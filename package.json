@@ -1,0 +1,67 @@
+{
+  "name": "djublee-backend-rebuild",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "server": "nodemon index.js",
+    "dev": "npm run server",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/awijaya09/djublee-backend-rebuild.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/awijaya09/djublee-backend-rebuild/issues"
+  },
+  "homepage": "https://github.com/awijaya09/djublee-backend-rebuild#readme",
+  "dependencies": {
+    "aws-sdk": "^2.562.0",
+    "bcryptjs": "^2.4.3",
+    "bluebird": "^3.5.4",
+    "body-parser": "^1.18.3",
+    "cors": "^2.8.5",
+    "dotenv": "^6.2.0",
+    "express": "^4.16.4",
+    "express-fileupload": "^1.1.1-alpha.3",
+    "express-validator": "^6.2.0",
+    "fcm-node": "^1.4.0",
+    "fs": "0.0.1-security",
+    "http": "0.0.0",
+    "image-size": "^0.7.2",
+    "jsonwebtoken": "^8.5.0",
+    "lodash": "^4.17.11",
+    "moment": "^2.24.0",
+    "morgan": "^1.9.1",
+    "multer": "^1.4.1",
+    "node-cron": "^2.0.3",
+    "nodemon": "^1.18.10",
+    "numeral": "^2.0.6",
+    "passport": "^0.4.0",
+    "passport-jwt": "^4.0.0",
+    "pg": "^7.12.1",
+    "randomatic": "^3.1.1",
+    "redis": "^2.8.0",
+    "request": "^2.88.0",
+    "sequelize": "^4.42.1",
+    "sequelize-cli": "^5.4.0",
+    "socket.io": "^2.2.0",
+    "stripe": "^6.26.0",
+    "validator": "^10.11.0"
+  },
+  "devDependencies": {
+    "eslint": "^5.3.0",
+    "eslint-config-airbnb": "^17.1.1",
+    "eslint-config-prettier": "^3.6.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-jsx-a11y": "^6.2.3",
+    "eslint-plugin-prettier": "^3.1.1",
+    "eslint-plugin-react": "^7.16.0",
+    "faker": "^4.1.0",
+    "prettier": "^1.18.2"
+  }
+}
