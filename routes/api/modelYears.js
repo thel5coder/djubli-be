@@ -56,23 +56,45 @@ router.get('/', async (req, res) => {
 router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.ModelYear.findByPk(id).then(data => {
-    res
-      .json({
+  return models.ModelYear.findByPk(id)
+    .then(data => {
+      res.json({
         success: true,
         data
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
       });
-  });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+router.get('/model/:id', async (req, res) => {
+  const { id } = req.params;
+
+  return models.ModelYear.findAll({
+    where: {
+      modelId: id
+    }
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 });
 
 router.post('/', async (req, res) => {
-  const { year } = req.body;
+  const { year, modelId } = req.body;
   const { images } = req.files;
 
   let picture = null;
@@ -90,7 +112,8 @@ router.post('/', async (req, res) => {
 
   return models.ModelYear.create({
     year,
-    picture
+    picture,
+    modelId
   })
     .then(data => {
       res.json({
@@ -123,7 +146,7 @@ router.put('id/:id', async (req, res) => {
     });
   }
 
-  const { year } = req.body;
+  const { year, modelId } = req.body;
   const { images } = req.files;
 
   let picture = null;
@@ -142,7 +165,8 @@ router.put('id/:id', async (req, res) => {
   return data
     .update({
       year,
-      picture
+      picture,
+      modelId
     })
     .then(() => {
       res.json({

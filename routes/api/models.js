@@ -68,6 +68,28 @@ router.get('/id/:id', async (req, res) => {
   });
 });
 
+router.get('/groupModel/:id', async (req, res) => {
+  const { id } = req.params;
+
+  return models.Model.findAll({
+    where: {
+      groupModelId: id
+    }
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
 router.post('/', async (req, res) => {
   const { name, groupModelId } = req.body;
   if (!name) {

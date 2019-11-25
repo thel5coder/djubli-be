@@ -2,6 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const ModelYear = sequelize.define(
     'ModelYear',
     {
+      modelIds: DataTypes.INTEGER,
       year: DataTypes.STRING,
       picture: DataTypes.STRING
     },
@@ -15,8 +16,12 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
   );
-  ModelYear.associate = function(models) {
-    // associations can be defined here
+  ModelYear.associate = models => {
+    ModelYear.belongsTo(models.Model, {
+      foreignKey: 'modelId',
+      as: 'model',
+      onDelete: 'CASCADE'
+    });
   };
   return ModelYear;
 };

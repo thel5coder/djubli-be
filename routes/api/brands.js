@@ -56,19 +56,19 @@ router.get('/', async (req, res) => {
 router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.Brand.findByPk(id).then(data => {
-    res
-      .json({
+  return models.Brand.findByPk(id)
+    .then(data => {
+      res.json({
         success: true,
         data
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
       });
-  });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 });
 
 router.post('/', async (req, res) => {

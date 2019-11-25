@@ -53,19 +53,41 @@ router.get('/', async (req, res) => {
 router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.GroupModel.findByPk(id).then(data => {
-    res
-      .json({
+  return models.GroupModel.findByPk(id)
+    .then(data => {
+      res.json({
         success: true,
         data
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
       });
-  });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+router.get('/brand/:id', async (req, res) => {
+  const { id } = req.params;
+
+  return models.GroupModel.findAll({
+    where: {
+      brandId: id
+    }
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 });
 
 router.post('/', async (req, res) => {
