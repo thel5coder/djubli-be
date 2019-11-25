@@ -5,7 +5,10 @@ module.exports = (sequelize, DataTypes) => {
       userCompanyId: DataTypes.INTEGER,
       fileId: DataTypes.INTEGER
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
   UserCompanyFile.associate = function(models) {
     // associations can be defined here

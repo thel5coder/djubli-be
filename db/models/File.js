@@ -5,7 +5,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING(100),
       url: DataTypes.STRING
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
   File.associate = function(models) {
     // associations can be defined here

@@ -8,7 +8,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.STRING,
       usedFrom: DataTypes.INTEGER
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
   UserEndUserCreditCardDetail.associate = function(models) {
     // associations can be defined here

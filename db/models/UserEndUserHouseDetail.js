@@ -7,7 +7,10 @@ module.exports = (sequelize, DataTypes) => {
       surfaceArea: DataTypes.STRING,
       usedFrom: DataTypes.INTEGER
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
   UserEndUserHouseDetail.associate = function(models) {
     // associations can be defined here

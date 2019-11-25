@@ -7,7 +7,10 @@ module.exports = (sequelize, DataTypes) => {
       type: DataTypes.INTEGER,
       companyType: DataTypes.INTEGER
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
   UserLead.associate = function(models) {
     // associations can be defined here

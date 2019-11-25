@@ -9,7 +9,7 @@ const passport = require('passport');
 const cors = require('cors');
 const redis = require('redis');
 
-const acceptedExtensions = ['jpg', 'png', 'gif'];
+const acceptedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
 const upload = multer({
   limits: {
     fileSize: 5 * 1024 * 1024, // 5 MB upload limit

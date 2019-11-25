@@ -10,7 +10,10 @@ module.exports = (sequelize, DataTypes) => {
       website: DataTypes.TEXT,
       lineOfBusiness: DataTypes.STRING
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
   UserCompany.associate = function(models) {
     // associations can be defined here

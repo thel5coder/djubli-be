@@ -5,10 +5,17 @@ module.exports = (sequelize, DataTypes) => {
       name: DataTypes.STRING,
       brandId: DataTypes.INTEGER
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
-  GroupModel.associate = function(models) {
-    // associations can be defined here
+  GroupModel.associate = models => {
+    GroupModel.belongsTo(models.Brand, {
+      foreignKey: 'brandId',
+      as: 'brand',
+      onDelete: 'CASCADE'
+    });
   };
   return GroupModel;
 };

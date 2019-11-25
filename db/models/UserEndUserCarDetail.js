@@ -6,7 +6,10 @@ module.exports = (sequelize, DataTypes) => {
       userId: DataTypes.INTEGER,
       yearId: DataTypes.INTEGER
     },
-    {}
+    {
+      timestamps: true,
+      paranoid: true
+    }
   );
   UserEndUserCarDetail.associate = function(models) {
     // associations can be defined here
