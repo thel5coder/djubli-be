@@ -1,6 +1,6 @@
 module.exports = {
   up: (queryInterface, Sequelize) =>
-    queryInterface.createTable('UserEndUserHouseDetails', {
+    queryInterface.createTable('UserEndUserCreditCardDetails', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -8,19 +8,18 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       userId: {
-        allowNull: false,
         type: Sequelize.INTEGER
       },
-      status: {
-        allowNull: false,
+      brand: {
         type: Sequelize.STRING
       },
-      surfaceArea: {
-        allowNull: false,
+      bank: {
+        type: Sequelize.STRING
+      },
+      type: {
         type: Sequelize.STRING
       },
       usedFrom: {
-        allowNull: false,
         type: Sequelize.INTEGER
       },
       createdAt: {
@@ -33,5 +32,5 @@ module.exports = {
       },
       deletedAt: Sequelize.DATE
     }),
-  down: queryInterface => queryInterface.dropTable('UserEndUserHouseDetails')
+  down: (queryInterface, Sequelize) => queryInterface.dropTable('UserEndUserCreditCardDetails')
 };

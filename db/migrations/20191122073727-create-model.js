@@ -1,18 +1,16 @@
 module.exports = {
   up: (queryInterface, Sequelize) =>
-    queryInterface.createTable('UserCompanyFiles', {
+    queryInterface.createTable('Models', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userCompanyId: {
-        allowNull: false,
-        type: Sequelize.INTEGER
+      name: {
+        type: Sequelize.STRING
       },
-      fileId: {
-        allowNull: false,
+      groupModelId: {
         type: Sequelize.INTEGER
       },
       createdAt: {
@@ -25,5 +23,5 @@ module.exports = {
       },
       deletedAt: Sequelize.DATE
     }),
-  down: queryInterface => queryInterface.dropTable('UserCompanyFiles')
+  down: (queryInterface, Sequelize) => queryInterface.dropTable('Models')
 };

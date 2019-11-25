@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const validator = require('validator');

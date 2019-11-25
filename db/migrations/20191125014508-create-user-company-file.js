@@ -1,21 +1,17 @@
 module.exports = {
   up: (queryInterface, Sequelize) =>
-    queryInterface.createTable('UserEndUserCarDetails', {
+    queryInterface.createTable('UserCompanyFiles', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
+      userCompanyId: {
         allowNull: false,
         type: Sequelize.INTEGER
       },
-      modelDetailId: {
-        allowNull: false,
-        type: Sequelize.INTEGER
-      },
-      yearId: {
+      fileId: {
         allowNull: false,
         type: Sequelize.INTEGER
       },
@@ -29,5 +25,5 @@ module.exports = {
       },
       deletedAt: Sequelize.DATE
     }),
-  down: queryInterface => queryInterface.dropTable('UserEndUserCarDetails')
+  down: (queryInterface, Sequelize) => queryInterface.dropTable('UserCompanyFiles')
 };
