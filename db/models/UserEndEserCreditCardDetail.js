@@ -13,8 +13,12 @@ module.exports = (sequelize, DataTypes) => {
       paranoid: true
     }
   );
-  UserEndUserCreditCardDetail.associate = function(models) {
-    // associations can be defined here
+  UserEndUserCreditCardDetail.associate = models => {
+    UserEndUserCreditCardDetail.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user',
+      onDelete: 'CASCADE'
+    });
   };
   return UserEndUserCreditCardDetail;
 };

@@ -12,8 +12,12 @@ module.exports = (sequelize, DataTypes) => {
       paranoid: true
     }
   );
-  UserEndUserHouseDetail.associate = function(models) {
-    // associations can be defined here
+  UserEndUserHouseDetail.associate = models => {
+    UserEndUserHouseDetail.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user',
+      onDelete: 'CASCADE'
+    });
   };
   return UserEndUserHouseDetail;
 };

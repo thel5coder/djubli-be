@@ -16,6 +16,11 @@ module.exports = (sequelize, DataTypes) => {
       as: 'modelYear',
       onDelete: 'CASCADE'
     });
+    UserEndUserCarDetail.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'user',
+      onDelete: 'CASCADE'
+    });
   };
 
   return UserEndUserCarDetail;

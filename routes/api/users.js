@@ -190,9 +190,10 @@ router.post('/register', async (req, res) => {
     address,
     status
   } = req.body;
-  const { modelDetailId, yearId } = req.body;
+  const { modelYearId } = req.body;
   const { brand, bank, ccType, ccUsedFrom } = req.body;
   const { hStatus, surfaceArea, hUsedFrom } = req.body;
+  let { isCar, isHome, isCard } = false;
 
   if (!name) {
     return res.status(400).json({
@@ -258,18 +259,32 @@ router.post('/register', async (req, res) => {
   }
 
   const hashedPassword = await bcrypt.hashSync(password, 10);
+
   // mapping car detail
-  const carModel = general.mapping(modelDetailId);
-  const carYears = general.mapping(yearId);
+  let carModel = [];
+  if (modelYearId) {
+    carModel = general.mapping(modelYearId);
+    isCar = true;
+  }
+
   // mapping credit card detail
-  const cardBrand = general.mapping(brand);
-  const cardBank = general.mapping(bank);
-  const cardType = general.mapping(ccType);
-  const cardUsedFrom = general.mapping(ccUsedFrom);
+  let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
+  if (brand && bank && ccType && ccUsedFrom) {
+    cardBrand = general.mapping(brand);
+    cardBank = general.mapping(bank);
+    cardType = general.mapping(ccType);
+    cardUsedFrom = general.mapping(ccUsedFrom);
+    isCard = true;
+  }
+
   // mapping home detail
-  const homeStatus = general.mapping(hStatus);
-  const homeArea = general.mapping(surfaceArea);
-  const homeUsedFrom = general.mapping(hUsedFrom);
+  let { homeStatus, homeArea, homeUsedFrom } = [];
+  if (hStatus && surfaceArea && hUsedFrom) {
+    homeStatus = general.mapping(hStatus);
+    homeArea = general.mapping(surfaceArea);
+    homeUsedFrom = general.mapping(hUsedFrom);
+    isHome = true;
+  }
 
   return models.User.create({
     phone,
@@ -284,33 +299,70 @@ router.post('/register', async (req, res) => {
     status
   })
     .then(async data => {
-      const car = [];
-      for (let i = 0; i < carModel.length; i++) {
-        car.push({ userId: data.id, modelDetailId: carModel[i], yearId: carYears[i] });
-      }
-      const card = [];
-      for (let j = 0; j < cardBank.length; j++) {
-        card.push({
-          userId: data.id,
-          brand: cardBrand[j],
-          bank: cardBank[j],
-          type: cardType[j],
-          usedFrom: cardUsedFrom[j]
-        });
-      }
-      const home = [];
-      for (let k = 0; k < homeArea.length; k++) {
-        home.push({
-          userId: data.id,
-          status: homeStatus[k],
-          surfaceArea: homeArea[k],
-          usedFrom: homeUsedFrom[k]
-        });
+      if (isCar) {
+        const car = [];
+        for (let i = 0; i < carModel.length; i += 1) {
+          car.push({ userId: data.id, modelYearId: carModel[i] });
+        }
+
+        await models.UserEndUserCarDetail.bulkCreate(car)
+          .then(() => {
+            console.log('car detail inserted');
+          })
+          .catch(err => {
+            res.status(400).json({
+              success: false,
+              errors: err.message
+            });
+          });
       }
 
-      await models.UserEndUserCarDetail.bulkCreate(car);
-      await models.UserEndUserHouseDetail.bulkCreate(home);
-      await models.UserEndUserCreditCardDetail.bulkCreate(card);
+      if (isCard) {
+        const card = [];
+        for (let j = 0; j < cardBank.length; j += 1) {
+          card.push({
+            userId: data.id,
+            brand: cardBrand[j],
+            bank: cardBank[j],
+            type: cardType[j],
+            usedFrom: cardUsedFrom[j]
+          });
+        }
+
+        await models.UserEndUserCreditCardDetail.bulkCreate(card)
+          .then(() => {
+            console.log('card detail inserted');
+          })
+          .catch(err => {
+            res.status(400).json({
+              success: false,
+              errors: err.message
+            });
+          });
+      }
+
+      if (isHome) {
+        const home = [];
+        for (let k = 0; k < homeArea.length; k += 1) {
+          home.push({
+            userId: data.id,
+            status: homeStatus[k],
+            surfaceArea: homeArea[k],
+            usedFrom: homeUsedFrom[k]
+          });
+        }
+
+        await models.UserEndUserHouseDetail.bulkCreate(home)
+          .then(() => {
+            console.log('home detail inserted');
+          })
+          .catch(err => {
+            res.status(400).json({
+              success: false,
+              errors: err.message
+            });
+          });
+      }
       res.json({
         success: true,
         data
@@ -337,80 +389,191 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   if (!data) {
     return res.status(400).json({
       success: false,
-      errors: 'Admin not found'
+      errors: 'User not found'
     });
   }
 
-  const { name } = req.body;
-  let { email, password, status, isSuperAdmin } = req.body;
-  email = email.toLowerCase();
-  if (validator.isBoolean(status ? status.toString() : '') === false) {
-    status = false;
-  }
-  if (validator.isBoolean(isSuperAdmin ? isSuperAdmin.toString() : '') === false) {
-    isSuperAdmin = false;
-  }
+  const {
+    name,
+    password,
+    confirmPassword,
+    phone,
+    email,
+    type,
+    companyType,
+    profileImageId,
+    address,
+    status
+  } = req.body;
+  const { modelYearId } = req.body;
+  const { brand, bank, ccType, ccUsedFrom } = req.body;
+  const { hStatus, surfaceArea, hUsedFrom } = req.body;
+  let { isCar, isHome, isCard } = false;
+
   if (!name) {
     return res.status(400).json({
       success: false,
-      errors: 'Invalid name'
+      errors: 'name is mandatory'
     });
   }
+
+  if (!type) {
+    return res.status(400).json({
+      success: false,
+      errors: 'type is mandatory'
+    });
+  }
+
   if (validator.isEmail(email ? email.toString() : '') === false) {
     return res.status(400).json({
       success: false,
-      errors: 'Invalid email'
+      errors: 'invalid email'
     });
   }
-  if (!password) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Invalid password'
-    });
-  }
-  if (password.length < 8) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Password minimum length is 8'
-    });
-  }
-  password = await bcrypt.hashSync(password, 10);
 
-  const dataUnique = await models.User.findOne({
-    where: {
-      email: {
-        [Op.iLike]: email
-      },
-      id: {
-        [Op.not]: id
-      }
-    }
-  });
-  if (dataUnique) {
+  if (validator.isMobilePhone(phone ? phone.toString() : '') === false) {
     return res.status(400).json({
       success: false,
-      errors: 'Phone or email already exist'
+      errors: 'invalid phone'
     });
+  }
+
+  if (validator.isBoolean(status ? status.toString() : '') === false) {
+    return res.status(400).json({
+      success: false,
+      errors: 'status must be boolean'
+    });
+  }
+
+  if (!address) {
+    return res.status(400).json({
+      success: false,
+      errors: 'address is mandatory'
+    });
+  }
+
+  if (password !== confirmPassword) {
+    return res.status(400).json({
+      success: true,
+      errors: 'password mismatch'
+    });
+  }
+
+  const hashedPassword = await bcrypt.hashSync(password, 10);
+
+  // mapping car detail
+  let carModel = [];
+  if (modelYearId) {
+    carModel = general.mapping(modelYearId);
+    isCar = true;
+  }
+
+  // mapping credit card detail
+  let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
+  if (brand && bank && ccType && ccUsedFrom) {
+    cardBrand = general.mapping(brand);
+    cardBank = general.mapping(bank);
+    cardType = general.mapping(ccType);
+    cardUsedFrom = general.mapping(ccUsedFrom);
+    isCard = true;
+  }
+
+  // mapping home detail
+  let { homeStatus, homeArea, homeUsedFrom } = [];
+  if (hStatus && surfaceArea && hUsedFrom) {
+    homeStatus = general.mapping(hStatus);
+    homeArea = general.mapping(surfaceArea);
+    homeUsedFrom = general.mapping(hUsedFrom);
+    isHome = true;
   }
 
   return data
     .update({
-      name,
+      phone,
       email,
-      password,
-      isSuperAdmin,
+      emailValidAt: moment.now(),
+      name,
+      password: hashedPassword,
+      type,
+      companyType,
+      profileImageId,
+      address,
       status
     })
-    .then(() => {
+    .then(async () => {
+      if (isCar) {
+        const car = [];
+        for (let i = 0; i < carModel.length; i += 1) {
+          car.push({ userId: data.id, modelYearId: carModel[i] });
+        }
+
+        await models.UserEndUserCarDetail.bulkCreate(car)
+          .then(() => {
+            console.log('car detail inserted');
+          })
+          .catch(err => {
+            res.status(400).json({
+              success: false,
+              errors: err.message
+            });
+          });
+      }
+
+      if (isCard) {
+        const card = [];
+        for (let j = 0; j < cardBank.length; j += 1) {
+          card.push({
+            userId: data.id,
+            brand: cardBrand[j],
+            bank: cardBank[j],
+            type: cardType[j],
+            usedFrom: cardUsedFrom[j]
+          });
+        }
+
+        await models.UserEndUserCreditCardDetail.bulkCreate(card)
+          .then(() => {
+            console.log('card detail inserted');
+          })
+          .catch(err => {
+            res.status(400).json({
+              success: false,
+              errors: err.message
+            });
+          });
+      }
+
+      if (isHome) {
+        const home = [];
+        for (let k = 0; k < homeArea.length; k += 1) {
+          home.push({
+            userId: data.id,
+            status: homeStatus[k],
+            surfaceArea: homeArea[k],
+            usedFrom: homeUsedFrom[k]
+          });
+        }
+
+        await models.UserEndUserHouseDetail.bulkCreate(home)
+          .then(() => {
+            console.log('home detail inserted');
+          })
+          .catch(err => {
+            res.status(400).json({
+              success: false,
+              errors: err.message
+            });
+          });
+      }
       res.json({
         success: true,
         data
       });
     })
-    .catch(() => {
+    .catch(err => {
       res.status(422).json({
         success: false,
-        errors: 'Something wrong!!'
+        errors: err.message
       });
     });
 });
