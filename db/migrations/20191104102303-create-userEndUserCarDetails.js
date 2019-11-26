@@ -11,11 +11,7 @@ module.exports = {
         allowNull: false,
         type: Sequelize.INTEGER
       },
-      modelDetailId: {
-        allowNull: false,
-        type: Sequelize.INTEGER
-      },
-      yearId: {
+      modelYearId: {
         allowNull: false,
         type: Sequelize.INTEGER
       },
