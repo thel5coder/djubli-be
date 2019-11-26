@@ -8,12 +8,10 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       type: {
-        allowNull: false,
-        type: Sequelize.STRING(100)
+        type: Sequelize.STRING
       },
       url: {
-        allowNull: false,
-        type: Sequelize.STRING
+        type: Sequelize.STRING(100)
       },
       createdAt: {
         allowNull: false,
@@ -25,5 +23,5 @@ module.exports = {
       },
       deletedAt: Sequelize.DATE
     }),
-  down: queryInterface => queryInterface.dropTable('Files')
+  down: (queryInterface, Sequelize) => queryInterface.dropTable('Files')
 };

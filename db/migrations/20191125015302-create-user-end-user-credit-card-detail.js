@@ -8,23 +8,18 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       userId: {
-        allowNull: false,
         type: Sequelize.INTEGER
       },
       brand: {
-        allowNull: false,
         type: Sequelize.STRING
       },
       bank: {
-        allowNull: false,
         type: Sequelize.STRING
       },
       type: {
-        allowNull: false,
         type: Sequelize.STRING
       },
       usedFrom: {
-        allowNull: false,
         type: Sequelize.INTEGER
       },
       createdAt: {

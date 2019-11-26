@@ -8,19 +8,15 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       phone: {
-        allowNull: false,
-        type: Sequelize.STRING(100)
+        type: Sequelize.STRING
       },
       email: {
-        allowNull: false,
-        type: Sequelize.STRING(100)
+        type: Sequelize.STRING
       },
       type: {
-        allowNull: false,
         type: Sequelize.INTEGER
       },
       companyType: {
-        allowNull: false,
         type: Sequelize.INTEGER
       },
       createdAt: {
@@ -33,5 +29,5 @@ module.exports = {
       },
       deletedAt: Sequelize.DATE
     }),
-  down: queryInterface => queryInterface.dropTable('UserLeads')
+  down: (queryInterface, Sequelize) => queryInterface.dropTable('UserLeads')
 };

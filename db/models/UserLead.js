@@ -1,12 +1,10 @@
 module.exports = (sequelize, DataTypes) => {
-  const User = sequelize.define(
-    'User',
+  const UserLead = sequelize.define(
+    'UserLead',
     {
-      phone: DataTypes.STRING(100),
-      email: DataTypes.STRING(100),
-      // 1: End User, 2: Dealer
+      phone: DataTypes.STRING,
+      email: DataTypes.STRING,
       type: DataTypes.INTEGER,
-      // 1: Self, 2: Company
       companyType: DataTypes.INTEGER
     },
     {
@@ -14,6 +12,8 @@ module.exports = (sequelize, DataTypes) => {
       paranoid: true
     }
   );
-
-  return User;
+  UserLead.associate = function(models) {
+    // associations can be defined here
+  };
+  return UserLead;
 };

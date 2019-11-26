@@ -8,19 +8,24 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       userId: {
-        allowNull: false,
         type: Sequelize.INTEGER
       },
-      phone: Sequelize.STRING(100),
-      fax: Sequelize.STRING(100),
-      email: {
-        allowNull: false,
+      phone: {
         type: Sequelize.STRING(100)
       },
-      emailValidAt: Sequelize.DATE,
-      website: Sequelize.TEXT,
+      fax: {
+        type: Sequelize.STRING(100)
+      },
+      email: {
+        type: Sequelize.STRING(100)
+      },
+      emailValidAt: {
+        type: Sequelize.DATE
+      },
+      website: {
+        type: Sequelize.TEXT
+      },
       lineOfBusiness: {
-        allowNull: false,
         type: Sequelize.STRING
       },
       createdAt: {
@@ -33,5 +38,5 @@ module.exports = {
       },
       deletedAt: Sequelize.DATE
     }),
-  down: queryInterface => queryInterface.dropTable('UserCompanies')
+  down: (queryInterface, Sequelize) => queryInterface.dropTable('UserCompanies')
 };
