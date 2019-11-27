@@ -21,6 +21,9 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
+      fax: {
+        type: Sequelize.STRING(100)
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

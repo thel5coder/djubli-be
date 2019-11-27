@@ -20,19 +20,19 @@ module.exports = (sequelize, DataTypes) => {
     Brand.hasMany(models.DealerSellAndBuyBrand, {
       foreignKey: 'brandId',
       sourceKey: 'id',
-      as: 'brand',
+      as: 'sellAndBuyBrand',
       onDelete: 'CASCADE'
     });
     Brand.hasMany(models.DealerWorkshopAuthorizedBrand, {
       foreignKey: 'brandId',
       sourceKey: 'id',
-      as: 'brand',
+      as: 'workshopAuthorizedBrand',
       onDelete: 'CASCADE'
     });
     Brand.hasMany(models.DealerWorkshopOtherBrand, {
       foreignKey: 'brandId',
       sourceKey: 'id',
-      as: 'brand',
+      as: 'workshopOtherBrand',
       onDelete: 'CASCADE'
     });
   };

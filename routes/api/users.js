@@ -190,10 +190,14 @@ router.post('/register', async (req, res) => {
     address,
     status
   } = req.body;
+  // User Member Attribute
   const { modelYearId } = req.body;
   const { brand, bank, ccType, ccUsedFrom } = req.body;
   const { hStatus, surfaceArea, hUsedFrom } = req.body;
   let { isCar, isHome, isCard } = false;
+  // Dealer Attribute
+  const { productType, website, fax, authorizedBrandId } = req.body;
+  const { authorizedWorkshop, otherWorkshop, sellAndBuy } = req.body;
 
   if (!name) {
     return res.status(400).json({
@@ -260,30 +264,34 @@ router.post('/register', async (req, res) => {
 
   const hashedPassword = await bcrypt.hashSync(password, 10);
 
-  // mapping car detail
+  // member attrinute
   let carModel = [];
-  if (modelYearId) {
-    carModel = general.mapping(modelYearId);
-    isCar = true;
-  }
-
-  // mapping credit card detail
   let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
-  if (brand && bank && ccType && ccUsedFrom) {
-    cardBrand = general.mapping(brand);
-    cardBank = general.mapping(bank);
-    cardType = general.mapping(ccType);
-    cardUsedFrom = general.mapping(ccUsedFrom);
-    isCard = true;
-  }
-
-  // mapping home detail
   let { homeStatus, homeArea, homeUsedFrom } = [];
-  if (hStatus && surfaceArea && hUsedFrom) {
-    homeStatus = general.mapping(hStatus);
-    homeArea = general.mapping(surfaceArea);
-    homeUsedFrom = general.mapping(hUsedFrom);
-    isHome = true;
+
+  if (type === 0) {
+    // mapping car detail
+    if (modelYearId) {
+      carModel = general.mapping(modelYearId);
+      isCar = true;
+    }
+
+    // mapping credit card detail
+    if (brand && bank && ccType && ccUsedFrom) {
+      cardBrand = general.mapping(brand);
+      cardBank = general.mapping(bank);
+      cardType = general.mapping(ccType);
+      cardUsedFrom = general.mapping(ccUsedFrom);
+      isCard = true;
+    }
+
+    // mapping home detail
+    if (hStatus && surfaceArea && hUsedFrom) {
+      homeStatus = general.mapping(hStatus);
+      homeArea = general.mapping(surfaceArea);
+      homeUsedFrom = general.mapping(hUsedFrom);
+      isHome = true;
+    }
   }
 
   return models.User.create({
@@ -299,69 +307,105 @@ router.post('/register', async (req, res) => {
     status
   })
     .then(async data => {
-      if (isCar) {
-        const car = [];
-        for (let i = 0; i < carModel.length; i += 1) {
-          car.push({ userId: data.id, modelYearId: carModel[i] });
+      if (type == 0) {
+        if (isCar) {
+          const car = [];
+          for (let i = 0; i < carModel.length; i += 1) {
+            car.push({ userId: data.id, modelYearId: carModel[i] });
+          }
+
+          await models.UserEndUserCarDetail.bulkCreate(car)
+            .then(() => {
+              console.log('car detail inserted');
+            })
+            .catch(err => {
+              res.status(400).json({
+                success: false,
+                errors: err.message
+              });
+            });
         }
 
-        await models.UserEndUserCarDetail.bulkCreate(car)
-          .then(() => {
-            console.log('car detail inserted');
-          })
-          .catch(err => {
-            res.status(400).json({
-              success: false,
-              errors: err.message
+        if (isCard) {
+          const card = [];
+          for (let j = 0; j < cardBank.length; j += 1) {
+            card.push({
+              userId: data.id,
+              brand: cardBrand[j],
+              bank: cardBank[j],
+              type: cardType[j],
+              usedFrom: cardUsedFrom[j]
             });
-          });
+          }
+
+          await models.UserEndUserCreditCardDetail.bulkCreate(card)
+            .then(() => {
+              console.log('card detail inserted');
+            })
+            .catch(err => {
+              res.status(400).json({
+                success: false,
+                errors: err.message
+              });
+            });
+        }
+
+        if (isHome) {
+          const home = [];
+          for (let k = 0; k < homeArea.length; k += 1) {
+            home.push({
+              userId: data.id,
+              status: homeStatus[k],
+              surfaceArea: homeArea[k],
+              usedFrom: homeUsedFrom[k]
+            });
+          }
+
+          await models.UserEndUserHouseDetail.bulkCreate(home)
+            .then(() => {
+              console.log('home detail inserted');
+            })
+            .catch(err => {
+              res.status(400).json({
+                success: false,
+                errors: err.message
+              });
+            });
+        }
       }
-
-      if (isCard) {
-        const card = [];
-        for (let j = 0; j < cardBank.length; j += 1) {
-          card.push({
-            userId: data.id,
-            brand: cardBrand[j],
-            bank: cardBank[j],
-            type: cardType[j],
-            usedFrom: cardUsedFrom[j]
-          });
-        }
-
-        await models.UserEndUserCreditCardDetail.bulkCreate(card)
-          .then(() => {
-            console.log('card detail inserted');
-          })
-          .catch(err => {
-            res.status(400).json({
-              success: false,
-              errors: err.message
+      if (type == 1) {
+        await models.Dealer.create({
+          userId: data.id,
+          productType,
+          website,
+          fax,
+          authorizedBrandId
+        }).then(async dealer => {
+          if (authorizedWorkshop) {
+            authorizedWorkshop.map(brandData => {
+              models.DealerWorkshopAuthorizedBrand.create({
+                dealerId: dealer.id,
+                brandId: brandData
+              });
             });
-          });
-      }
-
-      if (isHome) {
-        const home = [];
-        for (let k = 0; k < homeArea.length; k += 1) {
-          home.push({
-            userId: data.id,
-            status: homeStatus[k],
-            surfaceArea: homeArea[k],
-            usedFrom: homeUsedFrom[k]
-          });
-        }
-
-        await models.UserEndUserHouseDetail.bulkCreate(home)
-          .then(() => {
-            console.log('home detail inserted');
-          })
-          .catch(err => {
-            res.status(400).json({
-              success: false,
-              errors: err.message
+          }
+          if (otherWorkshop) {
+            otherWorkshop.map(brandData => {
+              models.DealerWorkshopOtherBrand.create({
+                dealerId: dealer.id,
+                brandId: brandData
+              });
             });
-          });
+          }
+          if (sellAndBuy) {
+            sellAndBuy.map(brandData => {
+              models.DealerSellAndBuyBrand.create({
+                dealerId: dealer.id,
+                brandId: brandData
+              });
+            });
+          }
+        });
       }
       res.json({
         success: true,

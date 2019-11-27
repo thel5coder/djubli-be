@@ -5,7 +5,8 @@ module.exports = (sequelize, DataTypes) => {
       userId: DataTypes.INTEGER,
       authorizedBrandId: DataTypes.INTEGER,
       website: DataTypes.STRING(100),
-      productType: DataTypes.INTEGER
+      productType: DataTypes.INTEGER,
+      fax: DataTypes.STRING(100)
     },
     {
       timestamps: true,
@@ -26,25 +27,25 @@ module.exports = (sequelize, DataTypes) => {
     Dealer.hasMany(models.DealerSellAndBuyBrand, {
       foreignKey: 'dealerId',
       sourceKey: 'id',
-      as: 'dealer',
+      as: 'dealerSellAndBuyBrand',
       onDelete: 'CASCADE'
     });
     Dealer.hasMany(models.DealerWorkshopAuthorizedBrand, {
       foreignKey: 'dealerId',
       sourceKey: 'id',
-      as: 'dealer',
+      as: 'workshopAuthorizedBrand',
       onDelete: 'CASCADE'
     });
     Dealer.hasMany(models.DealerWorkshopOtherBrand, {
       foreignKey: 'dealerId',
       sourceKey: 'id',
-      as: 'dealer',
+      as: 'workshopOtherBrand',
       onDelete: 'CASCADE'
     });
     Dealer.hasMany(models.DealerGallery, {
       foreignKey: 'dealerId',
       sourceKey: 'id',
-      as: 'dealer',
+      as: 'dealerGallery',
       onDelete: 'CASCADE'
     });
   };
