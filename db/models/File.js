@@ -7,11 +7,21 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       timestamps: true,
-      paranoid: true
+      paranoid: true,
+      getterMethods: {
+        fileUrl() {
+          return this.url ? process.env.HDRIVE_S3_BASE_URL + this.url : null;
+        }
+      }
     }
   );
-  File.associate = function(models) {
-    // associations can be defined here
+  File.associate = models => {
+    File.hasMany(models.DealerGallery, {
+      foreignKey: 'fileId',
+      sourceKey: 'id',
+      as: 'file',
+      onDelete: 'CASCADE'
+    });
   };
   return File;
 };

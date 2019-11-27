@@ -16,8 +16,25 @@ module.exports = (sequelize, DataTypes) => {
       }
     }
   );
-  Brand.associate = function(models) {
-    // associations can be defined here
+  Brand.associate = models => {
+    Brand.hasMany(models.DealerSellAndBuyBrand, {
+      foreignKey: 'brandId',
+      sourceKey: 'id',
+      as: 'brand',
+      onDelete: 'CASCADE'
+    });
+    Brand.hasMany(models.DealerWorkshopAuthorizedBrand, {
+      foreignKey: 'brandId',
+      sourceKey: 'id',
+      as: 'brand',
+      onDelete: 'CASCADE'
+    });
+    Brand.hasMany(models.DealerWorkshopOtherBrand, {
+      foreignKey: 'brandId',
+      sourceKey: 'id',
+      as: 'brand',
+      onDelete: 'CASCADE'
+    });
   };
   return Brand;
 };

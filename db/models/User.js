@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 module.exports = (sequelize, DataTypes) => {
   const User = sequelize.define(
     'User',
@@ -18,6 +19,12 @@ module.exports = (sequelize, DataTypes) => {
       paranoid: true
     }
   );
-
+  User.associate = models => {
+    User.belongsTo(models.File, {
+      foreignKey: 'profileImageId',
+      as: 'file',
+      onDelete: 'CASCADE'
+    });
+  };
   return User;
 };
