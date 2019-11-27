@@ -1,20 +1,19 @@
 /* eslint-disable linebreak-style */
 const moment = require('moment');
 const express = require('express');
+const passport = require('passport');
 const validator = require('validator');
-const Sequelize = require('sequelize');
 const randomize = require('randomatic');
 const models = require('../../db/models');
 const imageHelper = require('../../helpers/s3');
 const paginator = require('../../helpers/paginator');
 
-const { Op } = Sequelize;
 const router = express.Router();
 
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-router.get('/', async (req, res) => {
+router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -29,34 +28,29 @@ router.get('/', async (req, res) => {
 
   const where = {};
 
-  return models.Brand.findAll({
-    where,
-    order,
-    offset,
-    limit
-  })
+  return models.File.findAll({ where, order, offset, limit })
     .then(async data => {
       const count = await models.Brand.count({ where });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
         success: true,
-        pagination,
-        data
+        data,
+        pagination
       });
     })
     .catch(err => {
       res.status(422).json({
-        success: false,
+        success: true,
         errors: err.message
       });
     });
 });
 
-router.get('/id/:id', async (req, res) => {
+router.get('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
 
-  return models.Brand.findByPk(id)
+  return models.File.findByPk(id)
     .then(data => {
       res.json({
         success: true,
@@ -71,32 +65,18 @@ router.get('/id/:id', async (req, res) => {
     });
 });
 
-router.post('/', async (req, res) => {
-  const { name, status } = req.body;
+router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { type } = req.body;
   const { images } = req.files;
 
-  if (!name) {
+  if (!type) {
     return res.status(400).json({
       success: false,
-      errors: 'name is mandatory'
+      errors: ' type must be filled '
     });
   }
 
-  const dataUnique = await models.Brand.findOne({
-    where: {
-      name: {
-        [Op.iLike]: this.name
-      }
-    }
-  });
-  if (dataUnique) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Brand name already exist'
-    });
-  }
-
-  let logo = null;
+  let url = null;
   if (images) {
     const result = {};
     const tname = randomize('0', 4);
@@ -105,14 +85,13 @@ router.post('/', async (req, res) => {
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
-    logo = result.name;
+    url = result.name;
     imageHelper.uploadToS3(result);
   }
 
-  return models.Brand.create({
-    name,
-    status,
-    logo
+  return models.File.create({
+    url,
+    type
   })
     .then(data => {
       res.json({
@@ -128,7 +107,7 @@ router.post('/', async (req, res) => {
     });
 });
 
-router.put('/id/:id', async (req, res) => {
+router.put('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
@@ -137,39 +116,17 @@ router.put('/id/:id', async (req, res) => {
     });
   }
 
-  const data = await models.Brand.findByPk(id);
+  const data = await models.File.findByPk(id);
   if (!data) {
     return res.status(400).json({
       success: false,
-      errors: 'Brand not found'
+      errors: 'File not found'
     });
   }
 
-  const { name, status } = req.body;
   const { images } = req.files;
 
-  if (!name) {
-    return res.status(400).json({
-      success: false,
-      errors: 'name is mandatory'
-    });
-  }
-
-  const dataUnique = await models.Brand.findOne({
-    where: {
-      name: {
-        [Op.iLike]: this.name
-      }
-    }
-  });
-  if (dataUnique) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Brand name already exist'
-    });
-  }
-
-  let logo = null;
+  let url = null;
   if (images) {
     const result = {};
     const tname = randomize('0', 4);
@@ -178,15 +135,13 @@ router.put('/id/:id', async (req, res) => {
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
-    logo = result.name;
+    url = result.name;
     imageHelper.uploadToS3(result);
   }
 
   return data
     .update({
-      name,
-      status,
-      logo
+      url
     })
     .then(() => {
       res.json({
@@ -202,7 +157,7 @@ router.put('/id/:id', async (req, res) => {
     });
 });
 
-router.delete('/id/:id', async (req, res) => {
+router.delete('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
@@ -210,7 +165,7 @@ router.delete('/id/:id', async (req, res) => {
       errors: 'Invalid Parameter'
     });
   }
-  const data = await models.Brand.findByPk(id);
+  const data = await models.File.findByPk(id);
   if (!data) {
     return res.status(400).json({
       success: false,
