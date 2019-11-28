@@ -123,33 +123,40 @@ router.get('/token', passport.authenticate('user', { session: false }), async (r
 
 router.post('/login', async (req, res) => {
   const errors = {};
-  const { email, password } = req.body;
+  const { email, password, phone } = req.body;
 
-  if (validator.isEmail(email ? email.toString() : '') === false) {
-    return res.status(404).json({
-      success: false,
-      errors: 'Email/Password is incorrect.'
-    });
+  if (email) {
+    if (validator.isEmail(email ? email.toString() : '') === false) {
+      return res.status(404).json({
+        success: false,
+        errors: 'Email is incorrect.'
+      });
+    }
   }
   if (!password) {
     return res.status(404).json({
       success: false,
-      errors: 'Email/Password is incorrect.'
+      errors: 'Password is incorrect.'
     });
   }
 
   const data = await models.User.findOne({
     where: {
-      email: {
-        [Op.iLike]: email.toLowerCase()
-      },
+      [Op.or]: [
+        {
+          email: {
+            [Op.iLike]: email
+          }
+        },
+        { phone: { [Op.eq]: phone } }
+      ],
       status: true
     }
   });
   if (!data) {
     return res.status(404).json({
       success: false,
-      errors: 'Email/Password is incorrect.'
+      errors: 'Email/Phone is incorrect.'
     });
   }
 
@@ -157,7 +164,7 @@ router.post('/login', async (req, res) => {
   if (!isMatched) {
     return res.status(404).json({
       success: false,
-      errors: 'Phone/Password is incorrect. Please contact Admin'
+      errors: 'Password is incorrect.'
     });
   }
 
@@ -224,15 +231,24 @@ router.post('/register', async (req, res) => {
 
   const dataUnique = await models.User.findOne({
     where: {
-      email: {
-        [Op.eq]: email
-      }
+      [Op.or]: [
+        {
+          email: {
+            [Op.eq]: email
+          }
+        },
+        {
+          phone: {
+            [Op.eq]: phone
+          }
+        }
+      ]
     }
   });
   if (dataUnique) {
     return res.status(400).json({
       success: false,
-      errors: 'email already exist'
+      errors: 'email/phone already exist'
     });
   }
 
