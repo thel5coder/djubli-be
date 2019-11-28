@@ -5,7 +5,8 @@ module.exports = (sequelize, DataTypes) => {
       phone: DataTypes.STRING,
       email: DataTypes.STRING,
       type: DataTypes.INTEGER,
-      companyType: DataTypes.INTEGER
+      companyType: DataTypes.INTEGER,
+      status: DataTypes.INTEGER
     },
     {
       timestamps: true,

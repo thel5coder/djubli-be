@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 const { ExtractJwt, Strategy } = require('passport-jwt');
 const models = require('../db/models/index');
 const keys = require('./keys');
@@ -8,11 +9,11 @@ opts.secretOrKey = keys.secretKey;
 
 module.exports = passport => {
   passport.use(
-    'customer',
+    'otp',
     new Strategy(opts, async (jwtPayload, done) => {
       console.log(opts);
       console.log(jwtPayload);
-      const data = await models.Customer.findByPk(jwtPayload.id);
+      const data = await models.UserLead.findByPk(jwtPayload.id);
       if (data) {
         return done(null, data);
       }

@@ -19,6 +19,9 @@ module.exports = {
       companyType: {
         type: Sequelize.INTEGER
       },
+      status: {
+        type: Sequelize.integer
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
