@@ -198,6 +198,8 @@ router.post('/register', async (req, res) => {
   // Dealer Attribute
   const { productType, website, fax, authorizedBrandId } = req.body;
   const { authorizedWorkshop, otherWorkshop, sellAndBuy } = req.body;
+  // Company Attribute , fileId (dealer & company)
+  const { businessType, fileId } = req.body;
 
   if (!name) {
     return res.status(400).json({
@@ -269,7 +271,7 @@ router.post('/register', async (req, res) => {
   let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
   let { homeStatus, homeArea, homeUsedFrom } = [];
 
-  if (type === 0) {
+  if (type === '0' && companyType === '0') {
     // mapping car detail
     if (modelYearId) {
       carModel = general.mapping(modelYearId);
@@ -294,130 +296,205 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  return models.User.create({
-    phone,
-    email,
-    emailValidAt: moment.now(),
-    name,
-    password: hashedPassword,
-    type,
-    companyType,
-    profileImageId,
-    address,
-    status
-  })
-    .then(async data => {
-      if (type == 0) {
-        if (isCar) {
-          const car = [];
-          for (let i = 0; i < carModel.length; i += 1) {
-            car.push({ userId: data.id, modelYearId: carModel[i] });
-          }
+  const trans = await models.sequelize.transaction();
+  const errors = [];
 
-          await models.UserEndUserCarDetail.bulkCreate(car)
-            .then(() => {
-              console.log('car detail inserted');
-            })
-            .catch(err => {
-              res.status(400).json({
-                success: false,
-                errors: err.message
-              });
-            });
-        }
+  const data = await models.User.create(
+    {
+      phone,
+      email,
+      emailValidAt: moment.now(),
+      name,
+      password: hashedPassword,
+      type,
+      companyType,
+      profileImageId,
+      address,
+      status
+    },
+    {
+      transaction: trans
+    }
+  ).catch(err => {
+    errors.push(err);
+  });
 
-        if (isCard) {
-          const card = [];
-          for (let j = 0; j < cardBank.length; j += 1) {
-            card.push({
-              userId: data.id,
-              brand: cardBrand[j],
-              bank: cardBank[j],
-              type: cardType[j],
-              usedFrom: cardUsedFrom[j]
-            });
-          }
-
-          await models.UserEndUserCreditCardDetail.bulkCreate(card)
-            .then(() => {
-              console.log('card detail inserted');
-            })
-            .catch(err => {
-              res.status(400).json({
-                success: false,
-                errors: err.message
-              });
-            });
-        }
-
-        if (isHome) {
-          const home = [];
-          for (let k = 0; k < homeArea.length; k += 1) {
-            home.push({
-              userId: data.id,
-              status: homeStatus[k],
-              surfaceArea: homeArea[k],
-              usedFrom: homeUsedFrom[k]
-            });
-          }
-
-          await models.UserEndUserHouseDetail.bulkCreate(home)
-            .then(() => {
-              console.log('home detail inserted');
-            })
-            .catch(err => {
-              res.status(400).json({
-                success: false,
-                errors: err.message
-              });
-            });
-        }
+  if (type === '0' && companyType === '0') {
+    if (isCar) {
+      const car = [];
+      for (let i = 0; i < carModel.length; i += 1) {
+        car.push({ userId: data.id, modelYearId: carModel[i] });
       }
-      if (type == 1) {
-        await models.Dealer.create({
+
+      await models.UserEndUserCarDetail.bulkCreate(car, { transaction: trans }).catch(err => {
+        errors.push(err);
+      });
+    }
+
+    if (isCard) {
+      const card = [];
+      for (let j = 0; j < cardBank.length; j += 1) {
+        card.push({
           userId: data.id,
-          productType,
-          website,
-          fax,
-          authorizedBrandId
-        }).then(async dealer => {
-          if (authorizedWorkshop) {
-            authorizedWorkshop.map(brandData => {
-              models.DealerWorkshopAuthorizedBrand.create({
-                dealerId: dealer.id,
-                brandId: brandData
-              });
-            });
-          }
-          if (otherWorkshop) {
-            otherWorkshop.map(brandData => {
-              models.DealerWorkshopOtherBrand.create({
-                dealerId: dealer.id,
-                brandId: brandData
-              });
-            });
-          }
-          if (sellAndBuy) {
-            sellAndBuy.map(brandData => {
-              models.DealerSellAndBuyBrand.create({
-                dealerId: dealer.id,
-                brandId: brandData
-              });
-            });
-          }
+          brand: cardBrand[j],
+          bank: cardBank[j],
+          type: cardType[j],
+          usedFrom: cardUsedFrom[j]
         });
       }
-      res.json({
-        success: true,
-        data
+
+      await models.UserEndUserCreditCardDetail.bulkCreate(card, { transaction: trans }).catch(
+        err => {
+          errors.push(err);
+        }
+      );
+    }
+
+    if (isHome) {
+      const home = [];
+      for (let k = 0; k < homeArea.length; k += 1) {
+        home.push({
+          userId: data.id,
+          status: homeStatus[k],
+          surfaceArea: homeArea[k],
+          usedFrom: homeUsedFrom[k]
+        });
+      }
+
+      await models.UserEndUserHouseDetail.bulkCreate(home, { transaction: trans }).catch(err => {
+        errors.push(err);
       });
-    })
-    .catch(err => {
-      res.status(422).json({
-        success: false,
-        errors: err.message
-      });
+    }
+  }
+
+  if (type === '0' && companyType === '1') {
+    const company = await models.Company.create(
+      {
+        userId: data.id,
+        website,
+        fax,
+        businessType
+      },
+      {
+        transaction: trans
+      }
+    ).catch(err => {
+      errors.push(err);
     });
+
+    await Promise.all(
+      fileId.map(async file => {
+        await models.CompanyGallery.create(
+          {
+            companyId: company.id,
+            fileId: file
+          },
+          {
+            transaction: trans
+          }
+        ).catch(err => {
+          errors.push(err);
+        });
+      })
+    );
+  }
+
+  if (type === '1') {
+    const dealer = await models.Dealer.create(
+      {
+        userId: data.id,
+        productType,
+        website,
+        fax,
+        authorizedBrandId
+      },
+      { transaction: trans }
+    ).catch(err => {
+      errors.push(err);
+    });
+
+    await Promise.all(
+      fileId.map(async file => {
+        await models.DealerGallery.create(
+          {
+            dealerId: dealer.id,
+            fileId: file
+          },
+          {
+            transaction: trans
+          }
+        ).catch(err => {
+          errors.push(err);
+        });
+      })
+    );
+
+    if (authorizedWorkshop) {
+      await Promise.all(
+        authorizedWorkshop.map(async brandData => {
+          await models.DealerWorkshopAuthorizedBrand.create(
+            {
+              dealerId: dealer.id,
+              brandId: brandData
+            },
+            {
+              transaction: trans
+            }
+          ).catch(err => {
+            errors.push(err);
+          });
+        })
+      );
+    }
+    if (otherWorkshop) {
+      await Promise.all(
+        otherWorkshop.map(async brandData => {
+          await models.DealerWorkshopOtherBrand.create(
+            {
+              dealerId: dealer.id,
+              brandId: brandData
+            },
+            {
+              transaction: trans
+            }
+          ).catch(err => {
+            errors.push(err);
+          });
+        })
+      );
+    }
+    if (sellAndBuy) {
+      await Promise.all(
+        sellAndBuy.map(async brandData => {
+          await models.DealerSellAndBuyBrand.create(
+            {
+              dealerId: dealer.id,
+              brandId: brandData
+            },
+            {
+              transaction: trans
+            }
+          ).catch(err => {
+            errors.push(err);
+          });
+        })
+      );
+    }
+  }
+
+  if (errors.length > 0) {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors
+    });
+  }
+  trans.commit();
+
+  return res.json({
+    success: true,
+    data
+  });
 });
 
 router.put('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
