@@ -1,3 +1,4 @@
+/* eslint-disable linebreak-style */
 /* eslint-disable import/no-dynamic-require */
 /* eslint-disable global-require */
 const express = require('express');

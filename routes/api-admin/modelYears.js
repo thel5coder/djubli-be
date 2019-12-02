@@ -29,14 +29,14 @@ router.get('/', async (req, res) => {
 
   const where = {};
 
-  return models.Brand.findAll({
+  return models.ModelYear.findAll({
     where,
     order,
     offset,
     limit
   })
     .then(async data => {
-      const count = await models.Brand.count({ where });
+      const count = await models.ModelYear.count({ where });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
@@ -56,7 +56,7 @@ router.get('/', async (req, res) => {
 router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.Brand.findByPk(id)
+  return models.ModelYear.findByPk(id)
     .then(data => {
       res.json({
         success: true,
@@ -71,48 +71,13 @@ router.get('/id/:id', async (req, res) => {
     });
 });
 
-router.post('/', async (req, res) => {
-  const { name, status } = req.body;
-  const { images } = req.files;
+router.get('/model/:id', async (req, res) => {
+  const { id } = req.params;
 
-  if (!name) {
-    return res.status(400).json({
-      success: false,
-      errors: 'name is mandatory'
-    });
-  }
-
-  const dataUnique = await models.Brand.findOne({
+  return models.ModelYear.findAll({
     where: {
-      name: {
-        [Op.iLike]: this.name
-      }
+      modelId: id
     }
-  });
-  if (dataUnique) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Brand name already exist'
-    });
-  }
-
-  let logo = null;
-  if (images) {
-    const result = {};
-    const tname = randomize('0', 4);
-    result.name = `sidely/images/clientCompany/${tname}${moment().format('x')}${unescape(
-      images[0].originalname
-    ).replace(/\s/g, '')}`;
-    result.mimetype = images[0].mimetype;
-    result.data = images[0].buffer;
-    logo = result.name;
-    imageHelper.uploadToS3(result);
-  }
-
-  return models.Brand.create({
-    name,
-    status,
-    logo
   })
     .then(data => {
       res.json({
@@ -128,7 +93,43 @@ router.post('/', async (req, res) => {
     });
 });
 
-router.put('/id/:id', async (req, res) => {
+router.post('/', async (req, res) => {
+  const { year, modelId } = req.body;
+  const { images } = req.files;
+
+  let picture = null;
+  if (images) {
+    const result = {};
+    const tname = randomize('0', 4);
+    result.name = `djublee/images/clientCompany/${tname}${moment().format('x')}${unescape(
+      images[0].originalname
+    ).replace(/\s/g, '')}`;
+    result.mimetype = images[0].mimetype;
+    result.data = images[0].buffer;
+    picture = result.name;
+    imageHelper.uploadToS3(result);
+  }
+
+  return models.ModelYear.create({
+    year,
+    picture,
+    modelId
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+router.put('id/:id', async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
@@ -137,56 +138,35 @@ router.put('/id/:id', async (req, res) => {
     });
   }
 
-  const data = await models.Brand.findByPk(id);
+  const data = await models.ModelYear.findByPk(id);
   if (!data) {
     return res.status(400).json({
       success: false,
-      errors: 'Brand not found'
+      errors: 'ModelYear not found'
     });
   }
 
-  const { name, status } = req.body;
+  const { year, modelId } = req.body;
   const { images } = req.files;
 
-  if (!name) {
-    return res.status(400).json({
-      success: false,
-      errors: 'name is mandatory'
-    });
-  }
-
-  const dataUnique = await models.Brand.findOne({
-    where: {
-      name: {
-        [Op.iLike]: this.name
-      }
-    }
-  });
-  if (dataUnique) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Brand name already exist'
-    });
-  }
-
-  let logo = null;
+  let picture = null;
   if (images) {
     const result = {};
     const tname = randomize('0', 4);
-    result.name = `sidely/images/clientCompany/${tname}${moment().format('x')}${unescape(
+    result.name = `djublee/images/clientCompany/${tname}${moment().format('x')}${unescape(
       images[0].originalname
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
-    logo = result.name;
+    picture = result.name;
     imageHelper.uploadToS3(result);
   }
 
   return data
     .update({
-      name,
-      status,
-      logo
+      year,
+      picture,
+      modelId
     })
     .then(() => {
       res.json({
@@ -210,14 +190,7 @@ router.delete('/id/:id', async (req, res) => {
       errors: 'Invalid Parameter'
     });
   }
-  const data = await models.Brand.findByPk(id);
-  if (!data) {
-    return res.status(400).json({
-      success: false,
-      errors: 'data not found'
-    });
-  }
-
+  const data = await models.ModelYear.findByPk(id);
   return data
     .destroy()
     .then(() => {

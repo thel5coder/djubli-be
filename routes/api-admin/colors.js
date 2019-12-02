@@ -1,19 +1,20 @@
 /* eslint-disable linebreak-style */
 const moment = require('moment');
 const express = require('express');
-const passport = require('passport');
 const validator = require('validator');
+const Sequelize = require('sequelize');
 const randomize = require('randomatic');
 const models = require('../../db/models');
 const imageHelper = require('../../helpers/s3');
 const paginator = require('../../helpers/paginator');
 
+const { Op } = Sequelize;
 const router = express.Router();
 
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/', async (req, res) => {
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -28,29 +29,34 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 
   const where = {};
 
-  return models.File.findAll({ where, order, offset, limit })
+  return models.Color.findAll({
+    where,
+    order,
+    offset,
+    limit
+  })
     .then(async data => {
-      const count = await models.Brand.count({ where });
+      const count = await models.Color.count({ where });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
         success: true,
-        data,
-        pagination
+        pagination,
+        data
       });
     })
     .catch(err => {
       res.status(422).json({
-        success: true,
+        success: false,
         errors: err.message
       });
     });
 });
 
-router.get('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.File.findByPk(id)
+  return models.Color.findByPk(id)
     .then(data => {
       res.json({
         success: true,
@@ -65,33 +71,38 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
     });
 });
 
-router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { type } = req.body;
-  const { images } = req.files;
+router.post('/', async (req, res) => {
+  const { name, hex } = req.body;
 
-  if (!type) {
+  if (!name) {
     return res.status(400).json({
       success: false,
-      errors: ' type must be filled '
+      errors: 'name is mandatory'
     });
   }
 
-  let url = null;
-  if (images) {
-    const result = {};
-    const tname = randomize('0', 4);
-    result.name = `djublee/images/clientCompany/${tname}${moment().format('x')}${unescape(
-      images[0].originalname
-    ).replace(/\s/g, '')}`;
-    result.mimetype = images[0].mimetype;
-    result.data = images[0].buffer;
-    url = result.name;
-    imageHelper.uploadToS3(result);
+  if (!hex) {
+    return res.status(400).json({
+      success: false,
+      errors: 'hex is mandatory'
+    });
   }
 
-  return models.File.create({
-    url,
-    type
+  const dataUnique = await models.Color.findOne({
+    where: {
+      [Op.or]: [{ name: { [Op.iLike]: this.name } }, { hex: { [Op.iLike]: this.name } }]
+    }
+  });
+  if (dataUnique) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Color name/hex already exist'
+    });
+  }
+
+  return models.Color.create({
+    name,
+    hex
   })
     .then(data => {
       res.json({
@@ -107,7 +118,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
 });
 
-router.put('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.put('/id/:id', async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
@@ -116,32 +127,46 @@ router.put('/id/:id', passport.authenticate('user', { session: false }), async (
     });
   }
 
-  const data = await models.File.findByPk(id);
+  const data = await models.Color.findByPk(id);
   if (!data) {
     return res.status(400).json({
       success: false,
-      errors: 'File not found'
+      errors: 'Color not found'
     });
   }
 
-  const { images } = req.files;
+  const { name, hex } = req.body;
 
-  let url = null;
-  if (images) {
-    const result = {};
-    const tname = randomize('0', 4);
-    result.name = `djublee/images/clientCompany/${tname}${moment().format('x')}${unescape(
-      images[0].originalname
-    ).replace(/\s/g, '')}`;
-    result.mimetype = images[0].mimetype;
-    result.data = images[0].buffer;
-    url = result.name;
-    imageHelper.uploadToS3(result);
+  if (!name) {
+    return res.status(400).json({
+      success: false,
+      errors: 'name is mandatory'
+    });
+  }
+
+  if (!hex) {
+    return res.status(400).json({
+      success: false,
+      errors: 'hex is mandatory'
+    });
+  }
+
+  const dataUnique = await models.Color.findOne({
+    where: {
+      [Op.or]: [{ name: { [Op.iLike]: this.name } }, { hex: { [Op.iLike]: this.name } }]
+    }
+  });
+  if (dataUnique) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Color name/hex already exist'
+    });
   }
 
   return data
     .update({
-      url
+      name,
+      hex
     })
     .then(() => {
       res.json({
@@ -157,7 +182,7 @@ router.put('/id/:id', passport.authenticate('user', { session: false }), async (
     });
 });
 
-router.delete('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.delete('/id/:id', async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
@@ -165,7 +190,7 @@ router.delete('/:id', passport.authenticate('user', { session: false }), async (
       errors: 'Invalid Parameter'
     });
   }
-  const data = await models.File.findByPk(id);
+  const data = await models.Color.findByPk(id);
   if (!data) {
     return res.status(400).json({
       success: false,
@@ -188,5 +213,4 @@ router.delete('/:id', passport.authenticate('user', { session: false }), async (
       });
     });
 });
-
 module.exports = router;
