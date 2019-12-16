@@ -13,7 +13,7 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/', async (req, res) => {
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -47,7 +47,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     });
 });
 
-router.get('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
   return models.File.findByPk(id)
@@ -65,7 +65,7 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
     });
 });
 
-router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
+router.post('/', async (req, res) => {
   const { type } = req.body;
   const { images } = req.files;
 
@@ -107,7 +107,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
 });
 
-router.put('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.put('/id/:id', async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
@@ -157,7 +157,7 @@ router.put('/id/:id', passport.authenticate('user', { session: false }), async (
     });
 });
 
-router.delete('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.delete('/:id', async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
