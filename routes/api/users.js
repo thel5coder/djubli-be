@@ -124,6 +124,7 @@ router.get('/token', passport.authenticate('user', { session: false }), async (r
 router.post('/login', async (req, res) => {
   const errors = {};
   const { email, password, phone } = req.body;
+  let userType = '';
 
   if (email) {
     if (validator.isEmail(email ? email.toString() : '') === false) {
@@ -168,6 +169,14 @@ router.post('/login', async (req, res) => {
     });
   }
 
+  if (data.type === 0 && data.companyType === 0) {
+    userType = 'Member';
+  } else if (data.type === 0 && data.companyType === 1) {
+    userType = 'Company';
+  } else if (data.type === 1) {
+    userType = 'Dealer';
+  }
+
   const payload = {
     id: data.id
   };
@@ -179,7 +188,8 @@ router.post('/login', async (req, res) => {
 
     return res.json({
       success: true,
-      token: `Bearer ${token}`
+      token: `Bearer ${token}`,
+      userType
     });
   });
 });
