@@ -1,7 +1,6 @@
 /* eslint-disable linebreak-style */
 const moment = require('moment');
 const express = require('express');
-const passport = require('passport');
 const validator = require('validator');
 const randomize = require('randomatic');
 const models = require('../../db/models');
