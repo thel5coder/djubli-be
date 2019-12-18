@@ -3,7 +3,8 @@ module.exports = (sequelize, DataTypes) => {
     'GroupModel',
     {
       name: DataTypes.STRING,
-      brandId: DataTypes.INTEGER
+      brandId: DataTypes.INTEGER,
+      typeId: DataTypes.INTEGER
     },
     {
       timestamps: true,
@@ -14,6 +15,11 @@ module.exports = (sequelize, DataTypes) => {
     GroupModel.belongsTo(models.Brand, {
       foreignKey: 'brandId',
       as: 'brand',
+      onDelete: 'CASCADE'
+    });
+    GroupModel.belongsTo(models.Type, {
+      foreignKey: 'typeId',
+      as: 'type',
       onDelete: 'CASCADE'
     });
   };

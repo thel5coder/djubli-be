@@ -1,6 +1,6 @@
 module.exports = {
   up: (queryInterface, Sequelize) =>
-    queryInterface.createTable('GroupModels', {
+    queryInterface.createTable('Types', {
       id: {
         allowNull: false,
         autoIncrement: true,
@@ -10,11 +10,8 @@ module.exports = {
       name: {
         type: Sequelize.STRING
       },
-      brandId: {
-        type: Sequelize.INTEGER
-      },
-      typeId: {
-        type: Sequelize.INTEGER
+      status: {
+        type: Sequelize.BOOLEAN
       },
       createdAt: {
         allowNull: false,
@@ -26,5 +23,5 @@ module.exports = {
       },
       deletedAt: Sequelize.DATE
     }),
-  down: (queryInterface, Sequelize) => queryInterface.dropTable('GroupModels')
+  down: (queryInterface, Sequelize) => queryInterface.dropTable('Types')
 };

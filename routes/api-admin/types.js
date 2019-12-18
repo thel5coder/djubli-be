@@ -26,20 +26,14 @@ router.get('/', async (req, res) => {
 
   const where = {};
 
-  return models.Model.findAll({
-    include: [
-      {
-        model: models.GroupModel,
-        as: 'groupModel'
-      }
-    ],
+  return models.Type.findAll({
     where,
     order,
     offset,
     limit
   })
     .then(async data => {
-      const count = await models.Model.count({ where });
+      const count = await models.Type.count({ where });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
@@ -59,45 +53,7 @@ router.get('/', async (req, res) => {
 router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.Model.findOne({
-    include: [
-      {
-        model: models.GroupModel,
-        as: 'groupModel'
-      }
-    ],
-    where: {
-      id
-    }
-  }).then(data => {
-    res
-      .json({
-        success: true,
-        data
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
-      });
-  });
-});
-
-router.get('/groupModel/:id', async (req, res) => {
-  const { id } = req.params;
-
-  return models.Model.findAll({
-    include: [
-      {
-        model: models.GroupModel,
-        as: 'groupModel'
-      }
-    ],
-    where: {
-      groupModelId: id
-    }
-  })
+  return models.Type.findByPk(id)
     .then(data => {
       res.json({
         success: true,
@@ -113,21 +69,16 @@ router.get('/groupModel/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { name, groupModelId } = req.body;
+  const { name, status } = req.body;
+
   if (!name) {
     return res.status(400).json({
       success: false,
       errors: 'name is mandatory'
     });
   }
-  if (!groupModelId) {
-    return res.status(400).json({
-      success: false,
-      errors: 'groupModelId is mandatory'
-    });
-  }
 
-  const dataUnique = await models.Model.findOne({
+  const dataUnique = await models.Type.findOne({
     where: {
       name: {
         [Op.iLike]: this.name
@@ -137,13 +88,13 @@ router.post('/', async (req, res) => {
   if (dataUnique) {
     return res.status(400).json({
       success: false,
-      errors: 'Model name already exist'
+      errors: 'Type name already exist'
     });
   }
 
-  return models.Model.create({
+  return models.Type.create({
     name,
-    groupModelId
+    status
   })
     .then(data => {
       res.json({
@@ -167,15 +118,16 @@ router.put('/id/:id', async (req, res) => {
       errors: 'Invalid Parameter'
     });
   }
-  const data = await models.Model.findByPk(id);
+
+  const data = await models.Type.findByPk(id);
   if (!data) {
     return res.status(400).json({
       success: false,
-      errors: 'Model not found'
+      errors: 'Type not found'
     });
   }
 
-  const { name, groupModelId } = req.body;
+  const { name, status } = req.body;
 
   if (!name) {
     return res.status(400).json({
@@ -184,7 +136,7 @@ router.put('/id/:id', async (req, res) => {
     });
   }
 
-  const dataUnique = await models.Model.findOne({
+  const dataUnique = await models.Type.findOne({
     where: {
       name: {
         [Op.iLike]: this.name
@@ -194,14 +146,14 @@ router.put('/id/:id', async (req, res) => {
   if (dataUnique) {
     return res.status(400).json({
       success: false,
-      errors: 'Model name already exist'
+      errors: 'Type name already exist'
     });
   }
 
   return data
     .update({
       name,
-      groupModelId
+      status
     })
     .then(() => {
       res.json({
@@ -225,7 +177,14 @@ router.delete('/id/:id', async (req, res) => {
       errors: 'Invalid Parameter'
     });
   }
-  const data = await models.Model.findByPk(id);
+  const data = await models.Type.findByPk(id);
+  if (!data) {
+    return res.status(400).json({
+      success: false,
+      errors: 'data not found'
+    });
+  }
+
   return data
     .destroy()
     .then(() => {

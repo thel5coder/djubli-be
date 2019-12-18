@@ -27,6 +27,13 @@ router.get('/', async (req, res) => {
   const where = {};
 
   return models.GroupModel.findAll({
+    include: [
+      {
+        model: models.Type,
+        as: 'type',
+        attribute: ['id', 'name', 'status']
+      }
+    ],
     where,
     order,
     offset,
@@ -53,7 +60,18 @@ router.get('/', async (req, res) => {
 router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.GroupModel.findByPk(id)
+  return models.GroupModel.findOne({
+    include: [
+      {
+        model: models.Type,
+        as: 'type',
+        attribute: ['id', 'name', 'status']
+      }
+    ],
+    where: {
+      id
+    }
+  })
     .then(data => {
       res.json({
         success: true,
@@ -72,6 +90,13 @@ router.get('/brand/:id', async (req, res) => {
   const { id } = req.params;
 
   return models.GroupModel.findAll({
+    include: [
+      {
+        model: models.Type,
+        as: 'type',
+        attribute: ['id', 'name', 'status']
+      }
+    ],
     where: {
       brandId: id
     }
@@ -91,7 +116,7 @@ router.get('/brand/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { name, brandId } = req.body;
+  const { name, brandId, typeId } = req.body;
   if (!name) {
     return res.status(400).json({
       success: false,
@@ -102,6 +127,12 @@ router.post('/', async (req, res) => {
     return res.status(400).json({
       success: false,
       errors: 'brandId is mandatory'
+    });
+  }
+  if (!typeId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'typeId is mandatory'
     });
   }
 
@@ -121,7 +152,8 @@ router.post('/', async (req, res) => {
 
   return models.GroupModel.create({
     name,
-    brandId
+    brandId,
+    typeId
   })
     .then(data => {
       res.json({
@@ -153,7 +185,7 @@ router.put('/id/:id', async (req, res) => {
     });
   }
 
-  const { name, brandId } = req.body;
+  const { name, brandId, typeId } = req.body;
 
   if (!name) {
     return res.status(400).json({
@@ -179,7 +211,8 @@ router.put('/id/:id', async (req, res) => {
   return data
     .update({
       name,
-      brandId
+      brandId,
+      typeId
     })
     .then(() => {
       res.json({
