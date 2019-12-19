@@ -2,7 +2,7 @@ module.exports = (sequelize, DataTypes) => {
   const ModelYear = sequelize.define(
     'ModelYear',
     {
-      modelIds: DataTypes.INTEGER,
+      modelId: DataTypes.INTEGER,
       year: DataTypes.STRING,
       picture: DataTypes.STRING
     },
