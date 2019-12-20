@@ -10,8 +10,8 @@ module.exports = {
       carId: {
         type: Sequelize.INTEGER
       },
-      date: {
-        type: Sequelize.DATE
+      day: {
+        type: Sequelize.INTEGER
       },
       startTime: {
         type: Sequelize.TIME

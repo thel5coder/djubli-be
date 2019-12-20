@@ -63,7 +63,7 @@ router.get('/', async (req, res) => {
       {
         model: models.MeetingSchedule,
         as: 'meetingSchedule',
-        attributes: ['id', 'carId', 'date', 'startTime', 'endTime']
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
       },
       {
         model: models.InteriorGalery,
@@ -137,7 +137,7 @@ router.get('/id/:id', async (req, res) => {
       {
         model: models.MeetingSchedule,
         as: 'meetingSchedule',
-        attributes: ['id', 'carId', 'date', 'startTime', 'endTime']
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
       },
       {
         model: models.InteriorGalery,
@@ -150,7 +150,7 @@ router.get('/id/:id', async (req, res) => {
         attributes: ['id', 'fileId', 'carId']
       }
     ],
-    where:{
+    where: {
       id
     }
   })
@@ -185,7 +185,7 @@ router.post('/', async (req, res) => {
     STNKnumber,
     location
   } = req.body;
-  const { interior, exterior, date, startTime, endTime } = req.body;
+  const { interior, exterior, day, startTime, endTime } = req.body;
   const { images } = req.files;
 
   if (!userId) {
@@ -303,17 +303,17 @@ router.post('/', async (req, res) => {
     );
   }
 
-  if (date && startTime && endTime) {
-    let { dateTemp, startTimeTemp, endTimeTemp } = [];
-    dateTemp = general.mapping(date);
+  if (day && startTime && endTime) {
+    let { dayTemp, startTimeTemp, endTimeTemp } = [];
+    dayTemp = general.mapping(day);
     startTimeTemp = general.mapping(startTime);
     endTimeTemp = general.mapping(endTime);
 
     const schedule = [];
-    for (let i = 0; i < dateTemp.length; i += 1) {
+    for (let i = 0; i < dayTemp.length; i += 1) {
       schedule.push({
         carId: data.id,
-        date: dateTemp[i],
+        day: dayTemp[i],
         startTime: startTimeTemp[i],
         endTime: endTimeTemp[i]
       });

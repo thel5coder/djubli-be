@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     'MeetingSchedule',
     {
       carId: DataTypes.INTEGER,
-      date: DataTypes.DATE,
+      day: DataTypes.INTEGER,
       startTime: DataTypes.TIME,
       endTime: DataTypes.TIME
     },
