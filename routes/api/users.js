@@ -19,7 +19,7 @@ const paginator = require('../../helpers/paginator');
 
 router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
   let { page, limit, sort } = req.query;
-  const { by } = req.query;
+  const { by, type, companyType } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -47,6 +47,20 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     Object.assign(where, {
       email: {
         [Op.iLike]: `%${email}%`
+      }
+    });
+  }
+  if (type) {
+    Object.assign(where, {
+      type: {
+        [Op.eq]: type
+      }
+    });
+  }
+  if (companyType) {
+    Object.assign(where, {
+      companyType: {
+        [Op.eq]: companyType
       }
     });
   }
@@ -281,6 +295,34 @@ router.post('/register', async (req, res) => {
       success: true,
       errors: 'password mismatch'
     });
+  }
+
+  if (type === '0' && companyType === '1') {
+    const uniqueName = await models.User.findOne({
+      where: {
+        [Op.and] : [{type: 0}, {companyType: 1}, {name:name}]
+      }
+    });
+    if (uniqueName) {
+      return res.status(422).json({
+        success: false,
+        errors: 'Company Name already exist'
+      });
+    }
+  }
+
+  if (type === '1') {
+    const uniqueName = await models.User.findOne({
+      where: {
+        [Op.and] : [{type: 1}, {name:name}]
+      }
+    });
+    if (uniqueName) {
+      return res.status(422).json({
+        success: false,
+        errors: 'Dealer Name already exist'
+      });
+    }
   }
 
   const hashedPassword = await bcrypt.hashSync(password, 10);
