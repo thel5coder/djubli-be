@@ -3,17 +3,20 @@ const moment = require('moment');
 const express = require('express');
 const validator = require('validator');
 const randomize = require('randomatic');
+const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const imageHelper = require('../../helpers/s3');
 const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
 
+const { Op } = Sequelize;
 const router = express.Router();
 
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
+  const { groupModelId, modelId, brandId } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -27,6 +30,29 @@ router.get('/', async (req, res) => {
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   const where = {};
+  if (groupModelId) {
+    Object.assign(where, {
+      groupModelId: {
+        [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (modelId) {
+    Object.assign(where, {
+      modelId: {
+        [Op.eq]: modelId
+      }
+    });
+  }
+
+  if (brandId) {
+    Object.assign(where, {
+      brandId: {
+        [Op.eq]: brandId
+      }
+    });
+  }
 
   return models.Car.findAll({
     include: [
@@ -260,7 +286,11 @@ router.post('/', async (req, res) => {
       transaction: trans
     }
   ).catch(err => {
-    errors.push(err);
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
   });
 
   if (interior) {

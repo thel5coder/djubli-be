@@ -342,7 +342,11 @@ router.post('/register', async (req, res) => {
       transaction: trans
     }
   ).catch(err => {
-    errors.push(err);
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
   });
 
   if (type === '0' && companyType === '0') {
