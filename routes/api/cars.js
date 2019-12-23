@@ -16,7 +16,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  const { groupModelId, modelId, brandId } = req.query;
+  const { groupModelId, modelId, brandId, minPrice, maxPrice, by } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -25,9 +25,11 @@ router.get('/', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
+  let order = [['createdAt', 'desc']];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const where = {};
   if (groupModelId) {
@@ -50,6 +52,26 @@ router.get('/', async (req, res) => {
     Object.assign(where, {
       brandId: {
         [Op.eq]: brandId
+      }
+    });
+  }
+
+  if (minPrice && maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+      }
+    });
+  } else if (minPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.gte]: minPrice
+      }
+    });
+  } else if (maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.lte]: maxPrice
       }
     });
   }
