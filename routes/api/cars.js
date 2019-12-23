@@ -16,7 +16,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  const { groupModelId, modelId, brandId, minPrice, maxPrice, by } = req.query;
+  const { groupModelId, modelId, brandId, modelYearId, minPrice, maxPrice, by } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -32,6 +32,14 @@ router.get('/', async (req, res) => {
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const where = {};
+  if (modelYearId) {
+    Object.assign(where, {
+      modelYearId: {
+        [Op.eq]: modelYearId
+      }
+    });
+  }
+
   if (groupModelId) {
     Object.assign(where, {
       groupModelId: {
@@ -205,6 +213,103 @@ router.get('/id/:id', async (req, res) => {
     .then(data => {
       res.json({
         success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+router.get('/library', async (req, res) => {
+  const { modelYearId, by } = req.query;
+  let { page, limit, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  if (by === 'price' || by === 'id') order = [[by, sort]];
+
+  const where = {};
+  if (modelYearId) {
+    Object.assign(where, {
+      modelYearId: {
+        [Op.eq]: modelYearId
+      }
+    });
+  }
+
+  return models.ModelYear.findAll({
+    attributes: Object.keys(models.ModelYear.attributes).concat([
+      [
+        models.sequelize.literal(
+          '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
+        ),
+        'maxPrice'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
+        ),
+        'minPrice'
+      ]
+    ]),
+    include: [
+      {
+        model: models.Model,
+        as: 'model',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: [
+              {
+                model: models.Brand,
+                as: 'brand',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Car.count({ where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
         data
       });
     })
