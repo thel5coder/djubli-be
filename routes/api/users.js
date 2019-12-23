@@ -276,13 +276,6 @@ router.post('/register', async (req, res) => {
     });
   }
 
-  if (!address) {
-    return res.status(400).json({
-      success: false,
-      errors: 'address is mandatory'
-    });
-  }
-
   if (password !== confirmPassword) {
     return res.status(400).json({
       success: true,
