@@ -35,6 +35,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'workshopOtherBrand',
       onDelete: 'CASCADE'
     });
+    Brand.hasMany(models.Car, {
+      foreignKey: 'brandId',
+      sourceKey: 'id',
+      as: 'car',
+      onDelete: 'CASCADE'
+    });
   };
   return Brand;
 };

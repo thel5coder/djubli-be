@@ -22,6 +22,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'type',
       onDelete: 'CASCADE'
     });
+    GroupModel.hasMany(models.Car, {
+      foreignKey: 'groupModelId',
+      sourceKey: 'id',
+      as: 'car',
+      onDelete: 'CASCADE'
+    });
   };
   return GroupModel;
 };

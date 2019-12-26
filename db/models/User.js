@@ -25,6 +25,36 @@ module.exports = (sequelize, DataTypes) => {
       as: 'file',
       onDelete: 'CASCADE'
     });
+    User.hasMany(models.UserEndUserCreditCardDetail, {
+      foreignKey: 'userId',
+      sourceKey: 'id',
+      as: 'userCreditCard',
+      onDelete: 'CASCADE'
+    });
+    User.hasMany(models.UserEndUserCarDetail, {
+      foreignKey: 'userId',
+      sourceKey: 'id',
+      as: 'userCar',
+      onDelete: 'CASCADE'
+    });
+    User.hasMany(models.UserEndUserHouseDetail, {
+      foreignKey: 'userId',
+      sourceKey: 'id',
+      as: 'userHouse',
+      onDelete: 'CASCADE'
+    });
+    User.hasMany(models.Dealer, {
+      foreignKey: 'userId',
+      sourceKey: 'id',
+      as: 'dealer',
+      onDelete: 'CASCADE'
+    });
+    User.hasMany(models.Company, {
+      foreignKey: 'userId',
+      sourceKey: 'id',
+      as: 'company',
+      onDelete: 'CASCADE'
+    });
   };
   return User;
 };

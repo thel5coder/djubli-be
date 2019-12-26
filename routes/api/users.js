@@ -120,17 +120,88 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
 router.get('/token', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
 
-  return models.User.findByPk(id)
+  return models.User.findOne({
+    include: [
+      {
+        model: models.Dealer,
+        as: 'dealer',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.DealerSellAndBuyBrand,
+            as: 'dealerSellAndBuyBrand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.DealerWorkshopAuthorizedBrand,
+            as: 'workshopAuthorizedBrand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.DealerWorkshopOtherBrand,
+            as: 'workshopOtherBrand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.DealerGallery,
+            as: 'dealerGallery',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        model: models.Company,
+        as: 'company',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        model: models.UserEndUserCarDetail,
+        as: 'userCar',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        model: models.UserEndUserCreditCardDetail,
+        as: 'userCreditCard',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        model: models.UserEndUserHouseDetail,
+        as: 'userHouse',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      }
+    ],
+    where: {
+      id
+    }
+  })
     .then(data => {
       res.json({
         success: true,
         data
       });
     })
-    .catch(() =>
+    .catch(err =>
       res.status(422).json({
         success: false,
-        errors: 'Something wrong!!'
+        errors: err.message
       })
     );
 });
