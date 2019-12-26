@@ -17,7 +17,18 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { groupModelId, modelId, brandId, modelYearId, minPrice, maxPrice, by } = req.query;
+  const {
+    groupModelId,
+    modelId,
+    brandId,
+    condition,
+    modelYearId,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    by
+  } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -45,6 +56,14 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     Object.assign(where, {
       groupModelId: {
         [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (condition) {
+    Object.assign(where, {
+      condition: {
+        [Op.eq]: condition
       }
     });
   }
@@ -85,8 +104,35 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     });
   }
 
+  const whereYear = {};
+  if (minYear && maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+      }
+    });
+  } else if (minYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.gte]: minYear
+      }
+    });
+  } else if (maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.lte]: maxYear
+      }
+    });
+  }
+
   return models.Car.findAll({
     include: [
+      {
+        model: models.ModelYear,
+        as: 'modelYear',
+        attributes: ['id', 'year', 'modelId'],
+        where: whereYear
+      },
       {
         model: models.User,
         as: 'user',
@@ -139,7 +185,17 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     limit
   })
     .then(async data => {
-      const count = await models.Car.count({ where });
+      const count = await models.Car.count({
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: ['id', 'year', 'modelId'],
+            where: whereYear
+          }
+        ],
+        where
+      });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
