@@ -206,6 +206,82 @@ router.get('/token', passport.authenticate('user', { session: false }), async (r
     );
 });
 
+router.get('/myListingCar', passport.authenticate('user', { session: false }), async (req, res) => {
+  let { page, limit, sort } = req.query;
+  const { by, brandId, modelId, groupModelId, modelYearId } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  if (by === 'id' || by === 'price') order = [[by, sort]];
+
+  const where = {
+    userId: req.user.id
+  };
+
+  if (brandId) {
+    Object.assign(where, {
+      brandId: {
+        [Op.eq]: brandId
+      }
+    });
+  }
+
+  if (modelId) {
+    Object.assign(where, {
+      modelId: {
+        [Op.eq]: modelId
+      }
+    });
+  }
+
+  if (groupModelId) {
+    Object.assign(where, {
+      groupModelId: {
+        [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (modelYearId) {
+    Object.assign(where, {
+      modelYearId: {
+        [Op.eq]: modelYearId
+      }
+    });
+  }
+
+  return models.Car.findAll({
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Car.count({ where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err =>
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      })
+    );
+});
+
 router.post('/login', async (req, res) => {
   const errors = {};
   const { email, password, phone } = req.body;
