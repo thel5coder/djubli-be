@@ -371,7 +371,7 @@ router.post('/register', async (req, res) => {
   if (type === '0' && companyType === '1') {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and] : [{type: 0}, {companyType: 1}, {name:name}]
+        [Op.and]: [{ type: 0 }, { companyType: 1 }, { name }]
       }
     });
     if (uniqueName) {
@@ -385,7 +385,7 @@ router.post('/register', async (req, res) => {
   if (type === '1') {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and] : [{type: 1}, {name:name}]
+        [Op.and]: [{ type: 1 }, { name }]
       }
     });
     if (uniqueName) {

@@ -72,7 +72,8 @@ router.get('/listingAll', passport.authenticate('user', { session: false }), asy
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  if (by === 'id' || by === 'numberOfCar') order = [[by, sort]];
+  if (by === 'id') order = [[by, sort]];
+  else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
 
   const where = {};
 
@@ -124,7 +125,7 @@ router.get(
   '/listingCar/:id',
   passport.authenticate('user', { session: false }),
   async (req, res) => {
-    const { by } = req.query;
+    const { by, year } = req.query;
     const { id } = req.params;
     let { page, limit, sort } = req.query;
     let offset = 0;
@@ -144,14 +145,40 @@ router.get(
       modelId: id
     };
 
+    const inludeWhere = {};
+
+    if (year) {
+      Object.assign(inludeWhere, {
+        year: {
+          [Op.eq]: year
+        }
+      });
+    }
+
     return models.Car.findAll({
+      include: [
+        {
+          model: models.ModelYear,
+          as: 'modelYear',
+          where: inludeWhere
+        }
+      ],
       where,
       order,
       offset,
       limit
     })
       .then(async data => {
-        const count = await models.Car.count({ where });
+        const count = await models.Car.count({
+          include: [
+            {
+              model: models.ModelYear,
+              as: 'modelYear',
+              where: inludeWhere
+            }
+          ],
+          where
+        });
         const pagination = paginator.paging(page, count, limit);
 
         res.json({

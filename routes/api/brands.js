@@ -65,7 +65,8 @@ router.get('/listingAll', passport.authenticate('user', { session: false }), asy
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  if (by === 'id' || by === 'numberOfCar') order = [[by, sort]];
+  if (by === 'id') order = [[by, sort]];
+  else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
 
   const where = {};
 
@@ -161,7 +162,16 @@ router.get(
       limit
     })
       .then(async data => {
-        const count = await models.ModelYear.count({ where });
+        const count = await models.Car.count({
+          include: [
+            {
+              model: models.ModelYear,
+              as: 'modelYear',
+              where: inludeWhere
+            }
+          ],
+          where
+        });
         const pagination = paginator.paging(page, count, limit);
 
         res.json({

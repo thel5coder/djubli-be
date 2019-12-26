@@ -9,6 +9,7 @@ const multer = require('multer');
 const passport = require('passport');
 const cors = require('cors');
 const redis = require('redis');
+require('pg').defaults.parseInt8 = true;
 
 const acceptedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
 const upload = multer({
@@ -51,8 +52,8 @@ app.use(passport.initialize());
 require('./config/passport')(passport);
 
 const client = redis.createClient(process.env.REDIS_HOST);
-client.on('error', function(err) {
-  console.log('Error ' + err);
+client.on('error', err => {
+  console.log(`Error ${err}`);
 });
 
 io.on('connection', () => {
