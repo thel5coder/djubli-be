@@ -318,6 +318,52 @@ router.get('/myListingCar', passport.authenticate('user', { session: false }), a
     );
 });
 
+router.post('/checkCredential', async (req, res) => {
+  const { email, phone } = req.body;
+
+  if (!email) {
+    return res.status(422).json({
+      success: false,
+      errors: 'email field must be filled'
+    });
+  }
+
+  if (!phone) {
+    return res.status(422).json({
+      success: false,
+      errors: 'phone field must be filled'
+    });
+  }
+
+  const isEmail = await models.User.findOne({
+    where: {
+      email
+    }
+  }).catch(err => {
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
+
+  const isPhone = await models.User.findOne({
+    where: {
+      phone
+    }
+  }).catch(err => {
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
+
+  return res.json({
+    success: true,
+    isEmail,
+    isPhone
+  });
+});
+
 router.post('/login', async (req, res) => {
   const errors = {};
   const { email, password, phone } = req.body;
