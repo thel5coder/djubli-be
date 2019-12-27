@@ -58,7 +58,7 @@ router.get('/', async (req, res) => {
     });
 });
 
-router.get('/listingAll', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/listingAll', async (req, res) => {
   const { by } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
@@ -121,79 +121,75 @@ router.get('/listingAll', passport.authenticate('user', { session: false }), asy
     });
 });
 
-router.get(
-  '/listingCar/:id',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    const { by, year } = req.query;
-    const { id } = req.params;
-    let { page, limit, sort } = req.query;
-    let offset = 0;
+router.get('/listingCar/:id', async (req, res) => {
+  const { by, year } = req.query;
+  const { id } = req.params;
+  let { page, limit, sort } = req.query;
+  let offset = 0;
 
-    if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-    if (limit > MAX_LIMIT) limit = MAX_LIMIT;
-    if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
-    else page = 1;
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
 
-    let order = [['createdAt', 'desc']];
-    if (!sort) sort = 'asc';
-    else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-    if (by === 'price' || by === 'id') order = [[by, sort]];
+  if (by === 'price' || by === 'id') order = [[by, sort]];
 
-    const where = {
-      modelId: id
-    };
+  const where = {
+    modelId: id
+  };
 
-    const inludeWhere = {};
+  const inludeWhere = {};
 
-    if (year) {
-      Object.assign(inludeWhere, {
-        year: {
-          [Op.eq]: year
-        }
-      });
-    }
-
-    return models.Car.findAll({
-      include: [
-        {
-          model: models.ModelYear,
-          as: 'modelYear',
-          where: inludeWhere
-        }
-      ],
-      where,
-      order,
-      offset,
-      limit
-    })
-      .then(async data => {
-        const count = await models.Car.count({
-          include: [
-            {
-              model: models.ModelYear,
-              as: 'modelYear',
-              where: inludeWhere
-            }
-          ],
-          where
-        });
-        const pagination = paginator.paging(page, count, limit);
-
-        res.json({
-          success: true,
-          pagination,
-          data
-        });
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
-      });
+  if (year) {
+    Object.assign(inludeWhere, {
+      year: {
+        [Op.eq]: year
+      }
+    });
   }
-);
+
+  return models.Car.findAll({
+    include: [
+      {
+        model: models.ModelYear,
+        as: 'modelYear',
+        where: inludeWhere
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Car.count({
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            where: inludeWhere
+          }
+        ],
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
 
 module.exports = router;

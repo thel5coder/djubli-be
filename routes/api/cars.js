@@ -16,7 +16,7 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/', async (req, res) => {
   const {
     groupModelId,
     modelId,
@@ -212,7 +212,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     });
 });
 
-router.get('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
   return models.Car.findOne({
