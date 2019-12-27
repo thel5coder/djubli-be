@@ -12,7 +12,7 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
+router.get('/', async (req, res) => {
   let { page, limit, sort } = req.query;
   let offset = 0;
 
