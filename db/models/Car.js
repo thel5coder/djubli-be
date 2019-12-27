@@ -16,7 +16,8 @@ module.exports = (sequelize, DataTypes) => {
       engineNumber: DataTypes.STRING(100),
       STNKnumber: DataTypes.STRING(100),
       STNKphoto: DataTypes.STRING,
-      location: DataTypes.STRING
+      location: DataTypes.STRING,
+      status: DataTypes.INTEGER
     },
     {
       timestamps: true,
@@ -45,6 +46,12 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'carId',
       sourceKey: 'id',
       as: 'meetingSchedule',
+      onDelete: 'CASCADE'
+    });
+    Car.hasMany(models.Bargain, {
+      foreignKey: 'carId',
+      sourceKey: 'id',
+      as: 'bargain',
       onDelete: 'CASCADE'
     });
     Car.belongsTo(models.User, {

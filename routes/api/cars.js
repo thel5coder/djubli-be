@@ -296,7 +296,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     frameNumber,
     engineNumber,
     STNKnumber,
-    location
+    location,
+    status
   } = req.body;
   const { interior, exterior, day, startTime, endTime } = req.body;
   const { images } = req.files;
@@ -367,7 +368,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       engineNumber,
       STNKnumber,
       STNKphoto,
-      location
+      location,
+      status
     },
     {
       transaction: trans
