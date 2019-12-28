@@ -2,7 +2,6 @@
 const express = require('express');
 const validator = require('validator');
 const Sequelize = require('sequelize');
-const passport = require('passport');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 
