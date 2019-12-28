@@ -1,7 +1,6 @@
 /* eslint-disable linebreak-style */
 const express = require('express');
 const validator = require('validator');
-const passport = require('passport');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
