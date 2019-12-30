@@ -350,12 +350,12 @@ router.post('/checkCredential', async (req, res) => {
     where: {
       phone
     }
-  }).catch(err => {
-    return res.status(422).json({
+  }).catch(err =>
+    res.status(422).json({
       success: false,
       errors: err.message
-    });
-  });
+    })
+  );
 
   return res.json({
     success: true,
@@ -716,22 +716,23 @@ router.post('/register', async (req, res) => {
         errors: err.message
       });
     });
-
-    await Promise.all(
-      fileId.map(async file => {
-        await models.DealerGallery.create(
-          {
-            dealerId: dealer.id,
-            fileId: file
-          },
-          {
-            transaction: trans
-          }
-        ).catch(err => {
-          errors.push(err);
-        });
-      })
-    );
+    if (fileId) {
+      await Promise.all(
+        fileId.map(async file => {
+          await models.DealerGallery.create(
+            {
+              dealerId: dealer.id,
+              fileId: file
+            },
+            {
+              transaction: trans
+            }
+          ).catch(err => {
+            errors.push(err);
+          });
+        })
+      );
+    }
 
     if (authorizedWorkshop) {
       await Promise.all(
@@ -1016,21 +1017,23 @@ router.post('/unhandledRegister', async (req, res) => {
       });
     });
 
-    await Promise.all(
-      fileId.map(async file => {
-        await models.CompanyGallery.create(
-          {
-            companyId: company.id,
-            fileId: file
-          },
-          {
-            transaction: trans
-          }
-        ).catch(err => {
-          errors.push(err);
-        });
-      })
-    );
+    if (fileId) {
+      await Promise.all(
+        fileId.map(async file => {
+          await models.CompanyGallery.create(
+            {
+              companyId: company.id,
+              fileId: file
+            },
+            {
+              transaction: trans
+            }
+          ).catch(err => {
+            errors.push(err);
+          });
+        })
+      );
+    }
   }
 
   if (type === '1') {
@@ -1051,21 +1054,23 @@ router.post('/unhandledRegister', async (req, res) => {
       });
     });
 
-    await Promise.all(
-      fileId.map(async file => {
-        await models.DealerGallery.create(
-          {
-            dealerId: dealer.id,
-            fileId: file
-          },
-          {
-            transaction: trans
-          }
-        ).catch(err => {
-          errors.push(err);
-        });
-      })
-    );
+    if (fileId) {
+      await Promise.all(
+        fileId.map(async file => {
+          await models.DealerGallery.create(
+            {
+              dealerId: dealer.id,
+              fileId: file
+            },
+            {
+              transaction: trans
+            }
+          ).catch(err => {
+            errors.push(err);
+          });
+        })
+      );
+    }
 
     if (authorizedWorkshop) {
       await Promise.all(
