@@ -46,7 +46,7 @@ router.post('/', async (req, res) => {
   // otp
   const otp = Math.floor(1000 + Math.random() * 9000);
   await twilio.send(
-    `halo djubleers ini kode otp mu ${otp}, jangan beritahukan kepada siapapun meskipun itu bapakmu`,
+    `halo djubleers ini kode otp mu ${otp}, jangan beritahukan kode rahasia ini kepada siapapun`,
     phone
   );
 
@@ -69,8 +69,7 @@ router.post('/', async (req, res) => {
       trans.commit();
       return res.json({
         success: true,
-        token: `Bearer ${token}`,
-        key
+        token: `Bearer ${token}`
       });
     });
   });
