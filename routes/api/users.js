@@ -673,7 +673,11 @@ router.post('/register', async (req, res) => {
         transaction: trans
       }
     ).catch(err => {
-      errors.push(err);
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
+      });
     });
 
     await Promise.all(
@@ -704,7 +708,11 @@ router.post('/register', async (req, res) => {
       },
       { transaction: trans }
     ).catch(err => {
-      errors.push(err);
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
+      });
     });
 
     await Promise.all(
@@ -999,7 +1007,11 @@ router.post('/unhandledRegister', async (req, res) => {
         transaction: trans
       }
     ).catch(err => {
-      errors.push(err);
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
+      });
     });
 
     await Promise.all(
@@ -1030,7 +1042,11 @@ router.post('/unhandledRegister', async (req, res) => {
       },
       { transaction: trans }
     ).catch(err => {
-      errors.push(err);
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
+      });
     });
 
     await Promise.all(
