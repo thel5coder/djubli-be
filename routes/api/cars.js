@@ -369,7 +369,9 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       STNKnumber,
       STNKphoto,
       location,
-      status
+      status,
+      like: 0,
+      view: 0
     },
     {
       transaction: trans
@@ -456,6 +458,76 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     success: true,
     data
   });
+});
+
+router.put('/like/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+  const car = await models.Car.findOne({
+    where: {
+      id
+    }
+  });
+
+  if (!car) {
+    return res.status(404).json({
+      success: false,
+      errors: 'data not found'
+    });
+  }
+
+  const { like } = car;
+
+  return car
+    .update({
+      like: like + 1
+    })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+router.put('/view/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+  const car = await models.Car.findOne({
+    where: {
+      id
+    }
+  });
+
+  if (!car) {
+    return res.status(404).json({
+      success: false,
+      errors: 'data not found'
+    });
+  }
+
+  const { view } = car;
+
+  return car
+    .update({
+      view: view + 1
+    })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 });
 
 router.delete('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {

@@ -17,7 +17,9 @@ module.exports = (sequelize, DataTypes) => {
       STNKnumber: DataTypes.STRING(100),
       STNKphoto: DataTypes.STRING,
       location: DataTypes.STRING,
-      status: DataTypes.INTEGER
+      status: DataTypes.INTEGER,
+      like: DataTypes.INTEGER,
+      view: DataTypes.INTEGER
     },
     {
       timestamps: true,
