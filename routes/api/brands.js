@@ -149,7 +149,43 @@ router.get('/listingCar/:id', async (req, res) => {
       {
         model: models.ModelYear,
         as: 'modelYear',
-        where: inludeWhere
+        where: inludeWhere,
+        include: [
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['name'],
+            include: [
+              {
+                model: models.GroupModel,
+                as: 'groupModel',
+                attributes: ['name'],
+                include: [
+                  {
+                    model: models.Brand,
+                    as: 'brand',
+                    attributes: ['name']
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        model: models.User,
+        as: 'user',
+        attributes: ['name']
+      },
+      {
+        model: models.Color,
+        as: 'interiorColor',
+        attributes: ['name']
+      },
+      {
+        model: models.Color,
+        as: 'exteriorColor',
+        attributes: ['name']
       }
     ],
     where,
