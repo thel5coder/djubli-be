@@ -10,7 +10,7 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER
       },
-      dealerId: {
+      carId: {
         type: Sequelize.INTEGER
       },
       bidAmount: {

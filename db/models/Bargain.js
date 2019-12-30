@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     'Bargain',
     {
       userId: DataTypes.INTEGER,
-      dealerId: DataTypes.INTEGER,
+      carId: DataTypes.INTEGER,
       bidAmount: DataTypes.NUMERIC,
       haveSeenCar: DataTypes.BOOLEAN,
       paymentMethod: DataTypes.INTEGER,
