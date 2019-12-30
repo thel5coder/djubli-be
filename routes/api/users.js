@@ -340,7 +340,7 @@ router.post('/checkCredential', async (req, res) => {
       email
     }
   }).catch(err => {
-    return res.status(422).json({
+    res.status(422).json({
       success: false,
       errors: err.message
     });
@@ -680,21 +680,23 @@ router.post('/register', async (req, res) => {
       });
     });
 
-    await Promise.all(
-      fileId.map(async file => {
-        await models.CompanyGallery.create(
-          {
-            companyId: company.id,
-            fileId: file
-          },
-          {
-            transaction: trans
-          }
-        ).catch(err => {
-          errors.push(err);
-        });
-      })
-    );
+    if (fileId) {
+      await Promise.all(
+        fileId.map(async file => {
+          await models.CompanyGallery.create(
+            {
+              companyId: company.id,
+              fileId: file
+            },
+            {
+              transaction: trans
+            }
+          ).catch(err => {
+            errors.push(err);
+          });
+        })
+      );
+    }
   }
 
   if (type === '1') {
