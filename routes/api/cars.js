@@ -126,6 +126,20 @@ router.get('/', async (req, res) => {
   }
 
   return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+        ),
+        'like'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+        ),
+        'view'
+      ]
+    ]),
     include: [
       {
         model: models.ModelYear,
@@ -330,6 +344,20 @@ router.get('/user/:id', async (req, res) => {
   }
 
   return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+        ),
+        'like'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+        ),
+        'view'
+      ]
+    ]),
     include: [
       {
         model: models.ModelYear,
@@ -420,6 +448,20 @@ router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
   return models.Car.findOne({
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+        ),
+        'like'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+        ),
+        'view'
+      ]
+    ]),
     include: [
       {
         model: models.User,
@@ -591,9 +633,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       STNKnumber,
       STNKphoto,
       location,
-      status,
-      like: 0,
-      view: 0
+      status
     },
     {
       transaction: trans
@@ -697,12 +737,10 @@ router.put('/like/:id', passport.authenticate('user', { session: false }), async
     });
   }
 
-  const { like } = car;
-
-  return car
-    .update({
-      like: like + 1
-    })
+  return models.Like.create({
+    userId: req.user.id,
+    carId: car.id
+  })
     .then(data => {
       res.json({
         success: true,
@@ -732,12 +770,10 @@ router.put('/view/:id', passport.authenticate('user', { session: false }), async
     });
   }
 
-  const { view } = car;
-
-  return car
-    .update({
-      view: view + 1
-    })
+  return models.View.create({
+    userId: req.user.id,
+    carId: car.id
+  })
     .then(data => {
       res.json({
         success: true,

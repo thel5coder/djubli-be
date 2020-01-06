@@ -17,9 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       STNKnumber: DataTypes.STRING(100),
       STNKphoto: DataTypes.STRING,
       location: DataTypes.STRING,
-      status: DataTypes.INTEGER,
-      like: DataTypes.INTEGER,
-      view: DataTypes.INTEGER
+      status: DataTypes.INTEGER
     },
     {
       timestamps: true,
@@ -54,6 +52,18 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'carId',
       sourceKey: 'id',
       as: 'bargain',
+      onDelete: 'CASCADE'
+    });
+    Car.hasMany(models.Like, {
+      foreignKey: 'carId',
+      sourceKey: 'id',
+      as: 'like',
+      onDelete: 'CASCADE'
+    });
+    Car.hasMany(models.View, {
+      foreignKey: 'carId',
+      sourceKey: 'id',
+      as: 'view',
       onDelete: 'CASCADE'
     });
     Car.belongsTo(models.User, {
