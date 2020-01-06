@@ -722,7 +722,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   });
 });
 
-router.put('/like/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.post('/like/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
   const car = await models.Car.findOne({
     where: {
@@ -734,6 +734,18 @@ router.put('/like/:id', passport.authenticate('user', { session: false }), async
     return res.status(404).json({
       success: false,
       errors: 'data not found'
+    });
+  }
+
+  const user = await models.Like.findOne({
+    where: {
+      userId: req.user.id
+    }
+  });
+  if (user) {
+    return res.status(422).json({
+      success: false,
+      errors: 'user has already liked this car'
     });
   }
 
@@ -755,7 +767,7 @@ router.put('/like/:id', passport.authenticate('user', { session: false }), async
     });
 });
 
-router.put('/view/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.post('/view/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
   const car = await models.Car.findOne({
     where: {
@@ -767,6 +779,18 @@ router.put('/view/:id', passport.authenticate('user', { session: false }), async
     return res.status(404).json({
       success: false,
       errors: 'data not found'
+    });
+  }
+
+  const user = await models.View.findOne({
+    where: {
+      userId: req.user.id
+    }
+  });
+  if (user) {
+    return res.status(422).json({
+      success: false,
+      errors: 'user has already viewed this car'
     });
   }
 
