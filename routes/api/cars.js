@@ -253,6 +253,8 @@ router.get('/user/:id', async (req, res) => {
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   if (by === 'price' || by === 'id') order = [[by, sort]];
+  else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
+  else if (by === 'view') order = [[models.sequelize.col('view'), sort]];
 
   const where = {};
 
@@ -534,6 +536,134 @@ router.get('/id/:id', async (req, res) => {
     .then(data => {
       res.json({
         success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+router.get('/like/:id', async (req, res) => {
+  const { id } = req.params;
+  const { by } = req.query;
+  let { page, limit, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  if (by === 'price' || by === 'id') order = [[by, sort]];
+
+  const where = {
+    userId: id
+  };
+  return models.Like.findAll({
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Like.count({
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+router.get('/view/:id', async (req, res) => {
+  const { id } = req.params;
+  const { by } = req.query;
+  let { page, limit, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  if (by === 'price' || by === 'id') order = [[by, sort]];
+
+  const where = {
+    userId: id
+  };
+  return models.View.findAll({
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.View.count({
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
         data
       });
     })
