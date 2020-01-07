@@ -897,7 +897,7 @@ router.post('/like/:id', passport.authenticate('user', { session: false }), asyn
     });
 });
 
-router.post('/view/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+router.post('/view/:id', async (req, res) => {
   const { id } = req.params;
   const car = await models.Car.findOne({
     where: {
@@ -912,20 +912,25 @@ router.post('/view/:id', passport.authenticate('user', { session: false }), asyn
     });
   }
 
-  const user = await models.View.findOne({
-    where: {
-      userId: req.user.id
-    }
-  });
-  if (user) {
-    return res.status(422).json({
-      success: false,
-      errors: 'user has already viewed this car'
-    });
+  // const user = await models.View.findOne({
+  //   where: {
+  //     userId: req.user.id
+  //   }
+  // });
+  // if (user) {
+  //   return res.status(422).json({
+  //     success: false,
+  //     errors: 'user has already viewed this car'
+  //   });
+  // }
+
+  let user = null;
+  if (req.user) {
+    user = req.user.id;
   }
 
   return models.View.create({
-    userId: req.user.id,
+    userId: user,
     carId: car.id
   })
     .then(data => {
