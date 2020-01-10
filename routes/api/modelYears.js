@@ -221,6 +221,39 @@ router.get('/listingCar/:id', async (req, res) => {
         model: models.Color,
         as: 'exteriorColor',
         attributes: ['name']
+      },
+      {
+        model: models.MeetingSchedule,
+        as: 'meetingSchedule',
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+      },
+      {
+        model: models.InteriorGalery,
+        as: 'interiorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        model: models.ExteriorGalery,
+        as: 'exteriorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       }
     ],
     where,
