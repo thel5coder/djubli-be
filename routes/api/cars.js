@@ -129,13 +129,13 @@ router.get('/', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
         ),
         'like'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
         ),
         'view'
       ]
@@ -349,13 +349,13 @@ router.get('/user/:id', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
         ),
         'like'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
         ),
         'view'
       ]
@@ -453,13 +453,13 @@ router.get('/id/:id', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
         ),
         'like'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
         ),
         'view'
       ]

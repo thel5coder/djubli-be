@@ -81,19 +81,19 @@ router.get('/listingAll', async (req, res) => {
     attributes: Object.keys(models.Model.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."modelId" = "Model"."id")'
+          '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."modelId" = "Model"."id" AND "Cars"."deletedAt" IS NULL)'
         ),
         'maxPrice'
       ],
       [
         models.sequelize.literal(
-          '(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."modelId" = "Model"."id")'
+          '(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."modelId" = "Model"."id" AND "Cars"."deletedAt" IS NULL)'
         ),
         'minPrice'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelId" = "Model"."id")'
+          '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelId" = "Model"."id" AND "Cars"."deletedAt" IS NULL)'
         ),
         'numberOfCar'
       ]
@@ -156,13 +156,13 @@ router.get('/listingCar/:id', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
         ),
         'like'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
         ),
         'view'
       ]
