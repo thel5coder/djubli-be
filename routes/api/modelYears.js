@@ -180,6 +180,20 @@ router.get('/listingCar/:id', async (req, res) => {
   }
 
   return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+        ),
+        'like'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+        ),
+        'view'
+      ]
+    ]),
     include: [
       {
         model: models.ModelYear,

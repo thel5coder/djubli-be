@@ -151,6 +151,20 @@ router.get('/listingCar/:id', async (req, res) => {
     });
   }
   return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+        ),
+        'like'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+        ),
+        'view'
+      ]
+    ]),
     include: [
       {
         model: models.ModelYear,
@@ -192,6 +206,39 @@ router.get('/listingCar/:id', async (req, res) => {
         model: models.Color,
         as: 'exteriorColor',
         attributes: ['name']
+      },
+      {
+        model: models.MeetingSchedule,
+        as: 'meetingSchedule',
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+      },
+      {
+        model: models.InteriorGalery,
+        as: 'interiorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        model: models.ExteriorGalery,
+        as: 'exteriorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       }
     ],
     where,
