@@ -997,4 +997,67 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
     });
 });
 
+// router get list car by like 
+router.get("/viewLike", async(req, res ) => {
+  let { page, limit, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  const order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  const where = {};
+
+  return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.literal(
+          '(SELECT "Brands"."name" FROM "Brands" WHERE "Brands"."id" = "Car"."brandId")'
+        ),
+        'Brands'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT "Models"."name" FROM "Models" WHERE "Models"."id" = "Car"."modelId")'
+        ),
+        'Model'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
+        ),
+        'jumlahLike'
+      ],
+    ]),
+    where:{
+      [Op.and]: [
+        Sequelize.literal('(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")  > 0')
+      ]
+    },
+    order: Sequelize.literal('(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id") DESC'),
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Car.count({ where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+})
 module.exports = router;
