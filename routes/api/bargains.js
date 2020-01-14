@@ -112,27 +112,6 @@ router.get('/id/:id', async (req, res) => {
 router.post('/bid', passport.authenticate('user', { session: false }), async (req, res) => {
   const { userId, carId, bidAmount, haveSeenCar, paymentMethod, expiredAt } = req.body;
 
-  if (validator.isInt(userId ? userId.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of userId must be int'
-    });
-  }
-
-  if (validator.isInt(carId ? carId.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of carId must be int'
-    });
-  }
-
-  if (validator.isBoolean(haveSeenCar ? haveSeenCar.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of haveSeenCar must be boolean'
-    });
-  }
-
   if (!bidAmount) {
     return res.status(400).json({
       success: false,
