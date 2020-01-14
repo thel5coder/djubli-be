@@ -8,7 +8,12 @@ module.exports = (sequelize, DataTypes) => {
     { timestamps: true, paranoid: true }
   );
   Type.associate = models => {
-    // associations can be defined here
+    Type.hasMany(models.GroupModel, {
+      foreignKey: 'typeId',
+      sourceKey: 'id',
+      as: 'groupModel',
+      onDelete: 'CASCADE'
+    });
   };
   return Type;
 };
