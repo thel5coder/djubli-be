@@ -30,7 +30,7 @@ router.get('/', async (req, res) => {
 
   if (carId) {
     Object.assign(where, {
-      dealerId: {
+      carId: {
         [Op.eq]: carId
       }
     });
