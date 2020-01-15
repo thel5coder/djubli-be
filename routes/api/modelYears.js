@@ -318,4 +318,115 @@ router.get('/listingCar/:id', async (req, res) => {
     });
 });
 
+router.get('/luxuryCar', async (req, res) => {
+  const { minPrice, maxPrice, condition } = req.query;
+  const { by } = req.query;
+  let { page, limit, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  if (by === 'year' || by === 'id') order = [[by, sort]];
+  else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
+
+  const where = {};
+
+  const whereInclude = {};
+  if (minPrice) {
+    Object.assign(whereInclude, {
+      price: {
+        [Op.gte]: minPrice
+      }
+    });
+  }
+
+  if (maxPrice) {
+    Object.assign(whereInclude, {
+      price: {
+        [Op.gte]: maxPrice
+      }
+    });
+  }
+
+  if (condition) {
+    Object.assign(whereInclude, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
+  }
+
+  return models.ModelYear.findAll({
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        where: whereInclude,
+        attributes: ['id', 'price']
+      },
+      {
+        model: models.Model,
+        as: 'model',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: [
+              {
+                model: models.Brand,
+                as: 'brand',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.ModelYear.count({
+        include: [
+          {
+            model: models.Car,
+            as: 'car',
+            where: whereInclude
+          }
+        ],
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
 module.exports = router;
