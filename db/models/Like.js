@@ -3,7 +3,8 @@ module.exports = (sequelize, DataTypes) => {
     'Like',
     {
       userId: DataTypes.INTEGER,
-      carId: DataTypes.INTEGER
+      carId: DataTypes.INTEGER,
+      status: DataTypes.BOOLEAN
     },
     { timestamps: true, paranoid: true }
   );

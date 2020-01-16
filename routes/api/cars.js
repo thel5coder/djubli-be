@@ -349,7 +349,7 @@ router.get('/user/:id', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
         ),
         'like'
       ],
@@ -887,19 +887,50 @@ router.post('/like/:id', passport.authenticate('user', { session: false }), asyn
 
   const user = await models.Like.findOne({
     where: {
-      userId: req.user.id
+      [Op.and]: [{ userId: req.user.id }, { carId: id }]
     }
   });
   if (user) {
-    return res.status(422).json({
-      success: false,
-      errors: 'user has already liked this car'
-    });
+    if (user.status === true) {
+      return user
+        .update({
+          status: false
+        })
+        .then(data => {
+          res.json({
+            success: true,
+            data
+          });
+        })
+        .catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err.message
+          });
+        });
+    }
+    return user
+      .update({
+        status: true
+      })
+      .then(data => {
+        res.json({
+          success: true,
+          data
+        });
+      })
+      .catch(err => {
+        res.status(422).json({
+          success: false,
+          errors: err.message
+        });
+      });
   }
 
   return models.Like.create({
     userId: req.user.id,
-    carId: car.id
+    carId: car.id,
+    status: true
   })
     .then(data => {
       res.json({
@@ -997,8 +1028,8 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
     });
 });
 
-// router get list car by like 
-router.get("/viewLike", async(req, res ) => {
+// router get list car by like
+router.get('/viewLike', async (req, res) => {
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -1032,14 +1063,18 @@ router.get("/viewLike", async(req, res ) => {
           '(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
         ),
         'jumlahLike'
-      ],
+      ]
     ]),
-    where:{
+    where: {
       [Op.and]: [
-        Sequelize.literal('(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")  > 0')
+        Sequelize.literal(
+          '(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")  > 0'
+        )
       ]
     },
-    order: Sequelize.literal('(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id") DESC'),
+    order: Sequelize.literal(
+      '(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id") DESC'
+    ),
     offset,
     limit
   })
@@ -1059,5 +1094,5 @@ router.get("/viewLike", async(req, res ) => {
         errors: err.message
       });
     });
-})
+});
 module.exports = router;

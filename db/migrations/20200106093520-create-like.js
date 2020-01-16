@@ -10,6 +10,10 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER
       },
+      status: {
+        allowNull: false,
+        type: Sequelize.BOOLEAN
+      },
       carId: {
         type: Sequelize.INTEGER
       },
