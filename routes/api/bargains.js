@@ -69,6 +69,22 @@ router.get('/', async (req, res) => {
   }
 
   return models.Bargain.findAll({
+    include: [
+      {
+        model: models.User,
+        as: 'user',
+        attributes: ['name'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      }
+    ],
     where,
     order,
     offset,
