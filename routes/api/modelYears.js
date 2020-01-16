@@ -532,7 +532,7 @@ router.get('/luxuryCar', async (req, res) => {
   if (maxPrice) {
     Object.assign(whereInclude, {
       price: {
-        [Op.gte]: maxPrice
+        [Op.lte]: maxPrice
       }
     });
   }
