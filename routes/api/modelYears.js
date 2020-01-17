@@ -521,18 +521,10 @@ router.get('/luxuryCar', async (req, res) => {
   const where = {};
 
   const whereInclude = {};
-  if (minPrice) {
+  if (minPrice && maxPrice) {
     Object.assign(whereInclude, {
       price: {
-        [Op.gte]: minPrice
-      }
-    });
-  }
-
-  if (maxPrice) {
-    Object.assign(whereInclude, {
-      price: {
-        [Op.lte]: maxPrice
+        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
       }
     });
   }
