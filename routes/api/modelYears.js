@@ -209,6 +209,18 @@ router.get('/listingCar/:id', async (req, res) => {
           '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
         ),
         'view'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+        ),
+        'numberOfBidder'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT SUM("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+        ),
+        'biddingTotal'
       ]
     ]),
     include: [
