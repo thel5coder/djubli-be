@@ -371,7 +371,7 @@ router.get(
   '/listingCarLogon/:id',
   passport.authenticate('user', { session: false }),
   async (req, res) => {
-    const { by, year, maxPrice, minPrice } = req.query;
+    const { by, year, maxPrice, minPrice, condition } = req.query;
     const { id } = req.params;
     const userId = await req.user.id;
     let { page, limit, sort } = req.query;
@@ -398,6 +398,14 @@ router.get(
       Object.assign(inludeWhere, {
         year: {
           [Op.eq]: year
+        }
+      });
+    }
+
+    if (condition) {
+      Object.assign(where, {
+        condition: {
+          [Op.eq]: condition
         }
       });
     }
