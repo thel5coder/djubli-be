@@ -162,7 +162,7 @@ router.get('/listingAll', async (req, res) => {
 });
 
 router.get('/listingCar/:id', async (req, res) => {
-  const { by, year, maxPrice, minPrice } = req.query;
+  const { by, year, maxPrice, minPrice, condition } = req.query;
   const { id } = req.params;
   let { page, limit, sort } = req.query;
   let offset = 0;
@@ -188,6 +188,14 @@ router.get('/listingCar/:id', async (req, res) => {
     Object.assign(inludeWhere, {
       year: {
         [Op.eq]: year
+      }
+    });
+  }
+
+  if (condition) {
+    Object.assign(where, {
+      condition: {
+        [Op.eq]: condition
       }
     });
   }
