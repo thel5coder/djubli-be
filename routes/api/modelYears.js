@@ -410,18 +410,10 @@ router.get(
       });
     }
 
-    if (maxPrice) {
+    if (maxPrice && minPrice) {
       Object.assign(where, {
         price: {
-          [Op.lte]: maxPrice
-        }
-      });
-    }
-
-    if (minPrice) {
-      Object.assign(where, {
-        price: {
-          [Op.gte]: minPrice
+          [Op.and]: [{ [Op.lte]: maxPrice }, { [Op.gte]: minPrice }]
         }
       });
     }
