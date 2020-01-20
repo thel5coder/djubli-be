@@ -60,7 +60,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/listingAll', async (req, res) => {
-  const { by } = req.query;
+  const { by, condition } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -77,6 +77,15 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
 
   const where = {};
+  const whereInclude = {};
+
+  if (condition) {
+    Object.assign(whereInclude, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
+  }
 
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
@@ -136,6 +145,12 @@ router.get('/listingAll', async (req, res) => {
             ]
           }
         ]
+      },
+      {
+        model: models.Car,
+        as: 'car',
+        where: whereInclude,
+        attributes: ['condition']
       }
     ],
     where,
@@ -144,7 +159,16 @@ router.get('/listingAll', async (req, res) => {
     limit
   })
     .then(async data => {
-      const count = await models.ModelYear.count({ where });
+      const count = await models.ModelYear.count({
+        include: [
+          {
+            model: models.Car,
+            as: 'car',
+            where: whereInclude
+          }
+        ],
+        where
+      });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
@@ -430,9 +454,9 @@ router.get(
         ],
         [
           models.sequelize.literal(
-            '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+            '(SELECT SUM("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
           ),
-          'highestBidder'
+          'biddingTotal'
         ]
       ]),
       include: [
