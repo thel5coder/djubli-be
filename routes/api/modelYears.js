@@ -97,6 +97,18 @@ router.get('/listingAll', async (req, res) => {
           '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."deletedAt" IS NULL)'
         ),
         'numberOfCar'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Bargains"."id") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
+        ),
+        'numberOfBidder'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
+        ),
+        'highestBidder'
       ]
     ]),
     include: [
@@ -218,9 +230,9 @@ router.get('/listingCar/:id', async (req, res) => {
       ],
       [
         models.sequelize.literal(
-          '(SELECT SUM("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+          '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
         ),
-        'biddingTotal'
+        'highestBidder'
       ]
     ]),
     include: [
@@ -562,6 +574,20 @@ router.get('/luxuryCar', async (req, res) => {
   }
 
   return models.ModelYear.findAll({
+    attributes: Object.keys(models.ModelYear.attributes).concat([
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Bargains"."id") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`
+        ),
+        'numberOfBidder'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`
+        ),
+        'highestBidder'
+      ]
+    ]),
     include: [
       {
         model: models.Car,
