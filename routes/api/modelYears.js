@@ -446,9 +446,9 @@ router.get(
         ],
         [
           models.sequelize.literal(
-            '(SELECT SUM("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+            '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
           ),
-          'biddingTotal'
+          'highestBidder'
         ]
       ]),
       include: [
