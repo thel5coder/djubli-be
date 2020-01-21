@@ -486,7 +486,7 @@ router.get('/id/:id', async (req, res) => {
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       },
       {
         model: models.Brand,

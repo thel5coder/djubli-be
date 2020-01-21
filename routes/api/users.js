@@ -1213,11 +1213,13 @@ router.put('/update', passport.authenticate('user', { session: false }), async (
     });
   }
 
-  if (password !== confirmPassword) {
-    return res.status(400).json({
-      success: true,
-      errors: 'password mismatch'
-    });
+  if (password && confirmPassword) {
+    if (password !== confirmPassword) {
+      return res.status(400).json({
+        success: true,
+        errors: 'password mismatch'
+      });
+    }
   }
 
   const hashedPassword = await bcrypt.hashSync(password, 10);
