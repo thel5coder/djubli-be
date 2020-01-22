@@ -226,6 +226,50 @@ router.get('/', async (req, res) => {
     });
 });
 
+router.put('/status/:id', async(req, res) =>{
+    const { id } = req.params;
+    if (validator.isInt(id ? id.toString() : '') === false) {
+        return res.status(400).json({
+        success: false,
+        errors: 'Invalid Parameter'
+        });
+    }
+
+    const data = await models.Car.findByPk(id);
+    if (!data) {
+        return res.status(400).json({
+        success: false,
+        errors: 'Transaksi not found'
+        });
+    }
+
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({
+            success: false,
+            errors: 'status is mandatory'
+        });
+    }
+
+    return data
+    .update({
+        status
+    })
+    .then(() => {
+        res.json({
+            success: true,
+            data
+        });
+    })
+    .catch(err => {
+        res.status(422).json({
+            success: false,
+            errors: err.message
+        });
+    });
+});
+
 router.get('/user/:id', async (req, res) => {
   const { id } = req.params;
   const {
