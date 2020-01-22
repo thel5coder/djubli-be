@@ -4,7 +4,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       modelId: DataTypes.INTEGER,
       year: DataTypes.STRING,
-      picture: DataTypes.STRING
+      picture: DataTypes.STRING,
+      price: DataTypes.NUMERIC
     },
     {
       timestamps: true,

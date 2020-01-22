@@ -582,7 +582,7 @@ router.get('/luxuryCar', async (req, res) => {
 
   const whereInclude = {};
   if (minPrice && maxPrice) {
-    Object.assign(whereInclude, {
+    Object.assign(where, {
       price: {
         [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
       }
@@ -601,24 +601,24 @@ router.get('/luxuryCar', async (req, res) => {
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`
+          `(SELECT COUNT("Bargains"."id") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice})`
         ),
         'numberOfBidder'
       ],
       [
         models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`
+          `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice})`
         ),
         'highestBidder'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
+        ),
+        'numberOfCar'
       ]
     ]),
     include: [
-      {
-        model: models.Car,
-        as: 'car',
-        where: whereInclude,
-        attributes: ['id', 'price']
-      },
       {
         model: models.Model,
         as: 'model',

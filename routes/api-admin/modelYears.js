@@ -94,7 +94,7 @@ router.get('/model/:id', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const { year, modelId } = req.body;
+  const { year, modelId, price } = req.body;
   const { images } = req.files;
 
   let picture = null;
@@ -113,7 +113,8 @@ router.post('/', async (req, res) => {
   return models.ModelYear.create({
     year,
     picture,
-    modelId
+    modelId,
+    price
   })
     .then(data => {
       res.json({

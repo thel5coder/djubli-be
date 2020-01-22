@@ -1178,41 +1178,34 @@ router.put('/update', passport.authenticate('user', { session: false }), async (
   // Company Attribute , fileId (dealer & company)
   const { businessType, fileId } = req.body;
 
-  if (!name) {
-    return res.status(400).json({
-      success: false,
-      errors: 'name is mandatory'
-    });
+  if (email) {
+    if (validator.isEmail(email ? email.toString() : '') === false) {
+      return res.status(400).json({
+        success: false,
+        errors: 'invalid email'
+      });
+    }
   }
 
-  if (!type) {
-    return res.status(400).json({
-      success: false,
-      errors: 'type is mandatory'
-    });
+  if (phone) {
+    if (validator.isMobilePhone(phone ? phone.toString() : '') === false) {
+      return res.status(400).json({
+        success: false,
+        errors: 'invalid phone'
+      });
+    }
   }
 
-  if (validator.isEmail(email ? email.toString() : '') === false) {
-    return res.status(400).json({
-      success: false,
-      errors: 'invalid email'
-    });
+  if (status) {
+    if (validator.isBoolean(status ? status.toString() : '') === false) {
+      return res.status(400).json({
+        success: false,
+        errors: 'status must be boolean'
+      });
+    }
   }
 
-  if (validator.isMobilePhone(phone ? phone.toString() : '') === false) {
-    return res.status(400).json({
-      success: false,
-      errors: 'invalid phone'
-    });
-  }
-
-  if (validator.isBoolean(status ? status.toString() : '') === false) {
-    return res.status(400).json({
-      success: false,
-      errors: 'status must be boolean'
-    });
-  }
-
+  let hashedPassword = await bcrypt.hashSync(data.password, 10);
   if (password && confirmPassword) {
     if (password !== confirmPassword) {
       return res.status(400).json({
@@ -1220,9 +1213,8 @@ router.put('/update', passport.authenticate('user', { session: false }), async (
         errors: 'password mismatch'
       });
     }
+    hashedPassword = await bcrypt.hashSync(password, 10);
   }
-
-  const hashedPassword = await bcrypt.hashSync(password, 10);
 
   // member attribute
   let carModel = [];
