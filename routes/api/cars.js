@@ -226,7 +226,7 @@ router.get('/', async (req, res) => {
     });
 });
 
-router.put('/status/:id', async(req, res) =>{
+router.put('/status/:id', passport.authenticate('user', { session: false }), async(req, res) =>{
     const { id } = req.params;
     if (validator.isInt(id ? id.toString() : '') === false) {
         return res.status(400).json({
