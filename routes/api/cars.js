@@ -226,6 +226,7 @@ router.get('/', async (req, res) => {
     });
 });
 
+// Get By Status
 router.get('/status/:status', async (req, res) => {
   const { status } = req.params;
   const {
@@ -441,6 +442,51 @@ router.get('/status/:status', async (req, res) => {
         success: false,
         errors: err.message
       });
+    });
+});
+
+// Update Status
+router.put('/status/:id', passport.authenticate('user', { session: false }), async(req, res) =>{
+    const { id } = req.params;
+    if (validator.isInt(id ? id.toString() : '') === false) {
+        return res.status(400).json({
+        success: false,
+        errors: 'Invalid Parameter'
+        });
+    }
+
+    const data = await models.Car.findByPk(id);
+    if (!data) {
+        return res.status(400).json({
+        success: false,
+        errors: 'Transaksi not found'
+        });
+    }
+
+    const { status } = req.body;
+
+    if (!status) {
+        return res.status(400).json({
+            success: false,
+            errors: 'status is mandatory'
+        });
+    }
+
+    return data
+    .update({
+        status
+    })
+    .then(() => {
+        res.json({
+            success: true,
+            data
+        });
+    })
+    .catch(err => {
+        res.status(422).json({
+            success: false,
+            errors: err.message
+        });
     });
 });
 
