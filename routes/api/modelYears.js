@@ -75,6 +75,7 @@ router.get('/listingAll', async (req, res) => {
 
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
+  else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
 
   const where = {};
   const whereInclude = {};
