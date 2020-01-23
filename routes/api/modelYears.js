@@ -159,7 +159,51 @@ router.get('/listingAll', async (req, res) => {
         where: whereInclude,
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        }
+        },
+        include: [
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
         // attributes: ['condition']
       }
     ],
