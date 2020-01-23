@@ -163,7 +163,7 @@ router.get('/listingAll', async (req, res) => {
         attributes: Object.keys(models.Car.attributes).concat([
           [
             models.sequelize.literal(
-              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
+              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
             ),
             'bidAmount'
           ]
