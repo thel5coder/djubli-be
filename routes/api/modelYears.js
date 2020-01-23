@@ -160,6 +160,14 @@ router.get('/listingAll', async (req, res) => {
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
+        attributes: Object.keys(models.Car.attributes).concat([
+          [
+            models.sequelize.literal(
+              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
+            ),
+            'bidAmount'
+          ]
+        ]),
         include: [
           {
             model: models.Brand,
