@@ -213,10 +213,6 @@ router.get('/listingAll', async (req, res) => {
     limit
   })
     .then(async data => {
-      console.log();
-      console.log();
-      console.log();
-      console.log(whereInclude);
       const count = await models.ModelYear.count({
         include: [
           {
