@@ -119,7 +119,7 @@ router.get('/listingAll', async (req, res) => {
           '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
         ),
         'highestBidder'
-      ],
+      ]
       // [
       //   models.sequelize.literal(
       //     '(SELECT "Bargains"."id" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."bidAmount" = (SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id"))'
@@ -213,10 +213,10 @@ router.get('/listingAll', async (req, res) => {
     limit
   })
     .then(async data => {
-      console.log()
-      console.log()
-      console.log()
-      console.log(whereInclude)
+      console.log();
+      console.log();
+      console.log();
+      console.log(whereInclude);
       const count = await models.ModelYear.count({
         include: [
           {
@@ -674,6 +674,18 @@ router.get('/luxuryCar', async (req, res) => {
           `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
         ),
         'numberOfCar'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
+        ),
+        'maxPrice'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
+        ),
+        'minPrice'
       ]
     ]),
     include: [
