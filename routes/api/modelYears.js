@@ -139,6 +139,19 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
+  Object.assign(whereInclude, {
+    id: {
+      [Op.eq]: models.sequelize.literal(
+          '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+      )
+    }
+  });
+
+  // console.log()
+  // console.log(models.ModelYear.attributes.highestBidderCarId)
+
+  // models.ModelYear.sequelize.col('highestBidder')
+
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [
@@ -170,6 +183,12 @@ router.get('/listingAll', async (req, res) => {
           '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id")'
         ),
         'highestBidder'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+        ),
+        'highestBidderCarId'
       ]
     ]),
     include: [
@@ -202,10 +221,10 @@ router.get('/listingAll', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereInclude,
-        order: [['bidAmount', 'desc']],
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
+        order: [['bidAmount', 'desc']],
         attributes: Object.keys(models.Car.attributes).concat([
           [
             models.sequelize.literal(
