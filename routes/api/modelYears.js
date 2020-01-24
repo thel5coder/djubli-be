@@ -147,11 +147,6 @@ router.get('/listingAll', async (req, res) => {
     }
   });
 
-  // console.log()
-  // console.log(models.ModelYear.attributes.highestBidderCarId)
-
-  // models.ModelYear.sequelize.col('highestBidder')
-
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [

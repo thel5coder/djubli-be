@@ -809,6 +809,13 @@ router.get('/sales_list/nego', passport.authenticate('user', { session: false })
         where: whereCar,
         include: [
           {
+            model: models.User,
+            as: 'user',
+            attributes: {
+              exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
             model: models.ModelYear,
             as: 'modelYear',
             attributes: ['id', 'year', 'modelId'],
@@ -1019,6 +1026,13 @@ router.get('/nego_list', passport.authenticate('user', { session: false }), asyn
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         include: [
+          {
+            model: models.User,
+            as: 'user',
+            attributes: {
+              exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
           {
             model: models.ModelYear,
             as: 'modelYear',
