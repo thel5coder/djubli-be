@@ -171,12 +171,6 @@ router.get('/listingAll', async (req, res) => {
         ),
         'highestBidder'
       ]
-      // [
-      //   models.sequelize.literal(
-      //     '(SELECT "Bargains"."id" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."bidAmount" = (SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id"))'
-      //   ),
-      //   'bargainsId'
-      // ]
     ]),
     include: [
       {
@@ -208,9 +202,18 @@ router.get('/listingAll', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereInclude,
+        order: [['bidAmount', 'desc']],
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
+        attributes: Object.keys(models.Car.attributes).concat([
+          [
+            models.sequelize.literal(
+              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+            ),
+            'bidAmount'
+          ]
+        ]),
         include: [
           {
             model: models.Brand,
@@ -264,10 +267,6 @@ router.get('/listingAll', async (req, res) => {
     limit
   })
     .then(async data => {
-      console.log();
-      console.log();
-      console.log();
-      console.log(whereInclude);
       const count = await models.ModelYear.count({
         include: [
           {
