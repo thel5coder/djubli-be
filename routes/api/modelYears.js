@@ -212,9 +212,32 @@ router.get('/listingAll', async (req, res) => {
               '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
             ),
             'bidAmount'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+            ),
+            'numberOfBidder'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+            ),
+            'like'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+            ),
+            'view'
           ]
         ]),
         include: [
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['name', 'type', 'companyType']
+          },
           {
             model: models.Brand,
             as: 'brand',

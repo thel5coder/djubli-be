@@ -671,7 +671,7 @@ router.get('/purchase_list/status/:status', passport.authenticate('user', { sess
     });
 });
 
-// Ruang Nego Jual - list dijual, yang nego dengan profil pembeli
+// Ruang Nego Jual - list dijual, statusnya sedang nego dengan profil pembeli
 router.get('/sales_list/nego', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
   const {
@@ -807,6 +807,217 @@ router.get('/sales_list/nego', passport.authenticate('user', { session: false })
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         where: whereCar,
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: ['id', 'year', 'modelId'],
+            where: whereYear
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo', 'status']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.MeetingSchedule,
+            as: 'meetingSchedule',
+            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId']
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId']
+          }
+        ]
+      },
+      {
+        model: models.User,
+        as: 'user',
+        attributes: {
+          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+        }
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Bargain.count({
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
+// Ruang Nego Jual - list mobil dan nama penawar yang diajak nego
+router.get('/nego_list', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.user;
+  const {
+    groupModelId,
+    modelId,
+    brandId,
+    condition,
+    modelYearId,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    by
+  } = req.query;
+  let { page, limit, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  if (by === 'price' || by === 'id') order = [[by, sort]];
+
+  const where = {};
+
+  Object.assign(where, {
+    bidType: {
+      [Op.eq]: 1
+    },
+    userId: {
+      [Op.eq]: id
+    }
+  });
+
+  if (modelYearId) {
+    Object.assign(where, {
+      modelYearId: {
+        [Op.eq]: modelYearId
+      }
+    });
+  }
+
+  if (groupModelId) {
+    Object.assign(where, {
+      groupModelId: {
+        [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (condition) {
+    Object.assign(where, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
+  }
+
+  if (modelId) {
+    Object.assign(where, {
+      modelId: {
+        [Op.eq]: modelId
+      }
+    });
+  }
+
+  if (brandId) {
+    Object.assign(where, {
+      brandId: {
+        [Op.eq]: brandId
+      }
+    });
+  }
+
+  if (minPrice && maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+      }
+    });
+  } else if (minPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.gte]: minPrice
+      }
+    });
+  } else if (maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.lte]: maxPrice
+      }
+    });
+  }
+
+  const whereYear = {};
+  if (minYear && maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+      }
+    });
+  } else if (minYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.gte]: minYear
+      }
+    });
+  } else if (maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.lte]: maxYear
+      }
+    });
+  }
+
+  return models.Bargain.findAll({
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
         include: [
           {
             model: models.ModelYear,
