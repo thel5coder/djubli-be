@@ -1198,7 +1198,8 @@ router.put('/update', passport.authenticate('user', { session: false }), async (
     }
   }
 
-  let hashedPassword = await bcrypt.hashSync(data.password, 10);
+  // let hashedPassword = await bcrypt.hashSync(data.password, 10);
+  let hashedPassword = data.password;
   if (password && confirmPassword) {
     if (password !== confirmPassword) {
       return res.status(400).json({
