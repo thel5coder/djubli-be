@@ -703,8 +703,8 @@ router.get('/sales_list/nego', passport.authenticate('user', { session: false })
   const where = {};
 
   Object.assign(where, {
-    negotiationType: {
-      [Op.ne]: null
+    bidType: {
+      [Op.eq]: 1
     }
   });
 
