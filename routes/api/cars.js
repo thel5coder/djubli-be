@@ -703,13 +703,19 @@ router.get('/sales_list/nego', passport.authenticate('user', { session: false })
   const where = {};
 
   Object.assign(where, {
+    negotiationType: {
+      [Op.ne]: null
+    }
+  });
+
+  const whereCar = {
     userId: {
       [Op.eq]: id
     },
     status: {
       [Op.eq]: 0
-    }
-  });
+    },
+  }
 
   if (modelYearId) {
     Object.assign(where, {
@@ -792,72 +798,70 @@ router.get('/sales_list/nego', passport.authenticate('user', { session: false })
     });
   }
 
-  return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat([
-      [
-        models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
-        ),
-        'like'
-      ],
-      [
-        models.sequelize.literal(
-          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
-        ),
-        'view'
-      ]
-    ]),
+  return models.Bargain.findAll({
     include: [
       {
-        model: models.ModelYear,
-        as: 'modelYear',
-        attributes: ['id', 'year', 'modelId'],
-        where: whereYear
+        model: models.Car,
+        as: 'car',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        where: whereCar,
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: ['id', 'year', 'modelId'],
+            where: whereYear
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo', 'status']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.MeetingSchedule,
+            as: 'meetingSchedule',
+            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId']
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId']
+          }
+        ]
       },
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
-      },
-      {
-        model: models.Brand,
-        as: 'brand',
-        attributes: ['id', 'name', 'logo', 'status']
-      },
-      {
-        model: models.Model,
-        as: 'model',
-        attributes: ['id', 'name', 'groupModelId']
-      },
-      {
-        model: models.GroupModel,
-        as: 'groupModel',
-        attributes: ['id', 'name', 'brandId']
-      },
-      {
-        model: models.Color,
-        as: 'interiorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.Color,
-        as: 'exteriorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.MeetingSchedule,
-        as: 'meetingSchedule',
-        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-      },
-      {
-        model: models.InteriorGalery,
-        as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId']
-      },
-      {
-        model: models.ExteriorGalery,
-        as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: {
+          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+        }
       }
     ],
     where,
@@ -866,15 +870,7 @@ router.get('/sales_list/nego', passport.authenticate('user', { session: false })
     limit
   })
     .then(async data => {
-      const count = await models.Car.count({
-        include: [
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: ['id', 'year', 'modelId'],
-            where: whereYear
-          }
-        ],
+      const count = await models.Bargain.count({
         where
       });
       const pagination = paginator.paging(page, count, limit);
