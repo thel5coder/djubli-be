@@ -60,7 +60,17 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/listingAll', async (req, res) => {
-  const { by, condition } = req.query;
+  const {
+    by,
+    condition,
+    brandId,
+    groupModelId,
+    modelId,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear
+  } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -78,12 +88,53 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
 
   const where = {};
+
+  if (minYear && maxYear) {
+    Object.assign(where, {
+      year: {
+        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+      }
+    });
+  }
+
   const whereInclude = {};
 
   if (condition) {
     Object.assign(whereInclude, {
       condition: {
         [Op.eq]: condition
+      }
+    });
+  }
+
+  if (brandId) {
+    Object.assign(whereInclude, {
+      brandId: {
+        [Op.eq]: brandId
+      }
+    });
+  }
+
+  if (modelId) {
+    Object.assign(whereInclude, {
+      modelId: {
+        [Op.eq]: modelId
+      }
+    });
+  }
+
+  if (groupModelId) {
+    Object.assign(whereInclude, {
+      groupModelId: {
+        [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (minPrice && maxPrice) {
+    Object.assign(whereInclude, {
+      price: {
+        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
       }
     });
   }
