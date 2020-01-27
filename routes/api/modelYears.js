@@ -739,6 +739,14 @@ router.get('/luxuryCar', async (req, res) => {
     });
   }
 
+  Object.assign(whereInclude, {
+    id: {
+      [Op.eq]: models.sequelize.literal(
+        '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+      )
+    }
+  });
+
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [
