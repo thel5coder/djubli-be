@@ -253,6 +253,18 @@ router.get('/listingAll', async (req, res) => {
             attributes: ['name', 'type', 'companyType']
           },
           {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
             model: models.Brand,
             as: 'brand',
             attributes: {
