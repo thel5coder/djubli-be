@@ -480,10 +480,7 @@ router.get('/purchase_list/status/:status', passport.authenticate('user', { sess
   Object.assign(where, {
     status: {
       [Op.eq]: status
-    }
-  });
-
-  Object.assign(where, {
+    },
     userId: {
       [Op.eq]: id
     }
