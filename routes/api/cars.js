@@ -1309,7 +1309,7 @@ router.get('/user/:id', async (req, res) => {
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       },
       {
         model: models.Brand,
@@ -1419,6 +1419,18 @@ router.get('/id/:id', async (req, res) => {
           '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
         ),
         'view'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+        ),
+        'numberOfBidder'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+        ),
+        'highestBidder'
       ]
     ]),
     include: [
