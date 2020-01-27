@@ -142,7 +142,7 @@ router.get('/listingAll', async (req, res) => {
   Object.assign(whereInclude, {
     id: {
       [Op.eq]: models.sequelize.literal(
-          '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+        '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
       )
     }
   });
@@ -216,9 +216,6 @@ router.get('/listingAll', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereInclude,
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
         order: [['bidAmount', 'desc']],
         attributes: Object.keys(models.Car.attributes).concat([
           [
@@ -754,6 +751,14 @@ router.get('/luxuryCar', async (req, res) => {
     });
   }
 
+  Object.assign(whereInclude, {
+    id: {
+      [Op.eq]: models.sequelize.literal(
+        '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+      )
+    }
+  });
+
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [
@@ -812,6 +817,88 @@ router.get('/luxuryCar', async (req, res) => {
             ]
           }
         ]
+      },
+      {
+        model: models.Car,
+        as: 'car',
+        where: whereInclude,
+        order: [['bidAmount', 'desc']],
+        attributes: Object.keys(models.Car.attributes).concat([
+          [
+            models.sequelize.literal(
+              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+            ),
+            'bidAmount'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+            ),
+            'numberOfBidder'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+            ),
+            'like'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+            ),
+            'view'
+          ]
+        ]),
+        include: [
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['name', 'type', 'companyType']
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+        // attributes: ['condition']
       }
     ],
     where,
