@@ -86,6 +86,7 @@ router.get('/listingAll', async (req, res) => {
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
+  // else if (by === 'like') order = [[models.sequelize.col('like'), sort], [models.Car.attributes.likeCar, sort]];
 
   const where = {};
 
@@ -139,13 +140,15 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  Object.assign(whereInclude, {
-    id: {
-      [Op.eq]: models.sequelize.literal(
-        '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
-      )
-    }
-  });
+  if(by === 'highestBidder') {
+    Object.assign(whereInclude, {
+      id: {
+        [Op.eq]: models.sequelize.literal(
+          '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+        )
+      }
+    });
+  }
 
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
@@ -184,6 +187,12 @@ router.get('/listingAll', async (req, res) => {
           '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
         ),
         'highestBidderCarId'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Likes"."id") FROM "Likes" LEFT JOIN "Cars" ON "Likes"."carId" = "Cars"."id" WHERE "Likes"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
+        ),
+        'like'
       ]
     ]),
     include: [
@@ -216,7 +225,6 @@ router.get('/listingAll', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereInclude,
-        order: [['bidAmount', 'desc']],
         attributes: Object.keys(models.Car.attributes).concat([
           [
             models.sequelize.literal(
@@ -234,7 +242,7 @@ router.get('/listingAll', async (req, res) => {
             models.sequelize.literal(
               '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
             ),
-            'like'
+            'likeCar'
           ],
           [
             models.sequelize.literal(
@@ -303,7 +311,8 @@ router.get('/listingAll', async (req, res) => {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             }
           }
-        ]
+        ],
+
         // attributes: ['condition']
       }
     ],
