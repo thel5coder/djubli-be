@@ -189,7 +189,7 @@ router.post('/login-fb', async (req, res) =>{
     FB.api(
         "me",
         {
-          fields: ["id", "name", "address", "birthday", "email", "gender", "picture"],
+          fields: ["id", "name", "address", "email", "picture"],
           access_token: token
         },
         async FBdata => {
@@ -242,5 +242,100 @@ router.post('/login-fb', async (req, res) =>{
             });
         }
     );
+});
+
+// register by fb 
+router.post('/register-fb', async(req, res) =>{
+    const { token, phone, type, companyType } = req.body;
+    if (!token) return res.status(422).json({
+        success: false,
+        errors: 'Error, Failed to login.'
+    });
+
+    FB.api(
+        "me",
+        {
+          fields: ["id", "name", "address", "email", "picture"],
+          access_token: token
+        },
+        async FBdata => {
+            if(FBdata && FBdata.error ){
+                if (FBdata.error.code === "ETIMEDOUT") return res.status(400).json({ success: false, errors: 'Request timeout!' });
+                return res.status(400).json({
+                    success: false,
+                    errors: FBdata.error.message
+                });
+            }
+
+            const userDataPhone = await models.User.findOne({
+                where: { phone: phone }
+            });
+
+            if(userDataPhone){
+                return res.status(422).json({
+                    success: false,
+                    errors: 'Phone already exist'
+                });
+            } 
+
+
+            const trans = await models.sequelize.transaction();
+            const errors = [];
+          
+            const data = await models.User.create(
+              {
+                phone,
+                email: FBdata.email,
+                emailValidAt: moment.now(),
+                name: FBdata.name,
+                password: "",
+                type,
+                companyType,
+                profileImageId: 0,
+                // address,
+                status: true
+              },
+              {
+                transaction: trans
+              }
+            ).catch(err => {
+              trans.rollback();
+              return res.status(422).json({
+                success: false,
+                errors: err.message
+              });
+            });
+
+           trans.commit();
+
+            let userType = '';
+
+            if (data.type === 0 && data.companyType === 0) {
+                userType = 'Member';
+            } else if (data.type === 0 && data.companyType === 1) {
+                userType = 'Company';
+            } else if (data.type === 1) {
+                userType = 'Dealer';
+            }
+
+            const payload = {
+                id: data.id
+            };
+
+            return jwt.sign(payload, keys.secretKey, { expiresIn: 8 * 3600 }, (err, token) => {
+                if (err) {
+                  errors.jwt = 'Something wrong with JWT signing';
+                  return res.status(404).json(errors);
+                }
+            
+                return res.json({
+                    success: true,
+                    token: `Bearer ${token}`,
+                    userType
+                });
+            });
+        }
+    );
+    
 });
 module.exports = router;
