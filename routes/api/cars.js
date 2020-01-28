@@ -445,227 +445,231 @@ router.get('/status/:status', async (req, res) => {
     });
 });
 
-router.get('/purchase_list/status/:status', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { id } = req.user;
-  const { status } = req.params;
-  const {
-    groupModelId,
-    modelId,
-    brandId,
-    condition,
-    modelYearId,
-    minPrice,
-    maxPrice,
-    minYear,
-    maxYear,
-    by
-  } = req.query;
-  let { page, limit, sort } = req.query;
-  let offset = 0;
+router.get(
+  '/purchase_list/status/:status',
+  passport.authenticate('user', { session: false }),
+  async (req, res) => {
+    const { id } = req.user;
+    const { status } = req.params;
+    const {
+      groupModelId,
+      modelId,
+      brandId,
+      condition,
+      modelYearId,
+      minPrice,
+      maxPrice,
+      minYear,
+      maxYear,
+      by
+    } = req.query;
+    let { page, limit, sort } = req.query;
+    let offset = 0;
 
-  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
-  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
-  else page = 1;
+    if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+    if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+    if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+    else page = 1;
 
-  let order = [['createdAt', 'desc']];
-  if (!sort) sort = 'asc';
-  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+    let order = [['createdAt', 'desc']];
+    if (!sort) sort = 'asc';
+    else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  if (by === 'price' || by === 'id') order = [[by, sort]];
+    if (by === 'price' || by === 'id') order = [[by, sort]];
 
-  const where = {};
+    const where = {};
 
-  const whereCar = {
-    status: {
-      [Op.eq]: status
-    }
-  };
+    const whereCar = {
+      status: {
+        [Op.eq]: status
+      }
+    };
 
-  Object.assign(where, {
-    userId: {
-      [Op.eq]: id
-    }
-  });
-
-  if (modelYearId) {
     Object.assign(where, {
-      modelYearId: {
-        [Op.eq]: modelYearId
+      userId: {
+        [Op.eq]: id
       }
     });
-  }
 
-  if (groupModelId) {
-    Object.assign(where, {
-      groupModelId: {
-        [Op.eq]: groupModelId
-      }
-    });
-  }
-
-  if (condition) {
-    Object.assign(where, {
-      condition: {
-        [Op.eq]: condition
-      }
-    });
-  }
-
-  if (modelId) {
-    Object.assign(where, {
-      modelId: {
-        [Op.eq]: modelId
-      }
-    });
-  }
-
-  if (brandId) {
-    Object.assign(where, {
-      brandId: {
-        [Op.eq]: brandId
-      }
-    });
-  }
-
-  if (minPrice && maxPrice) {
-    Object.assign(where, {
-      price: {
-        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
-      }
-    });
-  } else if (minPrice) {
-    Object.assign(where, {
-      price: {
-        [Op.gte]: minPrice
-      }
-    });
-  } else if (maxPrice) {
-    Object.assign(where, {
-      price: {
-        [Op.lte]: maxPrice
-      }
-    });
-  }
-
-  const whereYear = {};
-  if (minYear && maxYear) {
-    Object.assign(whereYear, {
-      year: {
-        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
-      }
-    });
-  } else if (minYear) {
-    Object.assign(whereYear, {
-      year: {
-        [Op.gte]: minYear
-      }
-    });
-  } else if (maxYear) {
-    Object.assign(whereYear, {
-      year: {
-        [Op.lte]: maxYear
-      }
-    });
-  }
-
-  return models.Bargain.findAll({
-    include: [
-      {
-        model: models.Car,
-        as: 'car',
-        where: whereCar,
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        include: [
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: ['id', 'year', 'modelId'],
-            where: whereYear
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: ['id', 'name', 'logo', 'status']
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: ['id', 'name', 'groupModelId']
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: ['id', 'name', 'brandId']
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.MeetingSchedule,
-            as: 'meetingSchedule',
-            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-          },
-          {
-            model: models.InteriorGalery,
-            as: 'interiorGalery',
-            attributes: ['id', 'fileId', 'carId']
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: ['id', 'fileId', 'carId']
-          }
-        ]
-      },
-      {
-        model: models.User,
-        as: 'user',
-        attributes: {
-          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+    if (modelYearId) {
+      Object.assign(where, {
+        modelYearId: {
+          [Op.eq]: modelYearId
         }
-      }
-    ],
-    where,
-    order,
-    offset,
-    limit
-  })
-    .then(async data => {
-      const count = await models.Bargain.count({
-        include: [
-          {
-            model: models.Car,
-            as: 'car',
-            where: whereCar
-          }
-        ],
-        where
       });
-      const pagination = paginator.paging(page, count, limit);
+    }
 
-      res.json({
-        success: true,
-        pagination,
-        data
+    if (groupModelId) {
+      Object.assign(where, {
+        groupModelId: {
+          [Op.eq]: groupModelId
+        }
       });
+    }
+
+    if (condition) {
+      Object.assign(where, {
+        condition: {
+          [Op.eq]: condition
+        }
+      });
+    }
+
+    if (modelId) {
+      Object.assign(where, {
+        modelId: {
+          [Op.eq]: modelId
+        }
+      });
+    }
+
+    if (brandId) {
+      Object.assign(where, {
+        brandId: {
+          [Op.eq]: brandId
+        }
+      });
+    }
+
+    if (minPrice && maxPrice) {
+      Object.assign(where, {
+        price: {
+          [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+        }
+      });
+    } else if (minPrice) {
+      Object.assign(where, {
+        price: {
+          [Op.gte]: minPrice
+        }
+      });
+    } else if (maxPrice) {
+      Object.assign(where, {
+        price: {
+          [Op.lte]: maxPrice
+        }
+      });
+    }
+
+    const whereYear = {};
+    if (minYear && maxYear) {
+      Object.assign(whereYear, {
+        year: {
+          [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+        }
+      });
+    } else if (minYear) {
+      Object.assign(whereYear, {
+        year: {
+          [Op.gte]: minYear
+        }
+      });
+    } else if (maxYear) {
+      Object.assign(whereYear, {
+        year: {
+          [Op.lte]: maxYear
+        }
+      });
+    }
+
+    return models.Bargain.findAll({
+      include: [
+        {
+          model: models.Car,
+          as: 'car',
+          where: whereCar,
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          include: [
+            {
+              model: models.ModelYear,
+              as: 'modelYear',
+              attributes: ['id', 'year', 'modelId'],
+              where: whereYear
+            },
+            {
+              model: models.Brand,
+              as: 'brand',
+              attributes: ['id', 'name', 'logo', 'status']
+            },
+            {
+              model: models.Model,
+              as: 'model',
+              attributes: ['id', 'name', 'groupModelId']
+            },
+            {
+              model: models.GroupModel,
+              as: 'groupModel',
+              attributes: ['id', 'name', 'brandId']
+            },
+            {
+              model: models.Color,
+              as: 'interiorColor',
+              attributes: ['id', 'name', 'hex']
+            },
+            {
+              model: models.Color,
+              as: 'exteriorColor',
+              attributes: ['id', 'name', 'hex']
+            },
+            {
+              model: models.MeetingSchedule,
+              as: 'meetingSchedule',
+              attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+            },
+            {
+              model: models.InteriorGalery,
+              as: 'interiorGalery',
+              attributes: ['id', 'fileId', 'carId']
+            },
+            {
+              model: models.ExteriorGalery,
+              as: 'exteriorGalery',
+              attributes: ['id', 'fileId', 'carId']
+            }
+          ]
+        },
+        {
+          model: models.User,
+          as: 'user',
+          attributes: {
+            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+          }
+        }
+      ],
+      where,
+      order,
+      offset,
+      limit
     })
-    .catch(err => {
-      res.status(422).json({
-        success: false,
-        errors: err.message
+      .then(async data => {
+        const count = await models.Bargain.count({
+          include: [
+            {
+              model: models.Car,
+              as: 'car',
+              where: whereCar
+            }
+          ],
+          where
+        });
+        const pagination = paginator.paging(page, count, limit);
+
+        res.json({
+          success: true,
+          pagination,
+          data
+        });
+      })
+      .catch(err => {
+        res.status(422).json({
+          success: false,
+          errors: err.message
+        });
       });
-    });
-});
+  }
+);
 
 // Get sell car By Status
 router.get(

@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
 
   return models.File.findAll({ where, order, offset, limit })
     .then(async data => {
-      const count = await models.Brand.count({ where });
+      const count = await models.File.count({ where });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
