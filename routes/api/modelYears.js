@@ -86,21 +86,40 @@ router.get('/listingAll', async (req, res) => {
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
-  
-  // [models.sequelize.col('like'), sort], 
-  else if (by === 'like') order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('"car.like"'), sort]]; // masih error
-  else if (by === 'condition') order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
-  
-  // [models.sequelize.col('carPrice'), sort], 
-  else if (by === 'price') order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('price'), sort]];
-  else if (by === 'listingDate') order = [[models.sequelize.col('createdAt'), sort], [{ model: models.Car, as: 'car' }, models.sequelize.col('createdAt'), sort]];
-  
-  // [models.sequelize.col('carKm'), sort], 
-  else if (by === 'km') order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
-  else if (by === 'roleUser') order = [
-    [{ model: models.Car, as: 'car' }, { model: models.User, as: 'user' }, models.sequelize.col('type'), sort], 
-    [{ model: models.Car, as: 'car' }, { model: models.User, as: 'user' }, models.sequelize.col('companyType'), sort]
-  ];
+
+  // [models.sequelize.col('like'), sort],
+  else if (by === 'like')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('"car.like"'), sort]]; // masih error
+  // masih error
+  else if (by === 'condition')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
+  // [models.sequelize.col('carPrice'), sort],
+  else if (by === 'price')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('price'), sort]];
+  else if (by === 'listingDate')
+    order = [
+      [models.sequelize.col('createdAt'), sort],
+      [{ model: models.Car, as: 'car' }, models.sequelize.col('createdAt'), sort]
+    ];
+
+  // [models.sequelize.col('carKm'), sort],
+  else if (by === 'km')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
+  else if (by === 'roleUser')
+    order = [
+      [
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        models.sequelize.col('type'),
+        sort
+      ],
+      [
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        models.sequelize.col('companyType'),
+        sort
+      ]
+    ];
 
   const where = {};
 
@@ -113,7 +132,7 @@ router.get('/listingAll', async (req, res) => {
   }
 
   const whereInclude = {
-    [Op.or]: [{status:0},{status:1}]
+    [Op.or]: [{ status: 0 }, { status: 1 }]
   };
 
   if (condition) {
@@ -156,7 +175,7 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  if(by === 'highestBidder') {
+  if (by === 'highestBidder') {
     Object.assign(whereInclude, {
       id: {
         [Op.eq]: models.sequelize.literal(
@@ -203,7 +222,7 @@ router.get('/listingAll', async (req, res) => {
           '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
         ),
         'highestBidderCarId'
-      ],
+      ]
       // [
       //   models.sequelize.literal(
       //     '(SELECT COUNT("Likes"."id") FROM "Likes" LEFT JOIN "Cars" ON "Likes"."carId" = "Cars"."id" WHERE "Likes"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
