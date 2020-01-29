@@ -86,7 +86,21 @@ router.get('/listingAll', async (req, res) => {
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
-  // else if (by === 'like') order = [[models.sequelize.col('like'), sort], [models.Car.attributes.likeCar, sort]];
+  
+  // [models.sequelize.col('like'), sort], 
+  else if (by === 'like') order = [[{ model: models.Car, as: 'car' }, models.Car.sequelize.col('id'), sort]]; // masih error
+  else if (by === 'condition') order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
+  
+  // [models.sequelize.col('carPrice'), sort], 
+  else if (by === 'price') order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('price'), sort]];
+  else if (by === 'listingDate') order = [[models.sequelize.col('createdAt'), sort], [{ model: models.Car, as: 'car' }, models.sequelize.col('createdAt'), sort]];
+  
+  // [models.sequelize.col('carKm'), sort], 
+  else if (by === 'km') order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
+  else if (by === 'roleUser') order = [
+    [{ model: models.Car, as: 'car' }, { model: models.User, as: 'user' }, models.sequelize.col('type'), sort], 
+    [{ model: models.Car, as: 'car' }, { model: models.User, as: 'user' }, models.sequelize.col('companyType'), sort]
+  ];
 
   const where = {};
 
@@ -98,7 +112,9 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  const whereInclude = {};
+  const whereInclude = {
+    [Op.or]: [{status:0},{status:1}]
+  };
 
   if (condition) {
     Object.assign(whereInclude, {
@@ -188,12 +204,24 @@ router.get('/listingAll', async (req, res) => {
         ),
         'highestBidderCarId'
       ],
-      [
-        models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" LEFT JOIN "Cars" ON "Likes"."carId" = "Cars"."id" WHERE "Likes"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
-        ),
-        'like'
-      ]
+      // [
+      //   models.sequelize.literal(
+      //     '(SELECT COUNT("Likes"."id") FROM "Likes" LEFT JOIN "Cars" ON "Likes"."carId" = "Cars"."id" WHERE "Likes"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
+      //   ),
+      //   'like'
+      // ],
+      // [
+      //   models.sequelize.literal(
+      //     '(SELECT SUM("Cars"."price") FROM "Cars" WHERE "Cars"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
+      //   ),
+      //   'carPrice'
+      // ],
+      // [
+      //   models.sequelize.literal(
+      //     '(SELECT SUM("Cars"."km") FROM "Cars" WHERE "Cars"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
+      //   ),
+      //   'carKm'
+      // ]
     ]),
     include: [
       {
@@ -225,32 +253,37 @@ router.get('/listingAll', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereInclude,
-        attributes: Object.keys(models.Car.attributes).concat([
-          [
-            models.sequelize.literal(
-              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
-            ),
-            'bidAmount'
-          ],
-          [
-            models.sequelize.literal(
-              '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
-            ),
-            'numberOfBidder'
-          ],
-          [
-            models.sequelize.literal(
-              '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
-            ),
-            'likeCar'
-          ],
-          [
-            models.sequelize.literal(
-              '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
-            ),
-            'view'
+        attributes: {
+          include: [
+            [
+              models.sequelize.literal(
+                '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+              ),
+              'bidAmount'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+              ),
+              'numberOfBidder'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+              ),
+              'view'
+            ]
           ]
-        ]),
+        },
+        // attributes: Object.keys(models.Car.attributes).concat([
+            
+        // ]),
         include: [
           {
             model: models.User,
@@ -311,9 +344,7 @@ router.get('/listingAll', async (req, res) => {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             }
           }
-        ],
-
-        // attributes: ['condition']
+        ]
       }
     ],
     where,

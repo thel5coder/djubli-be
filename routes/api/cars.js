@@ -801,7 +801,27 @@ router.get(
           model: models.Car,
           as: 'car',
           attributes: {
-            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            exclude: ['createdAt', 'updatedAt', 'deletedAt'],
+            include: [
+              [
+                models.sequelize.literal(
+                  '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+                ),
+                'numberOfBidder'
+              ],
+              [
+                models.sequelize.literal(
+                  '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+                ),
+                'like'
+              ],
+              [
+                models.sequelize.literal(
+                  '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+                ),
+                'view'
+              ]
+            ]
           },
           include: [
             {
@@ -843,12 +863,22 @@ router.get(
             {
               model: models.InteriorGalery,
               as: 'interiorGalery',
-              attributes: ['id', 'fileId', 'carId']
+              attributes: ['id', 'fileId', 'carId'],
+              include: {
+                model: models.File,
+                as: 'file',
+                attributes: ['type', 'url']
+              }
             },
             {
               model: models.ExteriorGalery,
               as: 'exteriorGalery',
-              attributes: ['id', 'fileId', 'carId']
+              attributes: ['id', 'fileId', 'carId'],
+              include: {
+                model: models.File,
+                as: 'file',
+                attributes: ['type', 'url']
+              }
             }
           ]
         },

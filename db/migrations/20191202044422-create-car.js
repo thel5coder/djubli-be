@@ -56,6 +56,9 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false
       },
+      km: {
+        type: Sequelize.NUMERIC
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
