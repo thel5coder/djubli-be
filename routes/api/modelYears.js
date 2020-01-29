@@ -88,7 +88,7 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
   
   // [models.sequelize.col('like'), sort], 
-  else if (by === 'like') order = [[{ model: models.Car, as: 'car' }, models.Car.sequelize.col('id'), sort]]; // masih error
+  else if (by === 'like') order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('"car.like"'), sort]]; // masih error
   else if (by === 'condition') order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
   
   // [models.sequelize.col('carPrice'), sort], 
@@ -281,9 +281,6 @@ router.get('/listingAll', async (req, res) => {
             ]
           ]
         },
-        // attributes: Object.keys(models.Car.attributes).concat([
-            
-        // ]),
         include: [
           {
             model: models.User,
@@ -350,7 +347,8 @@ router.get('/listingAll', async (req, res) => {
     where,
     order,
     offset,
-    limit
+    limit,
+    // raw: true
   })
     .then(async data => {
       const count = await models.ModelYear.count({

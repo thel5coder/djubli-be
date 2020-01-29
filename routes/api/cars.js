@@ -805,6 +805,12 @@ router.get(
             include: [
               [
                 models.sequelize.literal(
+                  '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+                ),
+                'highestBidder'
+              ],
+              [
+                models.sequelize.literal(
                   '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
                 ),
                 'numberOfBidder'
