@@ -267,4 +267,75 @@ router.get('/listingCar/:id', async (req, res) => {
     });
 });
 
+router.get('/listingDealer', async (req, res) => {
+  let { page, limit, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  let order = [['createdAt', 'desc']];
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  const inludeWhere = {};
+
+  return models.Brand.findAll({
+    attributes: Object.keys(models.Brand.attributes).concat([
+      [
+        models.sequelize.literal(
+          '( SELECT COUNT ( "Cars"."id" ) FROM "Cars" WHERE "Cars"."brandId" = "Brand"."id" AND "Cars"."status" = 0 )'
+        ),
+        'countListing'
+      ],
+      [
+        models.sequelize.literal(
+          '( SELECT COUNT ( "DealerSellAndBuyBrands"."id" ) FROM "DealerSellAndBuyBrands" WHERE "DealerSellAndBuyBrands"."brandId" = "Brand"."id" )'
+        ),
+        'countPartner'
+      ],
+      [
+        models.sequelize.literal(
+          `( SELECT "GroupModels"."name" FROM "GroupModels" WHERE "GroupModels"."brandId" = "Brand"."id" 
+              ORDER BY
+              ( SELECT COUNT ( "Cars"."id" ) FROM "Cars" 
+              WHERE "Cars"."groupModelId" = "GroupModels"."id" AND "Cars"."status" = 0 ) 
+              DESC LIMIT 1 
+            )`
+        ),
+        'groupModelMostListing'
+      ],
+      [
+        models.sequelize.literal(
+          `( SELECT ( SELECT COUNT ( "Cars"."id" ) FROM "Cars" WHERE "Cars"."groupModelId" = "GroupModels"."id" AND "Cars"."status" = 0 ) groupModelMaxListing 
+            FROM "GroupModels" WHERE "GroupModels"."brandId" = "Brand"."id" 
+            ORDER BY groupModelMaxListing DESC LIMIT 1 
+          )`
+        ),
+        'groupModelMaxListing'
+      ]
+    ]),
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Brand.count({});
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
 module.exports = router;
