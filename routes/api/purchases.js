@@ -51,6 +51,34 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
             }
           },
           {
+            model: models.Brand,
+            as: 'brand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
             model: models.Color,
             as: 'exteriorColor',
             attributes: {
@@ -101,7 +129,84 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 router.get('/id/:id', async (req, res) => {
   const { id } = req.params;
 
-  return models.Purchase.findByPk(id)
+  return models.Purchase.findOne({
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        include: [
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['name', 'type', 'companyType']
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+        // attributes: ['condition']
+      },
+      {
+        model: models.User,
+        as: 'user',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt', 'password']
+        }
+      }
+    ],
+    where: { id }
+  })
     .then(data => {
       res.json({
         success: true,
