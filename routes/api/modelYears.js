@@ -88,8 +88,9 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
 
   // [models.sequelize.col('like'), sort],
+  // models.sequelize.literal('"car.like"')
   else if (by === 'like')
-    order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('"car.like"'), sort]]; // masih error
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('like'), sort]]; // masih error
   // masih error
   else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
