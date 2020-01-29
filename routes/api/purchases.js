@@ -32,6 +32,22 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
       {
         model: models.Car,
         as: 'car',
+        attributes: {
+          include: [
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+              ),
+              'view'
+            ]
+          ]
+        },
         include: [
           {
             model: models.User,
@@ -49,6 +65,20 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
               as: 'file',
               attributes: ['type', 'url']
             }
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
           },
           {
             model: models.Brand,
@@ -134,6 +164,22 @@ router.get('/id/:id', async (req, res) => {
       {
         model: models.Car,
         as: 'car',
+        attributes: {
+          include: [
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+              ),
+              'view'
+            ]
+          ]
+        },
         include: [
           {
             model: models.User,
@@ -151,6 +197,20 @@ router.get('/id/:id', async (req, res) => {
               as: 'file',
               attributes: ['type', 'url']
             }
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
           },
           {
             model: models.Brand,
