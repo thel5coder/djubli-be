@@ -117,6 +117,52 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
     );
 });
 
+router.get('/carId/:carId', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { carId } = req.params;
+
+  return models.User.findAll({
+    attributes: {
+      exclude: ['createdAt', 'updatedAt', 'deletedAt', 'password'],
+      include: [
+        [
+          models.sequelize.literal(
+            '(SELECT "website" FROM "Dealers" WHERE "Dealers"."userId" = "User"."id")'
+          ),
+          'website'
+        ],
+        [
+          models.sequelize.literal(
+            `(CASE 
+              WHEN "User"."type" = 0 AND "companyType" = 0 THEN 'End User' 
+              WHEN "User"."type" = 0 AND "companyType" = 1 THEN 'Company'
+              WHEN "User"."type" = 1 AND "companyType" = 0 THEN 'Dealer'
+            END)`
+          ),
+          'sellerType'
+        ]
+      ]
+    },
+    include: [{
+      model: models.Car,
+      as: 'car',
+      where: [{id: carId}]
+    }],
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      console.log(err)
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      })
+    });
+});
+
 router.get('/token', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
 

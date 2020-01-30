@@ -69,10 +69,15 @@ router.get('/listingAll', async (req, res) => {
     minPrice,
     maxPrice,
     minYear,
-    maxYear
+    maxYear,
+    radius,
+    latitude,
+    longitude
   } = req.query;
+
   let { page, limit, sort } = req.query;
   let offset = 0;
+  let distances = {}
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
@@ -91,7 +96,6 @@ router.get('/listingAll', async (req, res) => {
   // models.sequelize.literal('"car.like"')
   else if (by === 'like')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('like'), sort]]; // masih error
-  // masih error
   else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
   // [models.sequelize.col('carPrice'), sort],
@@ -121,6 +125,10 @@ router.get('/listingAll', async (req, res) => {
         sort
       ]
     ];
+  else if (by === 'location')
+    distances = Sequelize.literal(
+      `(6371 * acos (cos(radians('${longitude}')) * cos(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC)) * cos(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC)) - radians('${latitude}')) + sin(radians('${longitude}'))  * sin(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC)))))`
+    );
 
   const where = {};
 
@@ -135,6 +143,7 @@ router.get('/listingAll', async (req, res) => {
   const whereInclude = {
     [Op.or]: [{ status: 0 }, { status: 1 }]
   };
+  Object.assign(whereInclude, Sequelize.where(distances, { [Op.lte]: radius }));
 
   if (condition) {
     Object.assign(whereInclude, {
@@ -298,6 +307,18 @@ router.get('/listingAll', async (req, res) => {
                 '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
               ),
               'view'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT split_part("car"."location", ',', 1))`
+              ),
+              'latitude'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT split_part("car"."location", ',', 2))`
+              ),
+              'longitude'
             ]
           ]
         },
@@ -367,8 +388,7 @@ router.get('/listingAll', async (req, res) => {
     where,
     order,
     offset,
-    limit,
-    // raw: true
+    limit
   })
     .then(async data => {
       const count = await models.ModelYear.count({
