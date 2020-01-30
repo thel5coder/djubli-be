@@ -97,7 +97,32 @@ router.get('/listingCar', async (req, res) => {
         include: [
           {
             model: models.Car,
-            as: 'car'
+            as: 'car',
+            attributes: {
+              include: [
+                [
+                  models.sequelize.literal('(SELECT MAX("Bargains"."bidAmount") FROM "Bargains")'),
+                  'bidAmount'
+                ],
+                [
+                  models.sequelize.literal('(SELECT COUNT("Bargains"."id") FROM "Bargains")'),
+                  'numberOfBidder'
+                ],
+                [
+                  models.sequelize.literal(
+                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."status" IS TRUE)'
+                  ),
+                  'like'
+                ],
+                [
+                  models.sequelize.literal(
+                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."deletedAt" IS NULL)'
+                  ),
+                  'view'
+                ]
+              ],
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
           }
         ]
       }
