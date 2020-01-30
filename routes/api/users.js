@@ -117,6 +117,47 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
     );
 });
 
+router.get('/seller/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+
+  return models.User.findByPk(id, {
+    attributes: {
+      exclude: ['createdAt', 'updatedAt', 'deletedAt', 'password'],
+      include: [
+        [
+          models.sequelize.literal(
+            '(SELECT "website" FROM "Dealers" WHERE "Dealers"."userId" = "User"."id")'
+          ),
+          'website'
+        ],
+        [
+          models.sequelize.literal(
+            `(CASE 
+              WHEN "User"."type" = 0 AND "companyType" = 0 THEN 'End User' 
+              WHEN "User"."type" = 0 AND "companyType" = 1 THEN 'Company'
+              WHEN "User"."type" = 1 AND "companyType" = 0 THEN 'Dealer'
+            END)`
+          ),
+          'sellerType'
+        ]
+      ]
+    }
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      console.log(err)
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      })
+    });
+});
+
 router.get('/token', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
 
@@ -1560,6 +1601,67 @@ router.delete('/:id', passport.authenticate('user', { session: false }), async (
       res.status(422).json({
         success: false,
         errors: 'Something wrong!!'
+      });
+    });
+});
+
+router.post('/changePassword', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.user;
+  const data = await models.User.findByPk(id);
+  if (!data) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Invalid parameter'
+    });
+  }
+
+  // Check Old Password
+  const { oldPassword, password, confirmPassword } = req.body;
+  const compareOldPassword = await bcrypt.compare(oldPassword, data.password);
+  if (!compareOldPassword) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Maaf password Anda salah!'
+    });
+  }
+
+  // Hash password with bcrypt
+  let hashedPassword = data.password;
+  if (password) {
+    hashedPassword = await new Promise((resolve, reject) => {
+      bcrypt.genSalt(10, (error, salt) => {
+        bcrypt.hash(password, salt, (errorHash, hashedPass) => {
+          if (errorHash) reject(errorHash);
+          resolve(hashedPass);
+        });
+      });
+    });
+  }
+
+  // Check confirmPassword with hashedPassword
+  const comparePassword = await bcrypt.compare(confirmPassword, hashedPassword);
+  if (!comparePassword) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Konfirmasi password Anda salah!'
+    });
+  }
+
+  return data
+    .update({
+      password: hashedPassword
+    })
+    .then(() => {
+      res.json({
+        success: true,
+        message: 'Selamat, password Anda berhasil diganti.'
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: 'Something wrong!!',
+        backend: err.message
       });
     });
 });

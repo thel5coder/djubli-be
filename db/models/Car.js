@@ -17,7 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       STNKnumber: DataTypes.STRING(100),
       STNKphoto: DataTypes.STRING,
       location: DataTypes.STRING,
-      status: DataTypes.INTEGER
+      km: DataTypes.NUMERIC
     },
     {
       timestamps: true,

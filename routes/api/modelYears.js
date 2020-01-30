@@ -69,10 +69,15 @@ router.get('/listingAll', async (req, res) => {
     minPrice,
     maxPrice,
     minYear,
-    maxYear
+    maxYear,
+    radius,
+    latitude,
+    longitude
   } = req.query;
+
   let { page, limit, sort } = req.query;
   let offset = 0;
+  let distances = {};
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
@@ -86,6 +91,43 @@ router.get('/listingAll', async (req, res) => {
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
+  // [models.sequelize.col('like'), sort],
+  // models.sequelize.literal('"car.like"')
+  else if (by === 'like')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('like'), sort]];
+  // masih error
+  else if (by === 'condition')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
+  // [models.sequelize.col('carPrice'), sort],
+  else if (by === 'price')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('price'), sort]];
+  else if (by === 'listingDate')
+    order = [
+      [models.sequelize.col('createdAt'), sort],
+      [{ model: models.Car, as: 'car' }, models.sequelize.col('createdAt'), sort]
+    ];
+  // [models.sequelize.col('carKm'), sort],
+  else if (by === 'km')
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
+  else if (by === 'roleUser')
+    order = [
+      [
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        models.sequelize.col('type'),
+        sort
+      ],
+      [
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        models.sequelize.col('companyType'),
+        sort
+      ]
+    ];
+  else if (by === 'location')
+    distances = Sequelize.literal(
+      `(6371 * acos (cos(radians('${longitude}')) * cos(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC)) * cos(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC)) - radians('${latitude}')) + sin(radians('${longitude}'))  * sin(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC)))))`
+    );
 
   const where = {};
 
@@ -97,8 +139,7 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  const whereInclude = {};
-
+  const whereInclude = { [Op.or]: [{ status: 0 }, { status: 1 }] };
   if (condition) {
     Object.assign(whereInclude, {
       condition: {
@@ -139,13 +180,19 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  Object.assign(whereInclude, {
-    id: {
-      [Op.eq]: models.sequelize.literal(
-        '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
-      )
-    }
-  });
+  if (by === 'highestBidder') {
+    Object.assign(whereInclude, {
+      id: {
+        [Op.eq]: models.sequelize.literal(
+          '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+        )
+      }
+    });
+  }
+
+  if (by === 'location') {
+    Object.assign(whereInclude, Sequelize.where(distances, { [Op.lte]: radius }));
+  }
 
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
@@ -185,6 +232,24 @@ router.get('/listingAll', async (req, res) => {
         ),
         'highestBidderCarId'
       ]
+      // [
+      //   models.sequelize.literal(
+      //     '(SELECT COUNT("Likes"."id") FROM "Likes" LEFT JOIN "Cars" ON "Likes"."carId" = "Cars"."id" WHERE "Likes"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
+      //   ),
+      //   'like'
+      // ],
+      // [
+      //   models.sequelize.literal(
+      //     '(SELECT SUM("Cars"."price") FROM "Cars" WHERE "Cars"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
+      //   ),
+      //   'carPrice'
+      // ],
+      // [
+      //   models.sequelize.literal(
+      //     '(SELECT SUM("Cars"."km") FROM "Cars" WHERE "Cars"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
+      //   ),
+      //   'carKm'
+      // ]
     ]),
     include: [
       {
@@ -216,33 +281,36 @@ router.get('/listingAll', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereInclude,
-        order: [['bidAmount', 'desc']],
-        attributes: Object.keys(models.Car.attributes).concat([
-          [
-            models.sequelize.literal(
-              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
-            ),
-            'bidAmount'
-          ],
-          [
-            models.sequelize.literal(
-              '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
-            ),
-            'numberOfBidder'
-          ],
-          [
-            models.sequelize.literal(
-              '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
-            ),
-            'like'
-          ],
-          [
-            models.sequelize.literal(
-              '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
-            ),
-            'view'
+        attributes: {
+          include: [
+            [
+              models.sequelize.literal(
+                '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+              ),
+              'bidAmount'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+              ),
+              'numberOfBidder'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+              ),
+              'view'
+            ],
+            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
+            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
           ]
-        ]),
+        },
         include: [
           {
             model: models.User,
@@ -304,7 +372,6 @@ router.get('/listingAll', async (req, res) => {
             }
           }
         ]
-        // attributes: ['condition']
       }
     ],
     where,
@@ -357,6 +424,7 @@ router.get('/listingCar/:id', async (req, res) => {
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const where = {
+    [Op.or]: [{ status: 0 }, { status: 1 }],
     modelYearId: id
   };
 
@@ -543,6 +611,7 @@ router.get(
     if (by === 'price' || by === 'id') order = [[by, sort]];
 
     const where = {
+      [Op.or]: [{ status: 0 }, { status: 1 }],
       modelYearId: id
     };
 
@@ -734,7 +803,9 @@ router.get('/luxuryCar', async (req, res) => {
 
   const where = {};
 
-  const whereInclude = {};
+  const whereInclude = {
+    [Op.or]: [{ status: 0 }, { status: 1 }]
+  };
   if (minPrice && maxPrice) {
     Object.assign(where, {
       price: {
