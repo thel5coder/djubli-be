@@ -2698,6 +2698,18 @@ router.get('/viewLike', async (req, res) => {
           '(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id")'
         ),
         'jumlahLike'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
+        ),
+        'highestBidder'
+      ],
+      [
+        models.sequelize.literal(
+          '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+        ),
+        'numberOfBidder'
       ]
     ]),
     include: [
@@ -2739,12 +2751,22 @@ router.get('/viewLike', async (req, res) => {
       {
         model: models.InteriorGalery,
         as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: {
+          model: models.File,
+          as: 'file',
+          attributes: ['type', 'url']
+        }
       },
       {
         model: models.ExteriorGalery,
         as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: {
+          model: models.File,
+          as: 'file',
+          attributes: ['type', 'url']
+        }
       }
     ],
     where: {
