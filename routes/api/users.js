@@ -117,10 +117,10 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
     );
 });
 
-router.get('/carId/:carId', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { carId } = req.params;
+router.get('/seller/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
 
-  return models.User.findAll({
+  return models.User.findByPk(id, {
     attributes: {
       exclude: ['createdAt', 'updatedAt', 'deletedAt', 'password'],
       include: [
@@ -141,12 +141,7 @@ router.get('/carId/:carId', passport.authenticate('user', { session: false }), a
           'sellerType'
         ]
       ]
-    },
-    include: [{
-      model: models.Car,
-      as: 'car',
-      where: [{id: carId}]
-    }],
+    }
   })
     .then(data => {
       res.json({
