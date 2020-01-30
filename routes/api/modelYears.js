@@ -77,7 +77,7 @@ router.get('/listingAll', async (req, res) => {
 
   let { page, limit, sort } = req.query;
   let offset = 0;
-  let distances = {}
+  let distances = {};
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
@@ -91,11 +91,11 @@ router.get('/listingAll', async (req, res) => {
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
-
   // [models.sequelize.col('like'), sort],
   // models.sequelize.literal('"car.like"')
   else if (by === 'like')
-    order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('like'), sort]]; // masih error
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('like'), sort]];
+  // masih error
   else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
   // [models.sequelize.col('carPrice'), sort],
@@ -106,7 +106,6 @@ router.get('/listingAll', async (req, res) => {
       [models.sequelize.col('createdAt'), sort],
       [{ model: models.Car, as: 'car' }, models.sequelize.col('createdAt'), sort]
     ];
-
   // [models.sequelize.col('carKm'), sort],
   else if (by === 'km')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
@@ -140,9 +139,7 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  const whereInclude = {
-    [Op.or]: [{ status: 0 }, { status: 1 }]
-  };
+  const whereInclude = { [Op.or]: [{ status: 0 }, { status: 1 }] };
   Object.assign(whereInclude, Sequelize.where(distances, { [Op.lte]: radius }));
 
   if (condition) {
@@ -308,18 +305,8 @@ router.get('/listingAll', async (req, res) => {
               ),
               'view'
             ],
-            [
-              models.sequelize.literal(
-                `(SELECT split_part("car"."location", ',', 1))`
-              ),
-              'latitude'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT split_part("car"."location", ',', 2))`
-              ),
-              'longitude'
-            ]
+            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
+            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
           ]
         },
         include: [
@@ -435,6 +422,7 @@ router.get('/listingCar/:id', async (req, res) => {
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const where = {
+    [Op.or]: [{ status: 0 }, { status: 1 }],
     modelYearId: id
   };
 
@@ -621,6 +609,7 @@ router.get(
     if (by === 'price' || by === 'id') order = [[by, sort]];
 
     const where = {
+      [Op.or]: [{ status: 0 }, { status: 1 }],
       modelYearId: id
     };
 
@@ -812,7 +801,9 @@ router.get('/luxuryCar', async (req, res) => {
 
   const where = {};
 
-  const whereInclude = {};
+  const whereInclude = {
+    [Op.or]: [{ status: 0 }, { status: 1 }]
+  };
   if (minPrice && maxPrice) {
     Object.assign(where, {
       price: {
