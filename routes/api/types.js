@@ -52,7 +52,7 @@ router.get('/', async (req, res) => {
 
 router.get('/listingCar', async (req, res) => {
   let { page, limit, sort } = req.query;
-  const { name, typeId, carName } = req.query;
+  const { name, typeId, carName, carCondition } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -87,6 +87,13 @@ router.get('/listingCar', async (req, res) => {
       }
     });
   }
+
+  const whereCar = {};
+  if (carCondition) {
+    Object.assign(whereCar, {
+      condition: carCondition
+    });
+  }
   return models.Type.findAll({
     include: [
       {
@@ -98,31 +105,90 @@ router.get('/listingCar', async (req, res) => {
           {
             model: models.Car,
             as: 'car',
-            attributes: {
-              include: [
-                [
-                  models.sequelize.literal('(SELECT MAX("Bargains"."bidAmount") FROM "Bargains")'),
-                  'bidAmount'
-                ],
-                [
-                  models.sequelize.literal('(SELECT COUNT("Bargains"."id") FROM "Bargains")'),
-                  'numberOfBidder'
-                ],
-                [
-                  models.sequelize.literal(
-                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."status" IS TRUE)'
-                  ),
-                  'like'
-                ],
-                [
-                  models.sequelize.literal(
-                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."deletedAt" IS NULL)'
-                  ),
-                  'view'
-                ]
+            where: whereCar,
+            attributes: Object.keys(models.Car.attributes).concat([
+              [
+                models.sequelize.literal('(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" )'),
+                'bidAmount'
               ],
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
+              [
+                models.sequelize.literal('(SELECT COUNT("Bargains"."id") FROM "Bargains" )'),
+                'numberOfBidder'
+              ],
+              [
+                models.sequelize.literal(
+                  '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."status" IS TRUE)'
+                ),
+                'like'
+              ],
+              [
+                models.sequelize.literal(
+                  '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."deletedAt" IS NULL)'
+                ),
+                'view'
+              ]
+            ]),
+            include: [
+              {
+                model: models.User,
+                as: 'user',
+                attributes: ['name', 'type', 'companyType']
+              },
+              {
+                model: models.ExteriorGalery,
+                as: 'exteriorGalery',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                },
+                include: {
+                  model: models.File,
+                  as: 'file',
+                  attributes: ['type', 'url']
+                }
+              },
+              {
+                model: models.Brand,
+                as: 'brand',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Model,
+                as: 'model',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.GroupModel,
+                as: 'groupModel',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.ModelYear,
+                as: 'modelYear',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Color,
+                as: 'exteriorColor',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Color,
+                as: 'interiorColor',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
           }
         ]
       }
