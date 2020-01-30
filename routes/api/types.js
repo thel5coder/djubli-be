@@ -52,6 +52,7 @@ router.get('/', async (req, res) => {
 
 router.get('/listingCar', async (req, res) => {
   let { page, limit, sort } = req.query;
+  const { name, typeId, carName } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -64,11 +65,34 @@ router.get('/listingCar', async (req, res) => {
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   const where = {};
+  if (name) {
+    Object.assign(where, {
+      name: {
+        [Op.iLike]: `%${name}%`
+      }
+    });
+  }
+
+  if (typeId) {
+    Object.assign(where, {
+      id: typeId
+    });
+  }
+
+  const whereInclude = {};
+  if (carName) {
+    Object.assign(whereInclude, {
+      name: {
+        [Op.iLike]: `%${carName}%`
+      }
+    });
+  }
   return models.Type.findAll({
     include: [
       {
         model: models.GroupModel,
         as: 'groupModel',
+        where: whereInclude,
         attributes: ['name'],
         include: [
           {
@@ -84,7 +108,7 @@ router.get('/listingCar', async (req, res) => {
     limit
   })
     .then(async data => {
-      const count = await models.Car.count({
+      const count = await models.Type.count({
         include: [
           {
             model: models.GroupModel,
