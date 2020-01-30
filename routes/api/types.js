@@ -52,6 +52,7 @@ router.get('/', async (req, res) => {
 
 router.get('/listingCar', async (req, res) => {
   let { page, limit, sort } = req.query;
+  const { name, typeId, carName, carCondition } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -64,16 +65,130 @@ router.get('/listingCar', async (req, res) => {
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   const where = {};
+  if (name) {
+    Object.assign(where, {
+      name: {
+        [Op.iLike]: `%${name}%`
+      }
+    });
+  }
+
+  if (typeId) {
+    Object.assign(where, {
+      id: typeId
+    });
+  }
+
+  const whereInclude = {};
+  if (carName) {
+    Object.assign(whereInclude, {
+      name: {
+        [Op.iLike]: `%${carName}%`
+      }
+    });
+  }
+
+  const whereCar = {};
+  if (carCondition) {
+    Object.assign(whereCar, {
+      condition: carCondition
+    });
+  }
   return models.Type.findAll({
     include: [
       {
         model: models.GroupModel,
         as: 'groupModel',
+        where: whereInclude,
         attributes: ['name'],
         include: [
           {
             model: models.Car,
-            as: 'car'
+            as: 'car',
+            where: whereCar,
+            attributes: Object.keys(models.Car.attributes).concat([
+              [
+                models.sequelize.literal('(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" )'),
+                'bidAmount'
+              ],
+              [
+                models.sequelize.literal('(SELECT COUNT("Bargains"."id") FROM "Bargains" )'),
+                'numberOfBidder'
+              ],
+              [
+                models.sequelize.literal(
+                  '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."status" IS TRUE)'
+                ),
+                'like'
+              ],
+              [
+                models.sequelize.literal(
+                  '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."deletedAt" IS NULL)'
+                ),
+                'view'
+              ]
+            ]),
+            include: [
+              {
+                model: models.User,
+                as: 'user',
+                attributes: ['name', 'type', 'companyType']
+              },
+              {
+                model: models.ExteriorGalery,
+                as: 'exteriorGalery',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                },
+                include: {
+                  model: models.File,
+                  as: 'file',
+                  attributes: ['type', 'url']
+                }
+              },
+              {
+                model: models.Brand,
+                as: 'brand',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Model,
+                as: 'model',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.GroupModel,
+                as: 'groupModel',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.ModelYear,
+                as: 'modelYear',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Color,
+                as: 'exteriorColor',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Color,
+                as: 'interiorColor',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
           }
         ]
       }
@@ -84,7 +199,7 @@ router.get('/listingCar', async (req, res) => {
     limit
   })
     .then(async data => {
-      const count = await models.Car.count({
+      const count = await models.Type.count({
         include: [
           {
             model: models.GroupModel,
