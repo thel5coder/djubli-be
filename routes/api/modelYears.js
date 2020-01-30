@@ -140,8 +140,6 @@ router.get('/listingAll', async (req, res) => {
   }
 
   const whereInclude = { [Op.or]: [{ status: 0 }, { status: 1 }] };
-  Object.assign(whereInclude, Sequelize.where(distances, { [Op.lte]: radius }));
-
   if (condition) {
     Object.assign(whereInclude, {
       condition: {
@@ -190,6 +188,10 @@ router.get('/listingAll', async (req, res) => {
         )
       }
     });
+  }
+
+  if (by === 'location') {
+    Object.assign(whereInclude, Sequelize.where(distances, { [Op.lte]: radius }));
   }
 
   return models.ModelYear.findAll({
