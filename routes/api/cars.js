@@ -1317,12 +1317,30 @@ router.get(
         {
           model: models.InteriorGalery,
           as: 'interiorGalery',
-          attributes: ['id', 'fileId', 'carId']
+          attributes: ['id', 'fileId', 'carId'],
+          include: [
+            {
+              model: models.File,
+              as: 'file',
+              attributes: {
+                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              }
+            }
+          ]
         },
         {
           model: models.ExteriorGalery,
           as: 'exteriorGalery',
-          attributes: ['id', 'fileId', 'carId']
+          attributes: ['id', 'fileId', 'carId'],
+          include: [
+            {
+              model: models.File,
+              as: 'file',
+              attributes: {
+                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              }
+            }
+          ]
         }
       ],
       where,

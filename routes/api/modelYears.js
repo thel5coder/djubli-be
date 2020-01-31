@@ -96,7 +96,6 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'like') order = [[models.sequelize.literal('"car.like"'), sort]];
   else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
-  // [models.sequelize.col('carPrice'), sort],
   else if (by === 'price')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('price'), sort]];
   else if (by === 'listingDate')
@@ -104,7 +103,6 @@ router.get('/listingAll', async (req, res) => {
       [models.sequelize.col('createdAt'), sort],
       [{ model: models.Car, as: 'car' }, models.sequelize.col('createdAt'), sort]
     ];
-  // [models.sequelize.col('carKm'), sort],
   else if (by === 'km')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
   else if (by === 'roleUser')
@@ -300,7 +298,7 @@ router.get('/listingAll', async (req, res) => {
             ],
             [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
             [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
-          ],
+          ]
         },
         include: [
           {
