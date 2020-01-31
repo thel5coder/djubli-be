@@ -241,24 +241,6 @@ router.get('/listingAll', async (req, res) => {
         ),
         'highestBidderCarId'
       ]
-      // [
-      //   models.sequelize.literal(
-      //     '(SELECT COUNT("Likes"."id") FROM "Likes" LEFT JOIN "Cars" ON "Likes"."carId" = "Cars"."id" WHERE "Likes"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
-      //   ),
-      //   'like'
-      // ],
-      // [
-      //   models.sequelize.literal(
-      //     '(SELECT SUM("Cars"."price") FROM "Cars" WHERE "Cars"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
-      //   ),
-      //   'carPrice'
-      // ],
-      // [
-      //   models.sequelize.literal(
-      //     '(SELECT SUM("Cars"."km") FROM "Cars" WHERE "Cars"."deletedAt" IS NULL AND "Cars"."modelYearId" = "ModelYear"."id")'
-      //   ),
-      //   'carKm'
-      // ]
     ]),
     include: [
       {
@@ -317,8 +299,7 @@ router.get('/listingAll', async (req, res) => {
               'view'
             ],
             [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
-            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude'],
-            [distances, 'distances']
+            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
           ],
         },
         include: [
