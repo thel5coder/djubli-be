@@ -1096,6 +1096,12 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
               as: 'file',
               attributes: ['type', 'url']
             }
+          },
+          {
+            model: models.Bargain,
+            as: 'bargain',
+            attributes: ['createdAt'],
+            order: [['createdAt', 'asc']],
           }
         ]
       },
