@@ -847,7 +847,7 @@ router.get('/luxuryCar', async (req, res) => {
       ],
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
+          `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))`
         ),
         'numberOfCar'
       ],
