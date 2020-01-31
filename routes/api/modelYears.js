@@ -85,7 +85,6 @@ router.get('/listingAll', async (req, res) => {
   else page = 1;
 
   let order = [['createdAt', 'desc']];
-  // let orderCar = [[]];
 
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
@@ -126,7 +125,7 @@ router.get('/listingAll', async (req, res) => {
     ];
   else if (by === 'location')
     distances = Sequelize.literal(
-      `(6371 * acos (cos(radians('${longitude}')) * cos(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC)) * cos(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC)) - radians('${latitude}')) + sin(radians('${longitude}'))  * sin(radians(CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC)))))`
+      `(2*6371*asin(SQRT((sin(radians(( CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) - ${latitude} )/2)))^2+cos(radians( ${latitude} ))*cos(radians( CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) ))*(sin(radians(( CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) - ${longitude} )/2)))^2)))`
     );
 
   const where = {};
@@ -191,7 +190,11 @@ router.get('/listingAll', async (req, res) => {
   }
 
   if (by === 'location') {
-    Object.assign(whereInclude, Sequelize.where(distances, { [Op.lte]: radius }));
+    Object.assign(whereInclude, {
+      [Op.and]: [
+        Sequelize.where(distances, { [Op.lte]: radius })
+      ]
+    });
   }
 
   return models.ModelYear.findAll({
@@ -308,8 +311,9 @@ router.get('/listingAll', async (req, res) => {
               'view'
             ],
             [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
-            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
-          ]
+            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude'],
+            [distances, 'distances']
+          ],
         },
         include: [
           {
