@@ -1261,6 +1261,12 @@ router.get(
       attributes: Object.keys(models.Car.attributes).concat([
         [
           models.sequelize.literal(
+            '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
+          ),
+          'numberOfBidder'
+        ],
+        [
+          models.sequelize.literal(
             '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
           ),
           'like'
