@@ -188,9 +188,7 @@ router.get('/listingAll', async (req, res) => {
 
   if (by === 'location') {
     Object.assign(whereInclude, {
-      [Op.and]: [
-        Sequelize.where(distances, { [Op.lte]: radius })
-      ]
+      [Op.and]: [Sequelize.where(distances, { [Op.lte]: radius })]
     });
   }
 
@@ -419,7 +417,10 @@ router.get('/listingCar/:id', async (req, res) => {
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  if (by === 'price' || by === 'id') order = [[by, sort]];
+  if (by === 'price' || by === 'id' || by === 'km' || by === 'condition') order = [[by, sort]];
+  else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
+  else if (by === 'userType')
+    order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
 
   const where = {
     [Op.or]: [{ status: 0 }, { status: 1 }],
@@ -606,7 +607,10 @@ router.get(
     if (!sort) sort = 'asc';
     else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-    if (by === 'price' || by === 'id') order = [[by, sort]];
+    if (by === 'price' || by === 'id' || by === 'km' || by === 'condition') order = [[by, sort]];
+    else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
+    else if (by === 'userType')
+      order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
 
     const where = {
       [Op.or]: [{ status: 0 }, { status: 1 }],
