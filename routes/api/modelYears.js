@@ -72,7 +72,8 @@ router.get('/listingAll', async (req, res) => {
     maxYear,
     radius,
     latitude,
-    longitude
+    longitude,
+    typeId
   } = req.query;
 
   let { page, limit, sort } = req.query;
@@ -92,9 +93,7 @@ router.get('/listingAll', async (req, res) => {
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
-
-  else if (by === 'like')
-    order = [[models.sequelize.literal('"car.like"'), sort]];
+  else if (by === 'like') order = [[models.sequelize.literal('"car.like"'), sort]];
   else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
   // [models.sequelize.col('carPrice'), sort],
@@ -197,6 +196,13 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
+  const whereModelGroup = {};
+  if (typeId) {
+    Object.assign(whereModelGroup, {
+      typeId
+    });
+  }
+
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [
@@ -213,7 +219,7 @@ router.get('/listingAll', async (req, res) => {
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."deletedAt" IS NULL)'
+          '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))'
         ),
         'numberOfCar'
       ],
@@ -349,6 +355,7 @@ router.get('/listingAll', async (req, res) => {
           },
           {
             model: models.GroupModel,
+            where: whereModelGroup,
             as: 'groupModel',
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
@@ -382,7 +389,7 @@ router.get('/listingAll', async (req, res) => {
     order,
     offset,
     limit,
-    subQuery:false
+    subQuery: false
   })
     .then(async data => {
       const count = await models.ModelYear.count({
@@ -390,7 +397,14 @@ router.get('/listingAll', async (req, res) => {
           {
             model: models.Car,
             as: 'car',
-            where: whereInclude
+            where: whereInclude,
+            include: [
+              {
+                model: models.GroupModel,
+                where: whereModelGroup,
+                as: 'groupModel'
+              }
+            ]
           }
         ],
         where
@@ -851,7 +865,7 @@ router.get('/luxuryCar', async (req, res) => {
       ],
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
+          `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))`
         ),
         'numberOfCar'
       ],

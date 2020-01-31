@@ -97,10 +97,29 @@ router.get('/listingCar', async (req, res) => {
   return models.Type.findAll({
     include: [
       {
+        attributes: Object.keys(models.GroupModel.attributes).concat([
+          [
+            models.sequelize.literal(
+              '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."groupModelId" = "groupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+            ),
+            'maxPrice'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."groupModelId" = "groupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+            ),
+            'minPrice'
+          ],
+          [
+            models.sequelize.literal(
+              '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."groupModelId" = "groupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+            ),
+            'numberOfCar'
+          ]
+        ]),
         model: models.GroupModel,
         as: 'groupModel',
         where: whereInclude,
-        attributes: ['name'],
         include: [
           {
             model: models.Car,
