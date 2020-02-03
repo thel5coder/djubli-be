@@ -1159,22 +1159,27 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  let order = [['createdAt', 'desc']];
+  let order = [
+    ['createdAt', 'desc'],
+    [
+      { model: models.Car, as: 'car' }, 
+      { model: models.Bargain, as: 'bargain' }, 
+      'createdAt', 'desc'
+    ]
+  ];
+
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
-
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
-  const where = {};
-
-  Object.assign(where, {
+  const where = {
     userId: {
       [Op.eq]: id
     },
     bidType: {
       [Op.eq]: 0
     }
-  });
+  };
 
   if (modelYearId) {
     Object.assign(where, {
@@ -1351,8 +1356,7 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
           {
             model: models.Bargain,
             as: 'bargain',
-            attributes: ['createdAt'],
-            order: [['createdAt', 'asc']],
+            attributes: ['createdAt']
           }
         ]
       },
@@ -1516,6 +1520,12 @@ router.get(
 
     return models.Car.findAll({
       attributes: Object.keys(models.Car.attributes).concat([
+        [
+          models.sequelize.literal(
+            '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
+          ),
+          'numberOfBidder'
+        ],
         [
           models.sequelize.literal(
             '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL)'
