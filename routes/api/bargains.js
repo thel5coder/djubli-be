@@ -87,6 +87,22 @@ router.get('/', async (req, res) => {
       {
         model: models.Car,
         as: 'car',
+        attributes: {
+          include: [
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."deletedAt" IS NULL)'
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+              ),
+              'view'
+            ]
+          ]
+        },
         include: [
           {
             model: models.ModelYear,
