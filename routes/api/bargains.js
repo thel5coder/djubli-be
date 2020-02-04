@@ -322,7 +322,7 @@ router.delete(
   async (req, res) => {
     const { id } = req.params;
 
-    return models.Bargain.delete({
+    return models.Bargain.destroy({
       where: {
         [Op.and]: [{ carId: id }, { bidType: 1 }]
       }
