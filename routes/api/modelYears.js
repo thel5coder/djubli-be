@@ -80,11 +80,13 @@ router.get('/listingAll', async (req, res) => {
 
   let { page, limit, sort } = req.query;
   let offset = 0;
+  let countDataPage = 0;
   let distances = {};
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
-  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  // if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * countDataPage;
   else page = 1;
 
   let order = [['createdAt', 'desc']];
@@ -379,8 +381,8 @@ router.get('/listingAll', async (req, res) => {
           },
           {
             model: models.GroupModel,
-            where: whereModelGroup,
             as: 'groupModel',
+            where: whereModelGroup,
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             }
@@ -417,23 +419,18 @@ router.get('/listingAll', async (req, res) => {
   })
     .then(async data => {
       const count = await models.ModelYear.count({
+        distinct: true,
+        col: 'id',
         include: [
           {
             model: models.Car,
             as: 'car',
-            where: whereInclude,
-            include: [
-              {
-                model: models.GroupModel,
-                where: whereModelGroup,
-                as: 'groupModel'
-              }
-            ]
+            where: whereInclude
           }
         ],
-        where,
-        order
+        where
       });
+
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
