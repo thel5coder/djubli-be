@@ -268,7 +268,7 @@ router.get('/listingCar/:id', async (req, res) => {
 });
 
 router.get('/listingDealer', async (req, res) => {
-  let { page, limit, sort } = req.query;
+  let { page, limit, sort, condition } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -317,6 +317,16 @@ router.get('/listingDealer', async (req, res) => {
         'groupModelMaxListing'
       ]
     ]),
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        where: {condition},
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      }
+    ],
     offset,
     limit
   })
