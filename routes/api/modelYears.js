@@ -85,8 +85,7 @@ router.get('/listingAll', async (req, res) => {
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
-  // if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
-  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * countDataPage;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
   let order = [['createdAt', 'desc']];
@@ -97,7 +96,10 @@ router.get('/listingAll', async (req, res) => {
   if (by === 'year' || by === 'id') order = [[by, sort]];
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
-  else if (by === 'like') order = [[models.sequelize.literal('"car.like"'), sort]];
+  else if (by === 'like') 
+    order = [[{ model: models.Car, as: 'car' }, models.sequelize.literal('"car.like"'), sort]];
+    // order = [[models.sequelize.literal('"car.like"'), sort]];
+    // order = [[models.sequelize.literal('(select get_like(("ModelYear"."id")))'), sort]];
   else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
   else if (by === 'price')
@@ -332,7 +334,7 @@ router.get('/listingAll', async (req, res) => {
               'numberOfBidder'
             ],
             [
-              models.sequelize.literal(
+              Sequelize.literal(
                 '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
               ),
               'like'
@@ -383,6 +385,7 @@ router.get('/listingAll', async (req, res) => {
             model: models.GroupModel,
             as: 'groupModel',
             where: whereModelGroup,
+            required: false,
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             }
@@ -414,8 +417,8 @@ router.get('/listingAll', async (req, res) => {
     where,
     order,
     offset,
-    limit,
-    subQuery: false
+    limit
+    // subQuery: false
   })
     .then(async data => {
       const count = await models.ModelYear.count({
