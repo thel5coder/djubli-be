@@ -80,7 +80,7 @@ router.get('/listingAll', async (req, res) => {
 
   let { page, limit, sort } = req.query;
   let offset = 0;
-  let countDataPage = 0;
+  const countDataPage = 0;
   let distances = {};
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -100,8 +100,7 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'like') {
     subQuery = false;
     order = [[models.sequelize.literal('"car.like"'), sort]];
-  }
-  else if (by === 'condition')
+  } else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
   else if (by === 'price')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('price'), sort]];
@@ -133,8 +132,8 @@ router.get('/listingAll', async (req, res) => {
     );
 
   // Search by City, Subdistrict/Area & Radius
-  if(by === 'area') {
-    if(cityId) {
+  if (by === 'area') {
+    if (cityId) {
       const city = await models.City.findByPk(cityId);
       if (!city) {
         return res.status(400).json({
@@ -144,9 +143,9 @@ router.get('/listingAll', async (req, res) => {
       }
 
       // If subdistrictId Not Null
-      if(subdistrictId) {
+      if (subdistrictId) {
         const subdistrict = await models.SubDistrict.findOne({
-          where: {id: subdistrictId, cityId},
+          where: { id: subdistrictId, cityId }
         });
 
         if (!subdistrict) {
@@ -156,14 +155,15 @@ router.get('/listingAll', async (req, res) => {
           });
         }
 
-        if(city && subdistrict) {
+        if (city && subdistrict) {
           distances = Sequelize.literal(
             `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
           );
         }
       } else {
         // If subdistrictId Null (Search By City & Radius)
-        if(city) {
+        // eslint-disable-next-line no-lonely-if
+        if (city) {
           distances = Sequelize.literal(
             `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
           );
