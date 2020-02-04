@@ -105,6 +105,20 @@ router.get('/', async (req, res) => {
         },
         include: [
           {
+            model: models.User,
+            as: 'user',
+            attributes: ['name', 'type', 'companyType'],
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          },
+          {
             model: models.ModelYear,
             as: 'modelYear',
             attributes: ['id', 'year', 'modelId']
