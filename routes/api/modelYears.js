@@ -126,13 +126,44 @@ router.get('/listingAll', async (req, res) => {
         sort
       ]
     ];
-  else if (by === 'location')
+  
+  // Search By Location (Latitude, Longitude & Radius)
+  if (by === 'location'){
+    if (!latitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Latitude not found!'
+      });
+    }
+
+    if (!longitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Longitude not found!'
+      });
+    }
+
+    if (!radius) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Radius not found!'
+      });
+    }
+
     distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
+  } 
 
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area') {
+    if (!radius) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Radius not found!'
+      });
+    }
+    
     if (cityId) {
       const city = await models.City.findByPk(cityId);
       if (!city) {
@@ -422,7 +453,7 @@ router.get('/listingAll', async (req, res) => {
     order,
     offset,
     limit,
-    // subQuery
+    subQuery
   })
     .then(async data => {
       const count = await models.ModelYear.count({
