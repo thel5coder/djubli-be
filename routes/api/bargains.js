@@ -495,6 +495,22 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
   }
 
   return models.Car.findAll({
+    attributes: {
+      include: [
+        [
+          models.sequelize.literal(
+            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
+          ),
+          'like'
+        ],
+        [
+          models.sequelize.literal(
+            '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+          ),
+          'view'
+        ]
+      ]
+    },
     include: [
       {
         model: models.ModelYear,
@@ -535,12 +551,30 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
       {
         model: models.InteriorGalery,
         as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       },
       {
         model: models.ExteriorGalery,
         as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       },
       {
         model: models.User,
@@ -732,6 +766,22 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   }
 
   return models.Car.findAll({
+    attributes: {
+      include: [
+        [
+          models.sequelize.literal(
+            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
+          ),
+          'like'
+        ],
+        [
+          models.sequelize.literal(
+            '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+          ),
+          'view'
+        ]
+      ]
+    },
     include: [
       {
         model: models.ModelYear,
@@ -772,12 +822,30 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
       {
         model: models.InteriorGalery,
         as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       },
       {
         model: models.ExteriorGalery,
         as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       },
       {
         model: models.User,
