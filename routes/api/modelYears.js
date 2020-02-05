@@ -345,12 +345,6 @@ router.get('/listingAll', async (req, res) => {
               ),
               'view'
             ],
-            // [
-            //   models.sequelize.literal(
-            //     '(SELECT "GroupModels"."name" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId")'
-            //   ),
-            //   'groupModelName'
-            // ],
             [
               models.sequelize.literal(
                 '(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId")'
