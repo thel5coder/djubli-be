@@ -429,7 +429,17 @@ router.get('/listingAll', async (req, res) => {
           {
             model: models.Car,
             as: 'car',
-            where: whereInclude
+            where: whereInclude,
+            include: [
+              {
+                model: models.GroupModel,
+                as: 'groupModel',
+                where: whereModelGroup,
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
           }
         ],
         where
