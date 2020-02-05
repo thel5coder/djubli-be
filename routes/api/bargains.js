@@ -303,31 +303,50 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  return models.Bargain.create({
-    userId,
-    carId,
-    bidAmount,
-    haveSeenCar,
-    paymentMethod,
-    expiredAt,
-    bidType: 1,
-    negotiationType,
-    comment
-  })
-    .then(data => {
-      req.io.emit(`negotiation-car${carId}`, data);
+  const trans = await models.sequelize.transaction();
 
-      res.json({
-        success: true,
-        data
-      });
-    })
-    .catch(err => {
-      res.status(422).json({
+  const data = await models.Bargain.create(
+    {
+      userId,
+      carId,
+      bidAmount,
+      haveSeenCar,
+      paymentMethod,
+      expiredAt,
+      bidType: 1,
+      negotiationType,
+      comment
+    },
+    {
+      transaction: trans
+    }
+  ).catch(err => {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
+
+  if (data.negotiationType != 0) {
+    models.Bargain.destroy(
+      { where: { [Op.and]: [{ carId: data.carId }, { negotiationType: 0 }] } },
+      { transaction: trans }
+    ).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
         success: false,
         errors: err.message
       });
     });
+  }
+  trans.commit();
+  req.io.emit(`negotiation-car${carId}`, data);
+
+  return res.json({
+    success: true,
+    data
+  });
 });
 
 router.delete(
