@@ -16,7 +16,6 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-
 router.get('/', async (req, res) => {
   const {
     groupModelId,
@@ -1162,9 +1161,10 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
   let order = [
     ['createdAt', 'desc'],
     [
-      { model: models.Car, as: 'car' }, 
-      { model: models.Bargain, as: 'bargain' }, 
-      'createdAt', 'desc'
+      { model: models.Car, as: 'car' },
+      { model: models.Bargain, as: 'bargain' },
+      'createdAt',
+      'desc'
     ]
   ];
 
@@ -2249,20 +2249,54 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
       errors: 'Car not found'
     });
   }
-  return data
-    .destroy()
-    .then(() => {
-      res.json({
-        success: true,
-        data
-      });
-    })
-    .catch(err => {
-      res.status(422).json({
-        success: true,
+
+  const bargainData = await models.Bargain.findAll({
+    where: {
+      carId: id
+    }
+  });
+  const bargains = [];
+  if (bargainData) {
+    bargainData.map(dataB => {
+      bargains.push(dataB.id.toString());
+    });
+    console.log(bargains);
+  }
+
+  const trans = await models.sequelize.transaction();
+
+  models.Car.destroy({ where: { id } }, { transaction: trans }).catch(err => {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
+
+  if (bargains !== []) {
+    models.Bargain.destroy(
+      {
+        where: {
+          id: { $in: bargains }
+        }
+      },
+      {
+        transaction: trans
+      }
+    ).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
         errors: err.message
       });
     });
+  }
+
+  trans.commit();
+  return res.json({
+    success: true,
+    data
+  });
 });
 
 // router get list car by like
