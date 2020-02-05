@@ -244,10 +244,9 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  const whereModelGroup = {};
   if (typeId) {
-    Object.assign(whereModelGroup, {
-      typeId
+    Object.assign(whereInclude, {
+      [Op.and]: models.sequelize.literal(`EXISTS(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId" AND "GroupModels"."typeId" = ${typeId})`)
     });
   }
 
@@ -346,6 +345,18 @@ router.get('/listingAll', async (req, res) => {
               ),
               'view'
             ],
+            // [
+            //   models.sequelize.literal(
+            //     '(SELECT "GroupModels"."name" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId")'
+            //   ),
+            //   'groupModelName'
+            // ],
+            [
+              models.sequelize.literal(
+                '(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId")'
+              ),
+              'groupModelTypeId'
+            ],
             [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
             [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
           ]
@@ -385,8 +396,6 @@ router.get('/listingAll', async (req, res) => {
           {
             model: models.GroupModel,
             as: 'groupModel',
-            where: whereModelGroup,
-            required: false,
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             }
@@ -419,7 +428,7 @@ router.get('/listingAll', async (req, res) => {
     order,
     offset,
     limit,
-    subQuery
+    // subQuery
   })
     .then(async data => {
       const count = await models.ModelYear.count({
@@ -434,7 +443,6 @@ router.get('/listingAll', async (req, res) => {
               {
                 model: models.GroupModel,
                 as: 'groupModel',
-                where: whereModelGroup,
                 attributes: {
                   exclude: ['createdAt', 'updatedAt', 'deletedAt']
                 }
