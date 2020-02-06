@@ -6,7 +6,8 @@ module.exports = (sequelize, DataTypes) => {
       authorizedBrandId: DataTypes.INTEGER,
       website: DataTypes.STRING(100),
       productType: DataTypes.INTEGER,
-      fax: DataTypes.STRING(100)
+      fax: DataTypes.STRING(100),
+      isPartner: DataTypes.BOOLEAN
     },
     {
       timestamps: true,

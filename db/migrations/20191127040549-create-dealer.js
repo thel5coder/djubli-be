@@ -24,6 +24,9 @@ module.exports = {
       fax: {
         type: Sequelize.STRING(100)
       },
+      isPartner: {
+        type: Sequelize.BOOLEAN
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE
