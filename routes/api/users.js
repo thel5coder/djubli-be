@@ -105,6 +105,13 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
   return models.User.findOne({
     include: [
       {
+        model: models.File,
+        as: 'file',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
         model: models.Dealer,
         as: 'dealer',
         attributes: {
@@ -114,20 +121,6 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
       {
         model: models.Company,
         as: 'company',
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        }
-      },
-      {
-        model: models.UserEndUserCreditCardDetail,
-        as: 'userCreditCard',
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        }
-      },
-      {
-        model: models.UserEndUserHouseDetail,
-        as: 'userHouse',
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
