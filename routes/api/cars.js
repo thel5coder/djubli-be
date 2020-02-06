@@ -2017,7 +2017,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       engineNumber,
       STNKnumber,
       STNKphoto,
-      location,
+      location: location.replace(/\s/g, ''),
       status
     },
     {
