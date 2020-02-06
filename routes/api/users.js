@@ -109,37 +109,7 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
         as: 'dealer',
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        include: [
-          {
-            model: models.DealerSellAndBuyBrand,
-            as: 'dealerSellAndBuyBrand',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.DealerWorkshopAuthorizedBrand,
-            as: 'workshopAuthorizedBrand',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.DealerWorkshopOtherBrand,
-            as: 'workshopOtherBrand',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.DealerGallery,
-            as: 'dealerGallery',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
+        }
       },
       {
         model: models.Company,
@@ -147,49 +117,6 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
-      },
-      {
-        model: models.UserEndUserCarDetail,
-        as: 'userCar',
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        },
-        include: [
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            include: [
-              {
-                model: models.Model,
-                as: 'model',
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                },
-                include: [
-                  {
-                    model: models.GroupModel,
-                    as: 'groupModel',
-                    attributes: {
-                      exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                    },
-                    include: [
-                      {
-                        model: models.Brand,
-                        as: 'brand',
-                        attributes: {
-                          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
       },
       {
         model: models.UserEndUserCreditCardDetail,
