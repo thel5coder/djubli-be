@@ -242,7 +242,7 @@ router.get('/car/sellList/:id', async (req, res) => {
 
     const whereCar = {
         userId: {
-            [Op.eq]: models.sequelize.col('Dealer.userId')
+            [Op.eq]: models.sequelize.literal(`(SELECT "userId" FROM "Dealers" WHERE "Dealers"."id" = ${id})`)
         }
     };
 
@@ -265,31 +265,31 @@ router.get('/car/sellList/:id', async (req, res) => {
                 {
                     model: models.Car,
                     as: 'car',
+                    subQuery: true,
                     where: whereCar,
                     attributes: {
                         include: [
-
                             [
                                 models.sequelize.literal(
-                                    '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+                                    '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
                                 ),
                                 'bidAmount'
                             ],
                             [
                                 models.sequelize.literal(
-                                    '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+                                    '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
                                 ),
                                 'numberOfBidder'
                             ],
                             [
                                 Sequelize.literal(
-                                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+                                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
                                 ),
                                 'like'
                             ],
                             [
                                 models.sequelize.literal(
-                                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+                                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
                                 ),
                                 'view'
                             ]
@@ -351,8 +351,8 @@ router.get('/car/sellList/:id', async (req, res) => {
                             }
                         }
                     ],
-                    // limit,
-            		// offset
+                    limit,
+            		offset
                 }
             ]
         })
