@@ -489,7 +489,7 @@ router.get('/listingAll', async (req, res) => {
     .catch(err => {
       res.status(422).json({
         success: false,
-        errors: err.message
+        errors: err
       });
     });
 });
