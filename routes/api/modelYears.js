@@ -68,6 +68,8 @@ router.get('/listingAll', async (req, res) => {
     modelId,
     minPrice,
     maxPrice,
+    minKm,
+    maxKm,
     minYear,
     maxYear,
     radius,
@@ -247,6 +249,14 @@ router.get('/listingAll', async (req, res) => {
     Object.assign(whereInclude, {
       groupModelId: {
         [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (minKm && maxKm) {
+    Object.assign(whereInclude, {
+      km: {
+        [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
       }
     });
   }
