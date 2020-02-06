@@ -1096,7 +1096,7 @@ router.get(
         {
           model: models.User,
           as: 'user',
-          attributes: ['name']
+          attributes: ['name', 'type', 'companyType']
         },
         {
           model: models.Color,
