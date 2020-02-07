@@ -2518,7 +2518,30 @@ router.get('/viewLike', async (req, res) => {
         as: 'user',
         attributes: {
           exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-        }
+        },
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Dealer,
+            as: 'dealer',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Company,
+            as: 'company',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       },
       {
         model: models.Brand,

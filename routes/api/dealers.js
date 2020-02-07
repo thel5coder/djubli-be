@@ -380,7 +380,7 @@ router.get('/car/sellList/:id', async (req, res) => {
         });
 });
 
-router.get('/car/buyList/:id', async (req, res) => {
+router.get('/car/bidList/:id', async (req, res) => {
     let {
         page,
         limit,
