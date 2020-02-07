@@ -2421,6 +2421,34 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
     console.log(bargains);
   }
 
+  // like
+  const likeData = await models.Like.findAll({
+    where: {
+      carId: id
+    }
+  });
+  const likes = [];
+  if (likeData) {
+    likeData.map(dataL => {
+      likes.push(dataL.id.toString());
+    });
+    console.log(likes);
+  }
+
+  // view
+  const viewData = await models.View.findAll({
+    where: {
+      carId: id
+    }
+  });
+  const views = [];
+  if (viewData) {
+    viewData.map(dataV => {
+      views.push(dataV.id.toString());
+    });
+    console.log(views);
+  }
+
   const trans = await models.sequelize.transaction();
 
   models.Car.destroy({ where: { id } }, { transaction: trans }).catch(err => {
@@ -2436,6 +2464,44 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
       {
         where: {
           id: { $in: bargains }
+        }
+      },
+      {
+        transaction: trans
+      }
+    ).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+  }
+
+  if (likes !== []) {
+    models.Like.destroy(
+      {
+        where: {
+          id: { $in: likes }
+        }
+      },
+      {
+        transaction: trans
+      }
+    ).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+  }
+
+  if (views !== []) {
+    models.View.destroy(
+      {
+        where: {
+          id: { $in: views }
         }
       },
       {
