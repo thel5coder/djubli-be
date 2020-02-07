@@ -403,10 +403,11 @@ router.get('/car/bidList/:id', async (req, res) => {
     if (!sort) sort = 'asc';
     else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-    const whereBargain = {
-    	bidType: {
-      		[Op.eq]: 0
-    	}
+    const whereBargain = { 
+    	[Op.or]: [
+    		{ bidType: 0 }, 
+    		{ bidType: 1 }
+    	]
     } 
 
     return models.Dealer.findByPk(id, {
