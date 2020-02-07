@@ -2443,6 +2443,12 @@ router.get('/viewLike', async (req, res) => {
       ],
       [
         models.sequelize.literal(
+          '(SELECT COUNT("Views"."carId") FROM "Views" WHERE "Views"."carId" = "Car"."id")'
+        ),
+        'jumlahView'
+      ],
+      [
+        models.sequelize.literal(
           '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
         ),
         'highestBidder'
@@ -2508,6 +2514,13 @@ router.get('/viewLike', async (req, res) => {
           model: models.File,
           as: 'file',
           attributes: ['type', 'url']
+        }
+      },
+      {
+        model: models.ModelYear,
+        as: 'modelYear',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
       }
     ],
