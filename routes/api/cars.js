@@ -1828,14 +1828,93 @@ router.get('/like/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
+          include: [
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."deletedAt" IS NULL)'
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+              ),
+              'view'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+              ),
+              'numberOfBidder'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+              ),
+              'highestBidder'
+            ]
+          ],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         include: [
           {
             model: models.ModelYear,
             as: 'modelYear',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            attributes: ['id', 'year', 'modelId']
+          },
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'phone']
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo', 'status']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.MeetingSchedule,
+            as: 'meetingSchedule',
+            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
             }
           }
         ]
@@ -1892,14 +1971,93 @@ router.get('/view/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
+          include: [
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."deletedAt" IS NULL)'
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+              ),
+              'view'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+              ),
+              'numberOfBidder'
+            ],
+            [
+              models.sequelize.literal(
+                '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+              ),
+              'highestBidder'
+            ]
+          ],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
         include: [
           {
             model: models.ModelYear,
             as: 'modelYear',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            attributes: ['id', 'year', 'modelId']
+          },
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'phone']
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo', 'status']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.MeetingSchedule,
+            as: 'meetingSchedule',
+            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
             }
           }
         ]
