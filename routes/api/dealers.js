@@ -265,7 +265,6 @@ router.get('/car/sellList/:id', async (req, res) => {
                 {
                     model: models.Car,
                     as: 'car',
-                    subQuery: true,
                     where: whereCar,
                     attributes: {
                         include: [
