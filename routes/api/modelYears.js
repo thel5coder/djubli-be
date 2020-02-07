@@ -100,7 +100,7 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
   else if (by === 'like') {
-    // subQuery = false;
+    subQuery = false;
     order = [[models.sequelize.literal('"car.like"'), sort]];
   } else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];

@@ -2358,7 +2358,9 @@ router.get('/viewLike', async (req, res) => {
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: {
+          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+        }
       },
       {
         model: models.Brand,
