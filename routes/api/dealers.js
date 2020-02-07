@@ -442,25 +442,25 @@ router.get('/car/buyList/:id', async (req, res) => {
 		                        include: [
 		                            [
 		                                models.sequelize.literal(
-		                                    '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+		                                    '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "bargain->car"."id")'
 		                                ),
 		                                'bidAmount'
 		                            ],
 		                            [
 		                                models.sequelize.literal(
-		                                    '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+		                                    '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "bargain->car"."id")'
 		                                ),
 		                                'numberOfBidder'
 		                            ],
 		                            [
 		                                Sequelize.literal(
-		                                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+		                                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "bargain->car"."id" AND "Likes"."status" IS TRUE)'
 		                                ),
 		                                'like'
 		                            ],
 		                            [
 		                                models.sequelize.literal(
-		                                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+		                                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "bargain->car"."id" AND "Views"."deletedAt" IS NULL)'
 		                                ),
 		                                'view'
 		                            ]
@@ -524,8 +524,8 @@ router.get('/car/buyList/:id', async (req, res) => {
 		                    ]
 		                }
                     ],
-                    limit,
-		    		offset
+                    // limit,
+		    		// offset
                 }
             ]
         })
@@ -534,7 +534,8 @@ router.get('/car/buyList/:id', async (req, res) => {
             	where: {id},
             	include: [{
                  	model: models.Bargain,
-                 	as: 'bargain'
+                 	as: 'bargain',
+                 	where: whereBargain
              	}]
             });
             const pagination = paginator.paging(page, count.count, limit);
