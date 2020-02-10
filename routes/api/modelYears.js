@@ -152,7 +152,7 @@ router.get('/listingAll', async (req, res) => {
       });
     }
 
-    distances = Sequelize.literal(
+    distances =  models.sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
   } 
@@ -189,7 +189,7 @@ router.get('/listingAll', async (req, res) => {
         }
 
         if (city && subdistrict) {
-          distances = Sequelize.literal(
+          distances =  models.sequelize.literal(
             `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
           );
         }
@@ -197,7 +197,7 @@ router.get('/listingAll', async (req, res) => {
         // If subdistrictId Null (Search By City & Radius)
         // eslint-disable-next-line no-lonely-if
         if (city) {
-          distances = Sequelize.literal(
+          distances =  models.sequelize.literal(
             `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
           );
         }
@@ -281,7 +281,7 @@ router.get('/listingAll', async (req, res) => {
 
   if (by === 'location' || by === 'area') {
     Object.assign(whereInclude, {
-      [Op.and]: [Sequelize.where(distances, { [Op.lte]: radius })]
+      [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });
   }
 
@@ -375,7 +375,7 @@ router.get('/listingAll', async (req, res) => {
               'numberOfBidder'
             ],
             [
-              Sequelize.literal(
+              models.sequelize.literal(
                 '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
               ),
               'like'
@@ -671,7 +671,7 @@ router.get('/listingType', async (req, res) => {
               'numberOfBidder'
             ],
             [
-              Sequelize.literal(
+               models.sequelize.literal(
                 '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
               ),
               'like'

@@ -1,8 +1,16 @@
+const models = require('../../db/models');
+
 module.exports = (sequelize, DataTypes) => {
   const Bargain = sequelize.define(
     'Bargain',
     {
-      userId: DataTypes.INTEGER,
+      userId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: models.Dealer,
+          key: "userId"
+        }
+      },
       carId: DataTypes.INTEGER,
       bidAmount: DataTypes.NUMERIC,
       haveSeenCar: DataTypes.BOOLEAN,

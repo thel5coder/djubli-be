@@ -266,6 +266,7 @@ router.get('/car/sellList/:id', async (req, res) => {
                     model: models.Car,
                     as: 'car',
                     where: whereCar,
+                    subQuery: true,
                     attributes: {
                         include: [
                             [
@@ -281,7 +282,7 @@ router.get('/car/sellList/:id', async (req, res) => {
                                 'numberOfBidder'
                             ],
                             [
-                                Sequelize.literal(
+                                 models.sequelize.literal(
                                     '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
                                 ),
                                 'like'
@@ -407,8 +408,25 @@ router.get('/car/bidList/:id', async (req, res) => {
     	[Op.or]: [
     		{ bidType: 0 }, 
     		{ bidType: 1 }
+    	],
+    	[Op.and]: [
+    		{ 
+    			userId: { 
+    				[Op.eq]: models.sequelize.literal(`(SELECT "userId" FROM "Dealers" WHERE "Dealers"."id" = ${id})`)
+        		}
+        	}
     	]
-    } 
+    }
+
+    let whereCar = (table) => {
+    	countBargains =  models.sequelize.literal(
+	        `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "${table}"."id")`
+	    );
+
+	    return {
+	    	[Op.and]: [models.sequelize.where(countBargains, { [Op.gte]: 1 })]
+	    }
+    }
 
     return models.Dealer.findByPk(id, {
             include: [
@@ -427,106 +445,104 @@ router.get('/car/bidList/:id', async (req, res) => {
                     }]
                 },
             	{
-                    model: models.Bargain,
-                    as: 'bargain',
-                    where: whereBargain,
-                    // separate: false,
-                    // required: true,
+                    model: models.Car,
+                    as: 'car',
+                    where: whereCar("Car"),
+                    subQuery: true,
                     attributes: {
-                        exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                        include: [
+                            [
+                                models.sequelize.literal(
+                                    '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
+                                ),
+                                'bidAmount'
+                            ],
+                            [
+                                models.sequelize.literal(
+                                    '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")'
+                                ),
+                                'numberOfBidder'
+                            ],
+                            [
+                                 models.sequelize.literal(
+                                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
+                                ),
+                                'like'
+                            ],
+                            [
+                                models.sequelize.literal(
+                                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+                                ),
+                                'view'
+                            ]
+                        ]
                     },
                     include: [
                     	{
-		                    model: models.Car,
-		                    as: 'car',
-		                    attributes: {
-		                        include: [
-		                            [
-		                                models.sequelize.literal(
-		                                    '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "bargain->car"."id")'
-		                                ),
-		                                'bidAmount'
-		                            ],
-		                            [
-		                                models.sequelize.literal(
-		                                    '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "bargain->car"."id")'
-		                                ),
-		                                'numberOfBidder'
-		                            ],
-		                            [
-		                                Sequelize.literal(
-		                                    '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "bargain->car"."id" AND "Likes"."status" IS TRUE)'
-		                                ),
-		                                'like'
-		                            ],
-		                            [
-		                                models.sequelize.literal(
-		                                    '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "bargain->car"."id" AND "Views"."deletedAt" IS NULL)'
-		                                ),
-		                                'view'
-		                            ]
-		                        ]
-		                    },
-		                    include: [
-		                    	{
-		                            model: models.ExteriorGalery,
-		                            as: 'exteriorGalery',
-		                            attributes: {
-		                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-		                            },
-		                            include: {
-		                                model: models.File,
-		                                as: 'file',
-		                                attributes: ['type', 'url']
-		                            }
-		                        },
-		                        {
-		                            model: models.Brand,
-		                            as: 'brand',
-		                            attributes: {
-		                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-		                            }
-		                        },
-		                        {
-		                            model: models.Model,
-		                            as: 'model',
-		                            attributes: {
-		                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-		                            }
-		                        },
-		                        {
-		                            model: models.GroupModel,
-		                            as: 'groupModel',
-		                            attributes: {
-		                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-		                            }
-		                        },
-		                        {
-		                            model: models.ModelYear,
-		                            as: 'modelYear',
-		                            attributes: {
-		                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-		                            }
-		                        },
-		                        {
-		                            model: models.Color,
-		                            as: 'exteriorColor',
-		                            attributes: {
-		                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-		                            }
-		                        },
-		                        {
-		                            model: models.Color,
-		                            as: 'interiorColor',
-		                            attributes: {
-		                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-		                            }
-		                        }
-		                    ]
-		                }
+                            model: models.Bargain,
+                            as: 'bargain',
+                            where: whereBargain,
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        },
+                    	{
+                            model: models.ExteriorGalery,
+                            as: 'exteriorGalery',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            },
+                            include: {
+                                model: models.File,
+                                as: 'file',
+                                attributes: ['type', 'url']
+                            }
+                        },
+                        {
+                            model: models.Brand,
+                            as: 'brand',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        },
+                        {
+                            model: models.Model,
+                            as: 'model',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        },
+                        {
+                            model: models.GroupModel,
+                            as: 'groupModel',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        },
+                        {
+                            model: models.ModelYear,
+                            as: 'modelYear',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        },
+                        {
+                            model: models.Color,
+                            as: 'exteriorColor',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        },
+                        {
+                            model: models.Color,
+                            as: 'interiorColor',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        }
                     ],
-                    // limit,
-		    		// offset
+                    limit,
+            		offset
                 }
             ]
         })
@@ -534,13 +550,13 @@ router.get('/car/bidList/:id', async (req, res) => {
             const count = await models.Dealer.findAndCountAll({
             	where: {id},
             	include: [{
-                 	model: models.Bargain,
-                 	as: 'bargain',
-                 	where: whereBargain
+                 	model: models.Car,
+                 	as: 'car',
+                 	where: whereCar("car")
              	}]
             });
-            const pagination = paginator.paging(page, count.count, limit);
 
+            const pagination = paginator.paging(page, count.count, limit);
             res.json({
                 success: true,
                 pagination,

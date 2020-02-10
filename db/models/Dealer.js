@@ -1,8 +1,16 @@
+const models = require('../../db/models');
+
 module.exports = (sequelize, DataTypes) => {
   const Dealer = sequelize.define(
     'Dealer',
     {
-      userId: DataTypes.INTEGER,
+      userId: {
+        type: DataTypes.INTEGER,
+        references: {
+          model: models.Dealer,
+          key: "userId"
+        }
+      },
       authorizedBrandId: DataTypes.INTEGER,
       website: DataTypes.STRING(100),
       productType: DataTypes.INTEGER,
@@ -53,12 +61,6 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'brandId',
       sourceKey: 'authorizedBrandId',
       as: 'car',
-      onDelete: 'CASCADE'
-    });
-    Dealer.hasMany(models.Bargain, {
-      foreignKey: 'userId',
-      sourceKey: 'userId',
-      as: 'bargain',
       onDelete: 'CASCADE'
     });
   };
