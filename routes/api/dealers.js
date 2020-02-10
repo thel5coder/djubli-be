@@ -129,6 +129,51 @@ router.get('/', async (req, res) => {
         });
 });
 
+router.get('/id/:id', async (req, res) => {
+  const { id } = req.params;
+
+  return models.Dealer.findOne({
+    include: [
+    	{
+            model: models.User,
+            as: 'user',
+            attributes: {
+                exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: [{
+                model: models.File,
+                as: 'file',
+                attributes: {
+                    exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+            }]
+        },
+        {
+            model: models.Brand,
+            as: 'brand',
+            attributes: {
+               	exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+        }
+    ],
+    where: {
+      id
+    }
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err =>
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      })
+    );
+});
+
 router.get('/listingBrandForDealer', async (req, res) => {
     let {
         page,
