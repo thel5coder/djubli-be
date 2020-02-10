@@ -9,6 +9,8 @@ const multer = require('multer');
 const passport = require('passport');
 const cors = require('cors');
 const redis = require('redis');
+
+require('./helpers/cron/bargainsCron');
 require('pg').defaults.parseInt8 = true;
 
 const acceptedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg'];
