@@ -1,6 +1,3 @@
-/* API Masa Berlaku Penawaran */
-
-
 const Sequelize = require('sequelize');
 const cron = require('node-cron');
 const models = require('../../db/models');
@@ -42,11 +39,13 @@ let handleExpired = async (condition) => {
 	return;
 }
 
+/* API Masa Berlaku Penawaran */
 cron.schedule('59 23 * * *', function() {
 	handleExpired(0);
   	console.log('Running task handleExpired every day');
 });
 
+/* API Batas Waktu Ajak Nego */
 cron.schedule('* * * * *', function() {
 	handleExpired(1);
   	console.log('Running task handleExpired every minute');
