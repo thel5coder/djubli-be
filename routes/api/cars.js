@@ -2343,6 +2343,7 @@ router.post('/like/:id', passport.authenticate('user', { session: false }), asyn
 
 router.post('/view/:id', async (req, res) => {
   const { id } = req.params;
+  const { userId } = req.body;
   const car = await models.Car.findOne({
     where: {
       id
@@ -2369,8 +2370,8 @@ router.post('/view/:id', async (req, res) => {
   // }
 
   let user = null;
-  if (req.user) {
-    user = req.user.id;
+  if (userId) {
+    user = userId;
   }
 
   return models.View.create({
