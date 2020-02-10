@@ -59,6 +59,28 @@ router.get('/', async (req, res) => {
     });
 });
 
+router.get('/id/:id', async (req, res) => {
+  const { id } = req.params;
+
+  return models.ModelYear.findOne({
+    where: {
+      id
+    }
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err =>
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      })
+    );
+});
+
 router.get('/listingAll', async (req, res) => {
   const {
     by,
@@ -128,9 +150,9 @@ router.get('/listingAll', async (req, res) => {
         sort
       ]
     ];
-  
+
   // Search By Location (Latitude, Longitude & Radius)
-  if (by === 'location'){
+  if (by === 'location') {
     if (!latitude) {
       return res.status(400).json({
         success: false,
@@ -155,7 +177,7 @@ router.get('/listingAll', async (req, res) => {
     distances =  models.sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
-  } 
+  }
 
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area') {
@@ -165,7 +187,7 @@ router.get('/listingAll', async (req, res) => {
         errors: 'Radius not found!'
       });
     }
-    
+
     if (cityId) {
       const city = await models.City.findByPk(cityId);
       if (!city) {
@@ -287,7 +309,9 @@ router.get('/listingAll', async (req, res) => {
 
   if (typeId) {
     Object.assign(whereInclude, {
-      [Op.and]: models.sequelize.literal(`EXISTS(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId" AND "GroupModels"."typeId" = ${typeId})`)
+      [Op.and]: models.sequelize.literal(
+        `EXISTS(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId" AND "GroupModels"."typeId" = ${typeId})`
+      )
     });
   }
 
