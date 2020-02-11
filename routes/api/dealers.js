@@ -315,6 +315,7 @@ router.get('/car/sellList/:id', async (req, res) => {
                     as: 'car',
                     where: whereCar,
                     subQuery: true,
+                    required: false,
                     attributes: {
                         include: [
                             [
