@@ -113,7 +113,10 @@ router.get('/listingAll', async (req, res) => {
   else page = 1;
 
   let order = [['createdAt', 'desc']];
-  let subQuery = true;
+  let orderCar = [];
+
+  let separate = false;
+  let modelCarName = 'car';
 
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
@@ -122,8 +125,8 @@ router.get('/listingAll', async (req, res) => {
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
   else if (by === 'like') {
-    subQuery = false;
-    order = [[models.sequelize.literal('"car.like"'), sort]];
+    separate = true;
+    orderCar = [[models.sequelize.col('like'), sort]];
   } else if (by === 'condition')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
   else if (by === 'price')
@@ -301,6 +304,17 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
+  const countCar = models.sequelize.literal(
+    `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id")`
+  );
+
+  if (by === 'like') {
+    modelCarName = 'Car';
+    Object.assign(where, {
+      [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 1 })]
+    });
+  }
+
   if (by === 'location' || by === 'area') {
     Object.assign(whereInclude, {
       [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
@@ -314,9 +328,10 @@ router.get('/listingAll', async (req, res) => {
       )
     });
   }
-
+    
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
+      [ countCar, 'countCar' ],
       [
         models.sequelize.literal(
           '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."deletedAt" IS NULL)'
@@ -384,40 +399,42 @@ router.get('/listingAll', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereInclude,
+        separate,
+        order: orderCar,
         attributes: {
           include: [
             [
               models.sequelize.literal(
-                '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+                `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "${modelCarName}"."id")`
               ),
               'bidAmount'
             ],
             [
               models.sequelize.literal(
-                '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id")'
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "${modelCarName}"."id")`
               ),
               'numberOfBidder'
             ],
             [
               models.sequelize.literal(
-                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "${modelCarName}"."id" AND "Likes"."status" IS TRUE)`
               ),
               'like'
             ],
             [
               models.sequelize.literal(
-                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+                `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "${modelCarName}"."id" AND "Views"."deletedAt" IS NULL)`
               ),
               'view'
             ],
             [
               models.sequelize.literal(
-                '(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "car"."groupModelId")'
+                `(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "${modelCarName}"."groupModelId")`
               ),
               'groupModelTypeId'
             ],
-            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
-            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
+            [models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 1))`), 'latitude'],
+            [models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 2))`), 'longitude']
           ]
         },
         include: [
@@ -486,8 +503,7 @@ router.get('/listingAll', async (req, res) => {
     where,
     order,
     offset,
-    limit,
-    subQuery
+    limit
   })
     .then(async data => {
       const count = await models.ModelYear.count({
