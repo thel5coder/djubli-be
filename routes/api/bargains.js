@@ -341,8 +341,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
   trans.commit();
-  // req.io.emit(`negotiation-car${carId}`, data);
-  req.io.emit(`negotiation-car`, data);
+  req.io.emit(`negotiation-car${carId}`, data);
 
   return res.json({
     success: true,
