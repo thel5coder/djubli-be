@@ -285,16 +285,9 @@ router.get('/car/sellList/:id', async (req, res) => {
     if (!sort) sort = 'asc';
     else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-    const whereCar = {
-        userId: {
-            [Op.eq]: models.sequelize.literal(`(SELECT "userId" FROM "Dealers" WHERE "Dealers"."id" = ${id})`)
-        }
-    };
-
-    // const tableName = 'Car';
-    const tableName = 'car';
-
     return models.Dealer.findByPk(id, {
+            raw: true,
+            nest: true,
             include: [
             	{
                     model: models.User,
@@ -309,43 +302,50 @@ router.get('/car/sellList/:id', async (req, res) => {
                             exclude: ['createdAt', 'updatedAt', 'deletedAt']
                         }
                     }]
-                },
-                {
-                    model: models.Car,
-                    as: 'car',
+                }
+            ]
+        })
+        .then(async data => {
+            const userId = models.sequelize.literal(`(SELECT "userId" FROM "Dealers" WHERE "Dealers"."id" = ${id})`);
+            const whereCar = {
+                userId: { 
+                    [Op.eq]: userId
+                }
+            };
+
+            if(data) {
+                const cars = await models.Car.findAll({
                     where: whereCar,
-                    subQuery: true,
-                    required: false,
                     attributes: {
                         include: [
                             [
                                 models.sequelize.literal(
-                                    `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "${tableName}"."id")`
+                                    `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")`
                                 ),
                                 'bidAmount'
                             ],
                             [
                                 models.sequelize.literal(
-                                    `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "${tableName}"."id")`
+                                    `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")`
                                 ),
                                 'numberOfBidder'
                             ],
                             [
-                                 models.sequelize.literal(
-                                    `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "${tableName}"."id" AND "Likes"."status" IS TRUE)`
+                                models.sequelize.literal(
+                                    `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)`
                                 ),
                                 'like'
                             ],
                             [
                                 models.sequelize.literal(
-                                    `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "${tableName}"."id" AND "Views"."deletedAt" IS NULL)`
+                                    `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)`
                                 ),
                                 'view'
                             ]
                         ]
                     },
                     include: [
-                    	{
+                        {
                             model: models.ExteriorGalery,
                             as: 'exteriorGalery',
                             attributes: {
@@ -400,22 +400,20 @@ router.get('/car/sellList/:id', async (req, res) => {
                             }
                         }
                     ],
-                    // limit,
-            		// offset
-                }
-            ]
-        })
-        .then(async data => {
-            const count = await models.Dealer.findAndCountAll({
-            	where: {id},
-            	include: [{
-                 	model: models.Car,
-                 	as: 'car',
-                 	where: whereCar,
-             	}]
+                    limit,
+                    offset
+                }).then(async resultCar => {
+                    data.car = resultCar
+                });
+            }
+            
+            const count = await models.Car.count({
+                distinct: true,
+                col: 'id',
+                where: whereCar
             });
-            const pagination = paginator.paging(page, count.count, limit);
-
+            
+            const pagination = paginator.paging(page, count, limit);
             res.json({
                 success: true,
                 pagination,
@@ -467,20 +465,17 @@ router.get('/car/bidList/:id', async (req, res) => {
     	]
     }
 
-    let whereCar = (table) => {
-    	countBargains =  models.sequelize.literal(
-	        `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "${table}"."id")`
-	    );
+    countBargains =  models.sequelize.literal(
+        `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")`
+    );
 
-	    return {
-	    	[Op.and]: [models.sequelize.where(countBargains, { [Op.gte]: 1 })]
-	    }
+    let whereCar = {
+	    [Op.and]: [models.sequelize.where(countBargains, { [Op.gte]: 1 })]
     }
 
-    // const tableName = 'Car';
-    const tableName = 'car';
-
     return models.Dealer.findByPk(id, {
+            raw: true,
+            nest: true,
             include: [
             	{
                     model: models.User,
@@ -495,43 +490,45 @@ router.get('/car/bidList/:id', async (req, res) => {
                             exclude: ['createdAt', 'updatedAt', 'deletedAt']
                         }
                     }]
-                },
-            	{
-                    model: models.Car,
-                    as: 'car',
-                    where: whereCar(tableName),
-                    subQuery: true,
-                    required: false,
+                }
+            ]
+        })
+        .then(async data => {
+            const userId = models.sequelize.literal(`(SELECT "userId" FROM "Dealers" WHERE "Dealers"."id" = ${id})`);
+
+            if(data) {
+                const cars = await models.Car.findAll({
+                    where: whereCar,
                     attributes: {
                         include: [
                             [
                                 models.sequelize.literal(
-                                    `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "${tableName}"."id")`
+                                    `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")`
                                 ),
                                 'bidAmount'
                             ],
                             [
                                 models.sequelize.literal(
-                                    `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "${tableName}"."id")`
+                                    `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id")`
                                 ),
                                 'numberOfBidder'
                             ],
                             [
-                                 models.sequelize.literal(
-                                    `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "${tableName}"."id" AND "Likes"."status" IS TRUE)`
+                                models.sequelize.literal(
+                                    `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)`
                                 ),
                                 'like'
                             ],
                             [
                                 models.sequelize.literal(
-                                    `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "${tableName}"."id" AND "Views"."deletedAt" IS NULL)`
+                                    `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)`
                                 ),
                                 'view'
                             ]
                         ]
                     },
                     include: [
-                    	{
+                        {
                             model: models.Bargain,
                             as: 'bargain',
                             where: whereBargain,
@@ -539,7 +536,7 @@ router.get('/car/bidList/:id', async (req, res) => {
                                 exclude: ['createdAt', 'updatedAt', 'deletedAt']
                             }
                         },
-                    	{
+                        {
                             model: models.ExteriorGalery,
                             as: 'exteriorGalery',
                             attributes: {
@@ -594,22 +591,25 @@ router.get('/car/bidList/:id', async (req, res) => {
                             }
                         }
                     ],
-                    // limit,
-            		// offset
-                }
-            ]
-        })
-        .then(async data => {
-            const count = await models.Dealer.findAndCountAll({
-            	where: {id},
+                    limit,
+                    offset
+                }).then(async resultCar => {
+                    data.car = resultCar
+                });
+            }
+
+            const count = await models.Car.count({
+                distinct: true,
+                col: 'id',
+            	where: whereCar,
             	include: [{
-                 	model: models.Car,
-                 	as: 'car',
-                 	where: whereCar("car")
-             	}]
+                    model: models.Bargain,
+                    as: 'bargain',
+                    where: whereBargain
+                }]
             });
 
-            const pagination = paginator.paging(page, count.count, limit);
+            const pagination = paginator.paging(page, count, limit);
             res.json({
                 success: true,
                 pagination,
