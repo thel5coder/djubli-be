@@ -518,7 +518,7 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
       include: [
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
+            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
           ),
           'like'
         ],
@@ -789,7 +789,7 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
       include: [
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
+            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
           ),
           'like'
         ],

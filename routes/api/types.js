@@ -127,16 +127,16 @@ router.get('/listingCar', async (req, res) => {
             where: whereCar,
             attributes: Object.keys(models.Car.attributes).concat([
               [
-                models.sequelize.literal('(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" )'),
+                models.sequelize.literal('(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" AND "Bargains"."deletedAt" IS NULL )'),
                 'bidAmount'
               ],
               [
-                models.sequelize.literal('(SELECT COUNT("Bargains"."id") FROM "Bargains" )'),
+                models.sequelize.literal('(SELECT COUNT("Bargains"."id") FROM "Bargains" AND "Bargains"."deletedAt" IS NULL )'),
                 'numberOfBidder'
               ],
               [
                 models.sequelize.literal(
-                  '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."status" IS TRUE)'
+                  '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
                 ),
                 'like'
               ],

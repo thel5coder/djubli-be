@@ -36,7 +36,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
           include: [
             [
               models.sequelize.literal(
-                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
               ),
               'like'
             ],
@@ -168,7 +168,7 @@ router.get('/id/:id', async (req, res) => {
           include: [
             [
               models.sequelize.literal(
-                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE)'
+                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
               ),
               'like'
             ],

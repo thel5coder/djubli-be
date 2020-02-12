@@ -154,7 +154,7 @@ router.get('/listingCar/:id', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE)'
+          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
         ),
         'like'
       ],
