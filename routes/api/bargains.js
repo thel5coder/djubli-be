@@ -600,7 +600,16 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
         as: 'user',
         attributes: {
           exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-        }
+        },
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       },
       {
         model: models.Bargain,
@@ -615,7 +624,16 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
             as: 'user',
             attributes: {
               exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-            }
+            },
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
           }
         ]
       }
@@ -871,7 +889,16 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
         as: 'user',
         attributes: {
           exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-        }
+        },
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
       },
       {
         model: models.Bargain,
@@ -886,7 +913,16 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
             as: 'user',
             attributes: {
               exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-            }
+            },
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
           }
         ]
       }
@@ -917,7 +953,8 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
 });
 
 router.get('/socketTest', async (req, res) => {
-  return req.io.emit(`negotiation-car`, 'yoo');
+  req.io;
+  // return req.io.emit(`negotiation-car`, 'yoo');
 });
 
 module.exports = router;
