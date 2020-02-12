@@ -916,4 +916,8 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
     });
 });
 
+router.get('/socketTest', async (req, res) => {
+  return req.io.emit(`negotiation-car`, 'yoo');
+});
+
 module.exports = router;
