@@ -341,7 +341,8 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
   trans.commit();
-  req.io.emit(`negotiation-car${carId}`, data);
+  // req.io.emit(`negotiation-car${carId}`, data);
+  req.io.emit(`negotiation-car`, data);
 
   return res.json({
     success: true,
@@ -950,11 +951,6 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
         errors: err.message
       });
     });
-});
-
-router.get('/socketTest', async (req, res) => {
-  req.io;
-  // return req.io.emit(`negotiation-car`, 'yoo');
 });
 
 module.exports = router;
