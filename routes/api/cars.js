@@ -2549,11 +2549,33 @@ router.get('/viewLike', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
+  const order = [
+    // ['createdAt', 'desc'],
+    [
+      models.sequelize.literal(`(
+        SELECT COUNT("Likes"."carId") 
+        FROM "Likes" 
+        WHERE "Likes"."carId" = "Car"."id" 
+        AND "Likes"."deletedAt" IS NULL
+      )`),
+      'DESC'
+    ]
+  ];
+
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  const where = {};
+  const where = {
+    [Op.and]: [
+        models.sequelize.literal(`(
+          (SELECT COUNT("Likes"."carId") 
+            FROM "Likes" 
+            WHERE "Likes"."carId" = "Car"."id"
+            AND "Likes"."deletedAt" IS NULL
+          ) > 0 
+        )`)
+    ]
+  };
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat([
@@ -2683,16 +2705,8 @@ router.get('/viewLike', async (req, res) => {
         }
       }
     ],
-    where: {
-      [Op.and]: [
-        Sequelize.literal(
-          '(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id") > 0 AND "Likes"."deletedAt" IS NULL'
-        )
-      ]
-    },
-    order: Sequelize.literal(
-      '(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."deletedAt" IS NULL) DESC'
-    ),
+    where,
+    order,
     offset,
     limit
   })
