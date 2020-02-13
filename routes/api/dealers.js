@@ -194,11 +194,35 @@ router.get('/listingBrandForDealer', async (req, res) => {
     if (!sort) sort = 'asc';
     else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
+    const rawSubQuery = `( 
+        SELECT COUNT ( "Cars"."id" ) 
+        FROM "Cars" 
+        WHERE "Cars"."groupModelId" = "GroupModels"."id" 
+        AND "Cars"."status" = 0 
+        AND "Cars"."condition" = ${condition} 
+        AND "Cars"."userId" IN ( 
+            SELECT "Dealers"."userId" 
+            FROM "Dealers" 
+            WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+        )
+        AND "Cars"."deletedAt" IS NULL 
+    )`;
+
     return models.Brand.findAll({
             attributes: Object.keys(models.Brand.attributes).concat([
                 [
                     models.sequelize.literal(
-                        `( SELECT COUNT ( "Cars"."id" ) FROM "Cars" WHERE "Cars"."brandId" = "Brand"."id" AND "Cars"."condition" = ${condition} AND "Cars"."deletedAt" IS NULL )`
+                        `( SELECT COUNT ( "Cars"."id" ) 
+                            FROM "Cars" 
+                            WHERE "Cars"."brandId" = "Brand"."id" 
+                            AND "Cars"."condition" = ${condition} 
+                            AND "Cars"."userId" IN 
+                                (SELECT "Dealers"."userId" 
+                                FROM "Dealers" 
+                                WHERE "Dealers"."authorizedBrandId" = "Brand"."id"
+                                AND "Dealers"."deletedAt" IS NULL)
+                            AND "Cars"."deletedAt" IS NULL 
+                        )`
                     ),
                     'countListing'
                 ],
@@ -210,13 +234,56 @@ router.get('/listingBrandForDealer', async (req, res) => {
                 ],
                 [
                     models.sequelize.literal(
-                        `( SELECT "GroupModels"."name" FROM "GroupModels" WHERE "GroupModels"."brandId" = "Brand"."id" AND "GroupModels"."deletedAt" IS NULL ORDER BY ( SELECT COUNT ( "Cars"."id" ) FROM "Cars" WHERE "Cars"."groupModelId" = "GroupModels"."id" AND "Cars"."status" = 0 AND "Cars"."deletedAt" IS NULL ) DESC LIMIT 1 )`
+                        `( SELECT "GroupModels"."name" 
+                            FROM "GroupModels" 
+                            WHERE "GroupModels"."brandId" = "Brand"."id" 
+                            AND "GroupModels"."deletedAt" IS NULL 
+                            AND ( SELECT COUNT ( "Cars"."id" ) 
+                                FROM "Cars" 
+                                WHERE "Cars"."groupModelId" = "GroupModels"."id" 
+                                AND "Cars"."status" = 0 
+                                AND "Cars"."condition" = ${condition} 
+                                AND "Cars"."userId" IN ( 
+                                    SELECT "Dealers"."userId" 
+                                    FROM "Dealers" 
+                                    WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+                                )
+                                AND "Cars"."deletedAt" IS NULL 
+                            ) > 0
+                            ORDER BY 
+                                ( SELECT COUNT ( "Cars"."id" ) 
+                                    FROM "Cars" 
+                                    WHERE "Cars"."groupModelId" = "GroupModels"."id" 
+                                    AND "Cars"."status" = 0 
+                                    AND "Cars"."condition" = ${condition} 
+                                    AND "Cars"."userId" IN ( 
+                                        SELECT "Dealers"."userId" 
+                                        FROM "Dealers" 
+                                        WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+                                    )
+                                    AND "Cars"."deletedAt" IS NULL 
+                                ) 
+                            DESC LIMIT 1 
+                        )`
                     ),
                     'groupModelMostListing'
                 ],
                 [
                     models.sequelize.literal(
-                        `( SELECT ( SELECT COUNT ( "Cars"."id" ) FROM "Cars" WHERE "Cars"."groupModelId" = "GroupModels"."id" AND "Cars"."status" = 0 AND "Cars"."deletedAt" IS NULL ) groupModelMaxListing FROM "GroupModels" WHERE "GroupModels"."brandId" = "Brand"."id" AND "GroupModels"."deletedAt" IS NULL ORDER BY groupModelMaxListing DESC LIMIT 1 )`
+                        `( SELECT 
+                            ( SELECT COUNT ( "Cars"."id" ) 
+                                FROM "Cars" 
+                                WHERE "Cars"."groupModelId" = "GroupModels"."id" 
+                                AND "Cars"."status" = 0 
+                                AND "Cars"."condition" = ${condition} 
+                                AND "Cars"."deletedAt" IS NULL 
+                            ) groupModelMaxListing 
+                            FROM "GroupModels" 
+                            WHERE "GroupModels"."brandId" = "Brand"."id" 
+                            AND "GroupModels"."deletedAt" IS NULL 
+                            ORDER BY groupModelMaxListing 
+                            DESC LIMIT 1 
+                        )`
                     ),
                     'groupModelCountListing'
                 ]
