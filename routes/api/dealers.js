@@ -195,9 +195,9 @@ router.get('/listingBrandForDealer', async (req, res) => {
     else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
     const whereCar = {
-        // userId: {
-        //     [Op.in]: models.sequelize.literal('SELECT "Dealers"."userId" FROM "Dealers" WHERE "Dealers"."authorizedBrandId" = "Brand"."id"')
-        // }
+        userId: {
+            [Op.eq]: models.sequelize.col('dealer.userId')
+        }
     };
 
     if (condition) {
@@ -265,24 +265,6 @@ router.get('/listingBrandForDealer', async (req, res) => {
                                 ) 
                             DESC LIMIT 1 
                         )`
-                        // `( SELECT "GroupModels"."name" 
-                        //     FROM "GroupModels" 
-                        //     WHERE "GroupModels"."brandId" = 1 
-                        //     AND (
-                        //         SELECT COUNT("Cars"."id") 
-                        //         FROM "Cars" 
-                        //         WHERE "Cars"."deletedAt" IS NULL 
-                        //         AND "Cars"."groupModelId" = "GroupModels"."id"
-                        //         AND "Cars"."brandId" = 2 
-                        //         AND "Cars"."condition" = 0 
-                        //         AND "Cars"."userId" IN(
-                        //             SELECT "Dealers"."userId" 
-                        //             FROM "Dealers" 
-                        //             WHERE "Dealers"."authorizedBrandId" = 2 
-                        //         )
-                        //     ) > 0
-                        //     AND "GroupModels"."deletedAt" IS NULL
-                        // )`
                     ),
                     'groupModelMostListing'
                 ],
@@ -294,6 +276,11 @@ router.get('/listingBrandForDealer', async (req, res) => {
                                 WHERE "Cars"."groupModelId" = "GroupModels"."id" 
                                 AND "Cars"."status" = 0 
                                 ${whereCondition} 
+                                AND "Cars"."userId" IN ( 
+                                    SELECT "Dealers"."userId" 
+                                    FROM "Dealers" 
+                                    WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+                                )
                                 AND "Cars"."deletedAt" IS NULL 
                             ) groupModelMaxListing 
                             FROM "GroupModels" 
@@ -306,14 +293,26 @@ router.get('/listingBrandForDealer', async (req, res) => {
                     'groupModelCountListing'
                 ]
             ]),
-            include: [{
-                model: models.Car,
-                as: 'car',
-                where: whereCar,
-                attributes: {
-                    exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            include: [
+                {
+                    model: models.Dealer,
+                    as: 'dealer',
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                    },
+                    include: [
+                        {
+                            required: false,
+                            model: models.Car,
+                            as: 'car',
+                            where: whereCar,
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        }
+                    ]
                 }
-            }],
+            ],
             offset,
             limit
         })
