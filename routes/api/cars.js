@@ -1973,6 +1973,7 @@ router.get('/view/:id', async (req, res) => {
           ) AS row_number
           FROM "Views" 
           WHERE "userId" = ${id}
+          AND "deletedAt" IS NULL
         ) AS rows
         WHERE row_number = 1)`
       )
