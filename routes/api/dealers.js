@@ -194,19 +194,19 @@ router.get('/listingBrandForDealer', async (req, res) => {
     if (!sort) sort = 'asc';
     else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-    const rawSubQuery = `( 
-        SELECT COUNT ( "Cars"."id" ) 
-        FROM "Cars" 
-        WHERE "Cars"."groupModelId" = "GroupModels"."id" 
-        AND "Cars"."status" = 0 
-        AND "Cars"."condition" = ${condition} 
-        AND "Cars"."userId" IN ( 
-            SELECT "Dealers"."userId" 
-            FROM "Dealers" 
-            WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
-        )
-        AND "Cars"."deletedAt" IS NULL 
-    )`;
+    const whereCar = {
+        // userId: {
+        //     [Op.in]: models.sequelize.literal('SELECT "Dealers"."userId" FROM "Dealers" WHERE "Dealers"."authorizedBrandId" = "Brand"."id"')
+        // }
+    };
+
+    if (condition) {
+        Object.assign(whereCar, {
+            condition
+        });
+
+        whereCondition = `AND "Cars"."condition" = ${condition}`
+    }
 
     return models.Brand.findAll({
             attributes: Object.keys(models.Brand.attributes).concat([
@@ -215,7 +215,7 @@ router.get('/listingBrandForDealer', async (req, res) => {
                         `( SELECT COUNT ( "Cars"."id" ) 
                             FROM "Cars" 
                             WHERE "Cars"."brandId" = "Brand"."id" 
-                            AND "Cars"."condition" = ${condition} 
+                            ${whereCondition} 
                             AND "Cars"."userId" IN 
                                 (SELECT "Dealers"."userId" 
                                 FROM "Dealers" 
@@ -242,7 +242,7 @@ router.get('/listingBrandForDealer', async (req, res) => {
                                 FROM "Cars" 
                                 WHERE "Cars"."groupModelId" = "GroupModels"."id" 
                                 AND "Cars"."status" = 0 
-                                AND "Cars"."condition" = ${condition} 
+                                ${whereCondition} 
                                 AND "Cars"."userId" IN ( 
                                     SELECT "Dealers"."userId" 
                                     FROM "Dealers" 
@@ -255,7 +255,7 @@ router.get('/listingBrandForDealer', async (req, res) => {
                                     FROM "Cars" 
                                     WHERE "Cars"."groupModelId" = "GroupModels"."id" 
                                     AND "Cars"."status" = 0 
-                                    AND "Cars"."condition" = ${condition} 
+                                    ${whereCondition} 
                                     AND "Cars"."userId" IN ( 
                                         SELECT "Dealers"."userId" 
                                         FROM "Dealers" 
@@ -265,6 +265,24 @@ router.get('/listingBrandForDealer', async (req, res) => {
                                 ) 
                             DESC LIMIT 1 
                         )`
+                        // `( SELECT "GroupModels"."name" 
+                        //     FROM "GroupModels" 
+                        //     WHERE "GroupModels"."brandId" = 1 
+                        //     AND (
+                        //         SELECT COUNT("Cars"."id") 
+                        //         FROM "Cars" 
+                        //         WHERE "Cars"."deletedAt" IS NULL 
+                        //         AND "Cars"."groupModelId" = "GroupModels"."id"
+                        //         AND "Cars"."brandId" = 2 
+                        //         AND "Cars"."condition" = 0 
+                        //         AND "Cars"."userId" IN(
+                        //             SELECT "Dealers"."userId" 
+                        //             FROM "Dealers" 
+                        //             WHERE "Dealers"."authorizedBrandId" = 2 
+                        //         )
+                        //     ) > 0
+                        //     AND "GroupModels"."deletedAt" IS NULL
+                        // )`
                     ),
                     'groupModelMostListing'
                 ],
@@ -275,7 +293,7 @@ router.get('/listingBrandForDealer', async (req, res) => {
                                 FROM "Cars" 
                                 WHERE "Cars"."groupModelId" = "GroupModels"."id" 
                                 AND "Cars"."status" = 0 
-                                AND "Cars"."condition" = ${condition} 
+                                ${whereCondition} 
                                 AND "Cars"."deletedAt" IS NULL 
                             ) groupModelMaxListing 
                             FROM "GroupModels" 
@@ -291,9 +309,7 @@ router.get('/listingBrandForDealer', async (req, res) => {
             include: [{
                 model: models.Car,
                 as: 'car',
-                where: {
-                    condition
-                },
+                where: whereCar,
                 attributes: {
                     exclude: ['createdAt', 'updatedAt', 'deletedAt']
                 }
@@ -399,6 +415,12 @@ router.get('/car/sellList/:id', async (req, res) => {
                             ],
                             [
                                 models.sequelize.literal(
+                                  '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+                                ),
+                                'highestBidder'
+                            ],
+                            [
+                                models.sequelize.literal(
                                     `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
                                 ),
                                 'like'
@@ -423,6 +445,20 @@ router.get('/car/sellList/:id', async (req, res) => {
                                 as: 'file',
                                 attributes: ['type', 'url']
                             }
+                        },
+                        {
+                            model: models.InteriorGalery,
+                            as: 'interiorGalery',
+                            attributes: ['id', 'fileId', 'carId'],
+                            include: [
+                                {
+                                    model: models.File,
+                                    as: 'file',
+                                    attributes: {
+                                        exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                                    }
+                                }
+                            ]
                         },
                         {
                             model: models.Brand,
@@ -465,6 +501,11 @@ router.get('/car/sellList/:id', async (req, res) => {
                             attributes: {
                                 exclude: ['createdAt', 'updatedAt', 'deletedAt']
                             }
+                        },
+                        {
+                            model: models.MeetingSchedule,
+                            as: 'meetingSchedule',
+                            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
                         }
                     ],
                     limit,
