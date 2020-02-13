@@ -1963,8 +1963,22 @@ router.get('/view/:id', async (req, res) => {
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const where = {
-    userId: id
+    userId: id,
+    id: {
+      [Op.in]: models.sequelize.literal(`(SELECT "id"
+        FROM (
+          SELECT *, row_number() OVER (
+            partition BY "carId" 
+            ORDER BY "id"
+          ) AS row_number
+          FROM "Views" 
+          WHERE "userId" = ${id}
+        ) AS rows
+        WHERE row_number = 1)`
+      )
+    }
   };
+
   return models.View.findAll({
     include: [
       {
