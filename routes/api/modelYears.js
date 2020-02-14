@@ -179,7 +179,7 @@ router.get('/listingAll', async (req, res) => {
     }
 
     const rawDistancesFunc = (tableName = 'Cars') => {
-      const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${{tableName}}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${{tableName}}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+      const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
       rawDistances = calDistance;
       return calDistance;
     };
@@ -878,7 +878,27 @@ router.get('/listingType', async (req, res) => {
 });
 
 router.get('/listingCar/:id', async (req, res) => {
-  const { by, year, maxPrice, minPrice, condition } = req.query;
+  const { 
+    by,
+    brandId,
+    groupModelId,
+    modelId,
+    year, 
+    maxPrice, 
+    minPrice, 
+    condition,
+    minKm,
+    maxKm,
+    minYear,
+    maxYear,
+    radius,
+    latitude,
+    longitude,
+    cityId,
+    subdistrictId,
+    typeId
+  } = req.query;
+
   const { id } = req.params;
   let { page, limit, sort } = req.query;
   let offset = 0;
@@ -896,6 +916,84 @@ router.get('/listingCar/:id', async (req, res) => {
   else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
   else if (by === 'userType')
     order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
+
+  // Search By Location (Latitude, Longitude & Radius)
+  if (by === 'location') {
+    if (!latitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Latitude not found!'
+      });
+    }
+
+    if (!longitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Longitude not found!'
+      });
+    }
+
+    if (!radius) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Radius not found!'
+      });
+    }
+
+    const rawDistances = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+    distances = models.sequelize.literal(rawDistances);
+  }
+
+  // Search by City, Subdistrict/Area & Radius
+  if (by === 'area') {
+    if (!radius) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Radius not found!'
+      });
+    }
+
+    if (cityId) {
+      const city = await models.City.findByPk(cityId);
+      if (!city) {
+        return res.status(400).json({
+          success: false,
+          errors: 'City not found!'
+        });
+      }
+
+      // If subdistrictId Not Null
+      if (subdistrictId) {
+        const subdistrict = await models.SubDistrict.findOne({
+          where: { id: subdistrictId, cityId }
+        });
+
+        if (!subdistrict) {
+          return res.status(400).json({
+            success: false,
+            errors: 'Subdistrict not found!'
+          });
+        }
+
+        if (city && subdistrict) {
+          const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+          distances = models.sequelize.literal(rawDistances);
+        }
+      } else {
+        // If subdistrictId Null (Search By City & Radius)
+        // eslint-disable-next-line no-lonely-if
+        if (city) {
+          const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+          distances = models.sequelize.literal(rawDistances);
+        }
+      }
+    } else {
+      return res.status(400).json({
+        success: false,
+        errors: 'Please Select City!'
+      });
+    }
+  }
 
   const where = {
     [Op.or]: [{ status: 0 }, { status: 1 }],
@@ -925,6 +1023,75 @@ router.get('/listingCar/:id', async (req, res) => {
       price: {
         [Op.and]: [{ [Op.lte]: maxPrice }, { [Op.gte]: minPrice }]
       }
+    });
+  }
+
+  if (brandId) {
+    Object.assign(where, {
+      brandId: {
+        [Op.eq]: brandId
+      }
+    });
+  }
+
+  if (modelId) {
+    Object.assign(where, {
+      modelId: {
+        [Op.eq]: modelId
+      }
+    });
+  }
+
+  if (groupModelId) {
+    Object.assign(where, {
+      groupModelId: {
+        [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (minKm && maxKm) {
+    Object.assign(where, {
+      km: {
+        [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
+      }
+    });
+  }
+
+  if (by === 'highestBidder') {
+    const highestBidder = `(SELECT "Bargains"."carId" 
+      FROM "Bargains" 
+      LEFT JOIN "Cars" 
+      ON "Bargains"."carId" = "Car"."id" 
+      WHERE "Bargains"."deletedAt" IS NULL 
+      ORDER BY "Bargains"."bidAmount" 
+      DESC LIMIT 1
+    )`;
+
+    Object.assign(where, {
+      id: {
+        [Op.eq]: models.sequelize.literal(highestBidder)
+      }
+    });
+  }
+
+  if (by === 'location' || by === 'area') {
+    Object.assign(where, {
+      [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
+    });
+  }
+
+  if (typeId) {
+    const groupModelExist = `EXISTS(
+      SELECT "GroupModels"."typeId" 
+      FROM "GroupModels" 
+      WHERE "GroupModels"."id" = "Car"."groupModelId" 
+      AND "GroupModels"."typeId" = ${typeId} 
+      AND "GroupModels"."deletedAt" IS NULL
+    )`;
+
+    Object.assign(where, {
+      [Op.and]: models.sequelize.literal(groupModelExist)
     });
   }
 
