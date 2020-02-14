@@ -265,7 +265,23 @@ router.get('/listingBrandForDealer', async (req, res) => {
                 ],
                 [
                     models.sequelize.literal(
-                        '( SELECT COUNT ( "Dealers"."id" ) FROM "Dealers" WHERE "Dealers"."authorizedBrandId" = "Brand"."id" AND "Dealers"."isPartner" = true AND "Dealers"."deletedAt" IS NULL )'
+                        `( SELECT COUNT ( "Dealers"."id" ) 
+                            FROM "Dealers" 
+                            WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+                            AND "Dealers"."isPartner" = true 
+                            AND ( SELECT COUNT ( "Cars"."id" ) 
+                                FROM "Cars" 
+                                WHERE "Cars"."status" = 0 
+                                ${whereCondition} 
+                                AND "Cars"."userId" IN ( 
+                                    SELECT "Dealers"."userId" 
+                                    FROM "Dealers" 
+                                    WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+                                )
+                                AND "Cars"."deletedAt" IS NULL 
+                            ) > 0
+                            AND "Dealers"."deletedAt" IS NULL 
+                        )`
                     ),
                     'countPartner'
                 ],
