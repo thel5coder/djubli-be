@@ -209,6 +209,42 @@ router.get('/listingBrandForDealer', async (req, res) => {
         whereCondition = `AND "Cars"."condition" = ${condition}`
     }
 
+    let groupModelMostListing = (field) => {
+        return models.sequelize.literal(
+            `( SELECT "GroupModels"."${field}" 
+                FROM "GroupModels" 
+                WHERE "GroupModels"."brandId" = "Brand"."id" 
+                AND "GroupModels"."deletedAt" IS NULL 
+                AND ( SELECT COUNT ( "Cars"."id" ) 
+                    FROM "Cars" 
+                    WHERE "Cars"."groupModelId" = "GroupModels"."id" 
+                    AND "Cars"."status" = 0 
+                    ${whereCondition} 
+                    AND "Cars"."userId" IN ( 
+                        SELECT "Dealers"."userId" 
+                        FROM "Dealers" 
+                        WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+                    )
+                    AND "Cars"."deletedAt" IS NULL 
+                ) > 0
+                ORDER BY 
+                    ( SELECT COUNT ( "Cars"."id" ) 
+                        FROM "Cars" 
+                        WHERE "Cars"."groupModelId" = "GroupModels"."id" 
+                        AND "Cars"."status" = 0 
+                        ${whereCondition} 
+                        AND "Cars"."userId" IN ( 
+                            SELECT "Dealers"."userId" 
+                            FROM "Dealers" 
+                            WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
+                        )
+                        AND "Cars"."deletedAt" IS NULL 
+                    ) 
+                DESC LIMIT 1 
+            )`
+        );
+    };
+
     return models.Brand.findAll({
             attributes: Object.keys(models.Brand.attributes).concat([
                 [
@@ -233,42 +269,8 @@ router.get('/listingBrandForDealer', async (req, res) => {
                     ),
                     'countPartner'
                 ],
-                [
-                    models.sequelize.literal(
-                        `( SELECT "GroupModels"."name" 
-                            FROM "GroupModels" 
-                            WHERE "GroupModels"."brandId" = "Brand"."id" 
-                            AND "GroupModels"."deletedAt" IS NULL 
-                            AND ( SELECT COUNT ( "Cars"."id" ) 
-                                FROM "Cars" 
-                                WHERE "Cars"."groupModelId" = "GroupModels"."id" 
-                                AND "Cars"."status" = 0 
-                                ${whereCondition} 
-                                AND "Cars"."userId" IN ( 
-                                    SELECT "Dealers"."userId" 
-                                    FROM "Dealers" 
-                                    WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
-                                )
-                                AND "Cars"."deletedAt" IS NULL 
-                            ) > 0
-                            ORDER BY 
-                                ( SELECT COUNT ( "Cars"."id" ) 
-                                    FROM "Cars" 
-                                    WHERE "Cars"."groupModelId" = "GroupModels"."id" 
-                                    AND "Cars"."status" = 0 
-                                    ${whereCondition} 
-                                    AND "Cars"."userId" IN ( 
-                                        SELECT "Dealers"."userId" 
-                                        FROM "Dealers" 
-                                        WHERE "Dealers"."authorizedBrandId" = "Brand"."id" 
-                                    )
-                                    AND "Cars"."deletedAt" IS NULL 
-                                ) 
-                            DESC LIMIT 1 
-                        )`
-                    ),
-                    'groupModelMostListing'
-                ],
+                [ groupModelMostListing("name"), 'groupModelMostListing' ],
+                [ groupModelMostListing("id"), 'groupModelMostListingId' ],
                 [
                     models.sequelize.literal(
                         `( SELECT 
@@ -351,7 +353,8 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
         page,
         limit,
         sort,
-        condition
+        condition,
+        groupModelId
     } = req.query;
     let offset = 0;
 
@@ -378,7 +381,15 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
             condition
         });
 
-        whereCondition = `AND "Cars"."condition" = ${condition}`
+        whereCondition += ` AND "Cars"."condition" = ${condition}`
+    }
+
+    if (groupModelId) {
+        Object.assign(whereCar, {
+            groupModelId
+        });
+
+        whereCondition += ` AND "Cars"."groupModelId" = ${groupModelId}`
     }
 
     return models.Brand.findByPk(id, {
@@ -472,6 +483,7 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
                     model: models.Car,
                     as: 'car',
                     where: whereCar,
+                    subQuery: true,
                     attributes: {
                         include: [
                             [
