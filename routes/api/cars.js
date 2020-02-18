@@ -1831,6 +1831,18 @@ router.get('/like/:id', async (req, res) => {
           include: [
             [
               models.sequelize.literal(
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${id} AND "Likes"."deletedAt" IS NULL)`
+              ),
+              'islike'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+              ),
+              'isBid'
+            ],
+            [
+              models.sequelize.literal(
                 '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."deletedAt" IS NULL)'
               ),
               'like'
@@ -1987,6 +1999,18 @@ router.get('/view/:id', async (req, res) => {
         as: 'car',
         attributes: {
           include: [
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${id} AND "Likes"."deletedAt" IS NULL)`
+              ),
+              'islike'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+              ),
+              'isBid'
+            ],
             [
               models.sequelize.literal(
                 '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."deletedAt" IS NULL)'
