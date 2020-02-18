@@ -27,7 +27,10 @@ router.get('/', async (req, res) => {
     maxPrice,
     minYear,
     maxYear,
-    by
+    by,
+    radius,
+    latitude,
+    longitude
   } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
@@ -122,6 +125,35 @@ router.get('/', async (req, res) => {
       year: {
         [Op.lte]: maxYear
       }
+    });
+  }
+
+  // Search By Location (Latitude, Longitude & Radius) (For Pin Map)
+  if (by === 'location') {
+    if (!latitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Latitude not found!'
+      });
+    }
+
+    if (!longitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Longitude not found!'
+      });
+    }
+
+    if (!radius) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Radius not found!'
+      });
+    }
+
+    let distances = models.sequelize.literal(`(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`);
+    Object.assign(where, {
+      [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });
   }
 
