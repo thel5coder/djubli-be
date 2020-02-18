@@ -198,6 +198,23 @@ router.get('/id/:id', async (req, res) => {
 router.post('/bid', passport.authenticate('user', { session: false }), async (req, res) => {
   const { userId, carId, bidAmount, haveSeenCar, paymentMethod, expiredAt } = req.body;
 
+  const checkIsBid = await models.Bargain.findAll({
+    where: {
+      carId,
+      userId,
+      expiredAt: {
+        [Op.gte]: models.sequelize.literal('(SELECT NOW())')
+      }
+    }
+  });
+
+  if(checkIsBid.length) {
+    return res.status(400).json({
+      success: false,
+      errors: 'You have bid this car'
+    });
+  }
+
   if (!bidAmount) {
     return res.status(400).json({
       success: false,

@@ -1295,6 +1295,12 @@ router.get(
         ],
         [
           models.sequelize.literal(
+            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${userId} AND "Bargains"."carId" = "Car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+          ),
+          'isBid'
+        ],
+        [
+          models.sequelize.literal(
             '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
           ),
           'like'
