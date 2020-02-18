@@ -2158,6 +2158,13 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
 
+  if (!location) {
+    return res.status(400).json({
+      success: false,
+      errors: 'location is mandatory'
+    });
+  }
+
   let STNKphoto = null;
   if (images) {
     const result = {};
