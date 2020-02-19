@@ -1852,8 +1852,10 @@ router.get('/like/:id', async (req, res) => {
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const where = {
-    userId: id
+    userId: id,
+    status: true
   };
+
   return models.Like.findAll({
     include: [
       {
