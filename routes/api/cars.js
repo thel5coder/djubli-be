@@ -1911,7 +1911,7 @@ router.get('/like/:id', async (req, res) => {
           {
             model: models.User,
             as: 'user',
-            attributes: ['id', 'name', 'email', 'phone']
+            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
           },
           {
             model: models.Brand,
@@ -2081,7 +2081,7 @@ router.get('/view/:id', async (req, res) => {
           {
             model: models.User,
             as: 'user',
-            attributes: ['id', 'name', 'email', 'phone']
+            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
           },
           {
             model: models.Brand,
