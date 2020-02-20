@@ -1836,7 +1836,7 @@ router.get('/id/:id', async (req, res) => {
 
 router.get('/like/:id', async (req, res) => {
   const { id } = req.params;
-  const { by } = req.query;
+  const { by, condition } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -1855,6 +1855,15 @@ router.get('/like/:id', async (req, res) => {
     userId: id,
     status: true
   };
+
+  const whereCar = {};
+  if (condition) {
+    Object.assign(whereCar, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
+  }
 
   return models.Like.findAll({
     include: [
@@ -1963,7 +1972,8 @@ router.get('/like/:id', async (req, res) => {
               attributes: ['type', 'url']
             }
           }
-        ]
+        ],
+        where: whereCar
       }
     ],
     where,
@@ -1993,7 +2003,7 @@ router.get('/like/:id', async (req, res) => {
 
 router.get('/view/:id', async (req, res) => {
   const { id } = req.params;
-  const { by } = req.query;
+  const { by, condition } = req.query;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -2025,6 +2035,15 @@ router.get('/view/:id', async (req, res) => {
       )
     }
   };
+
+  const whereCar = {};
+  if (condition) {
+    Object.assign(whereCar, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
+  }
 
   return models.View.findAll({
     include: [
@@ -2133,7 +2152,8 @@ router.get('/view/:id', async (req, res) => {
               attributes: ['type', 'url']
             }
           }
-        ]
+        ],
+        where: whereCar
       }
     ],
     where,
@@ -2606,7 +2626,12 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
 
 // router get list car by like
 router.get('/viewLike', async (req, res) => {
-  let { page, limit, sort } = req.query;
+  let { 
+    condition,
+    page, 
+    limit, 
+    sort 
+  } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -2641,6 +2666,14 @@ router.get('/viewLike', async (req, res) => {
         )`)
     ]
   };
+
+  if (condition) {
+    Object.assign(where, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
+  }
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat([
@@ -2795,7 +2828,12 @@ router.get('/viewLike', async (req, res) => {
 
 // router get list car by like(Login)
 router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), async (req, res) => {
-  let { page, limit, sort } = req.query;
+  let { 
+    condition,
+    page, 
+    limit, 
+    sort 
+  } = req.query;
   const userId = await req.user.id;
   let offset = 0;
 
@@ -2831,6 +2869,14 @@ router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), 
         )`)
     ]
   };
+
+  if (condition) {
+    Object.assign(where, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
+  }
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat([
