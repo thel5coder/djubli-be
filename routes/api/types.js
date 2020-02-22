@@ -127,22 +127,43 @@ router.get('/listingCar', async (req, res) => {
             where: whereCar,
             attributes: Object.keys(models.Car.attributes).concat([
               [
-                models.sequelize.literal('(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" AND "Bargains"."deletedAt" IS NULL )'),
+                models.sequelize.literal(
+                  `(SELECT MAX("Bargains"."bidAmount") 
+                    FROM "Bargains" 
+                    WHERE "Bargains"."carId" = "Car"."id"
+                      AND "Bargains"."deletedAt" IS NULL
+                  )`
+                ),
                 'bidAmount'
               ],
               [
-                models.sequelize.literal('(SELECT COUNT("Bargains"."id") FROM "Bargains" AND "Bargains"."deletedAt" IS NULL )'),
+                models.sequelize.literal(
+                  `(SELECT COUNT("Bargains"."id") 
+                    FROM "Bargains" 
+                    WHERE "Bargains"."carId" = "Car"."id"
+                      AND "Bargains"."deletedAt" IS NULL
+                  )`
+                ),
                 'numberOfBidder'
               ],
               [
                 models.sequelize.literal(
-                  '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+                  `(SELECT COUNT("Likes"."id") 
+                    FROM "Likes" 
+                    WHERE "Likes"."carId" = "car"."id" 
+                      AND "Likes"."status" IS TRUE 
+                      AND "Likes"."deletedAt" IS NULL
+                  )`
                 ),
                 'like'
               ],
               [
                 models.sequelize.literal(
-                  '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."deletedAt" IS NULL)'
+                  `(SELECT COUNT("Views"."id") 
+                    FROM "Views" 
+                    WHERE "Views"."carId" = "car"."id" 
+                      AND "Views"."deletedAt" IS NULL
+                  )`
                 ),
                 'view'
               ]
