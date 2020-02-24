@@ -11,6 +11,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.user;
   let { page, limit, sort } = req.query;
   let offset = 0;
 
@@ -24,7 +25,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   const where = {
-    userId: req.user.id
+    userId: id
   };
 
   return models.Purchase.findAll({
@@ -45,6 +46,18 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
                 '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
               ),
               'view'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${id} AND "Likes"."deletedAt" IS NULL)`
+              ),
+              'islike'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+              ),
+              'isBid'
             ]
           ]
         },
@@ -157,6 +170,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 });
 
 router.get('/id/:id', async (req, res) => {
+  const { userId } = req.user;
   const { id } = req.params;
 
   return models.Purchase.findOne({
@@ -177,6 +191,18 @@ router.get('/id/:id', async (req, res) => {
                 '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
               ),
               'view'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${userId} AND "Likes"."deletedAt" IS NULL)`
+              ),
+              'islike'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${userId} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+              ),
+              'isBid'
             ]
           ]
         },

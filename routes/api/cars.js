@@ -1349,7 +1349,7 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
                 `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
               ),
               'isBid'
-            ],
+            ]
           ]
         },
         include: [
