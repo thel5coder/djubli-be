@@ -631,7 +631,7 @@ router.get('/listingType', async (req, res) => {
       condition
     });
 
-    whereQuery = ` AND "Cars"."condition" = ${condition}`;
+    whereQuery += ` AND "Cars"."condition" = ${condition}`;
   }
 
   if (brandId) {
@@ -639,7 +639,7 @@ router.get('/listingType', async (req, res) => {
       brandId
     });
 
-    whereQuery = ` AND "Cars"."brandId" = ${brandId}`;
+    whereQuery += ` AND "Cars"."brandId" = ${brandId}`;
   }
 
   if (modelId) {
@@ -647,7 +647,7 @@ router.get('/listingType', async (req, res) => {
       modelId
     });
 
-    whereQuery = ` AND "Cars"."modelId" = ${modelId}`;
+    whereQuery += ` AND "Cars"."modelId" = ${modelId}`;
   }
 
   if (groupModelId) {
@@ -655,7 +655,7 @@ router.get('/listingType', async (req, res) => {
       groupModelId
     });
 
-    whereQuery = ` AND "Cars"."groupModelId" = ${groupModelId}`;
+    whereQuery += ` AND "Cars"."groupModelId" = ${groupModelId}`;
   }
 
   if (minPrice && maxPrice) {
@@ -665,7 +665,7 @@ router.get('/listingType', async (req, res) => {
       }
     });
 
-    whereQuery = ` AND ("Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`;
+    whereQuery += ` AND ("Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`;
   }
 
   const whereModelGroup = {};
@@ -674,7 +674,7 @@ router.get('/listingType', async (req, res) => {
       typeId
     });
 
-    whereQuery = ` AND (SELECT "GroupModels"."typeId" 
+    whereQuery += ` AND (SELECT "GroupModels"."typeId" 
       FROM "GroupModels" 
       WHERE "Cars"."groupModelId" = "GroupModels"."id") = ${typeId}
     `;
