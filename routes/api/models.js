@@ -142,10 +142,10 @@ router.get('/listingCar/:id', async (req, res) => {
     modelId: id
   };
 
-  const inludeWhere = {};
+  const includeWhere = {};
 
   if (year) {
-    Object.assign(inludeWhere, {
+    Object.assign(includeWhere, {
       year: {
         [Op.eq]: year
       }
@@ -171,7 +171,7 @@ router.get('/listingCar/:id', async (req, res) => {
       {
         model: models.ModelYear,
         as: 'modelYear',
-        where: inludeWhere,
+        where: includeWhere,
         include: [
           {
             model: models.Model,
@@ -254,7 +254,7 @@ router.get('/listingCar/:id', async (req, res) => {
           {
             model: models.ModelYear,
             as: 'modelYear',
-            where: inludeWhere
+            where: includeWhere
           }
         ],
         where
