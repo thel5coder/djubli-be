@@ -259,6 +259,58 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
     });
 });
 
+router.put('/bid/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+  const { bidAmount, haveSeenCar, paymentMethod } = req.body;
+
+  if (!bidAmount) {
+    return res.status(400).json({
+      success: false,
+      errors: 'bidAmount must be filled'
+    });
+  }
+
+  if (!paymentMethod) {
+    return res.status(400).json({
+      success: false,
+      errors: 'paymentMethod must be filled'
+    });
+  }
+
+  const data = await models.Bargain.findOne({
+    where: {
+      id,
+      bidType: 0,
+      negotiationType: null
+    }
+  });
+
+  if (!data) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Transaksi not found'
+    });
+  }
+
+  return data.update({
+    bidAmount,
+    haveSeenCar,
+    paymentMethod
+  })
+    .then(data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
 router.post('/negotiate', passport.authenticate('user', { session: false }), async (req, res) => {
   const {
     userId,
