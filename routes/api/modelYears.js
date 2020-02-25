@@ -370,7 +370,11 @@ router.get('/listingAll', async (req, res) => {
 
   // HARUS diatas return
   const countCar = models.sequelize.literal(
-    `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."deletedAt" IS NULL ${customQueryWhere})`
+    `(SELECT COUNT("Cars"."id") 
+      FROM "Cars" 
+      WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+        AND "Cars"."deletedAt" IS NULL ${customQueryWhere}
+    )`
   );
 
   if (by === 'like') {
@@ -382,34 +386,70 @@ router.get('/listingAll', async (req, res) => {
     
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
-      [ countCar, 'numberOfCar' ],
+      [ 
+        countCar,
+        'numberOfCar' 
+      ],
       [
         models.sequelize.literal(
-          '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))'
+          `(SELECT MAX("Cars"."price") 
+            FROM "Cars" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "Cars"."deletedAt" IS NULL 
+              AND ("Cars"."status" = 0 OR "Cars"."status" = 1)
+          )`
         ),
         'maxPrice'
       ],
       [
         models.sequelize.literal(
-          '(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Cars"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))'
+          `(SELECT MIN("Cars"."price") 
+            FROM "Cars" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "Cars"."deletedAt" IS NULL 
+              AND ("Cars"."status" = 0 OR "Cars"."status" = 1)
+          )`
         ),
         'minPrice'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Bargains"."id") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))'
+          `(SELECT COUNT("Bargains"."id") 
+            FROM "Bargains" 
+              LEFT JOIN "Cars" 
+              ON "Bargains"."carId" = "Cars"."id" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "Bargains"."deletedAt" IS NULL 
+              AND ("Cars"."status" = 0 OR "Cars"."status" = 1)
+          )`
         ),
         'numberOfBidder'
       ],
       [
         models.sequelize.literal(
-          '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))'
+          `(SELECT MAX("Bargains"."bidAmount") 
+            FROM "Bargains" 
+              LEFT JOIN "Cars" 
+              ON "Bargains"."carId" = "Cars"."id" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "Bargains"."deletedAt" IS NULL 
+              AND ("Cars"."status" = 0 OR "Cars"."status" = 1)
+          )`
         ),
         'highestBidder'
       ],
       [
         models.sequelize.literal(
-          '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1) ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+          `(SELECT "Bargains"."carId" 
+            FROM "Bargains" 
+              LEFT JOIN "Cars" 
+              ON "Bargains"."carId" = "Cars"."id" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "Bargains"."deletedAt" IS NULL 
+              AND ("Cars"."status" = 0 OR "Cars"."status" = 1) 
+            ORDER BY "Bargains"."bidAmount" DESC 
+            LIMIT 1
+          )`
         ),
         'highestBidderCarId'
       ]
@@ -450,36 +490,67 @@ router.get('/listingAll', async (req, res) => {
           include: [
             [
               models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "${modelCarName}"."id" AND "Bargains"."deletedAt" IS NULL)`
+                `(SELECT MAX("Bargains"."bidAmount") 
+                  FROM "Bargains" 
+                  WHERE "Bargains"."carId" = "${modelCarName}"."id" 
+                    AND "Bargains"."deletedAt" IS NULL
+                )`
               ),
               'bidAmount'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "${modelCarName}"."id" AND "Bargains"."deletedAt" IS NULL)`
+                `(SELECT COUNT("Bargains"."id") 
+                  FROM "Bargains" 
+                  WHERE "Bargains"."carId" = "${modelCarName}"."id" 
+                    AND "Bargains"."deletedAt" IS NULL
+                )`
               ),
               'numberOfBidder'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "${modelCarName}"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
+                `(SELECT COUNT("Likes"."id") 
+                  FROM "Likes" 
+                  WHERE "Likes"."carId" = "${modelCarName}"."id" 
+                    AND "Likes"."status" IS TRUE 
+                    AND "Likes"."deletedAt" IS NULL
+                )`
               ),
               'like'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "${modelCarName}"."id" AND "Views"."deletedAt" IS NULL)`
+                `(SELECT COUNT("Views"."id") 
+                  FROM "Views" 
+                  WHERE "Views"."carId" = "${modelCarName}"."id" 
+                    AND "Views"."deletedAt" IS NULL
+                )`
               ),
               'view'
             ],
             [
               models.sequelize.literal(
-                `(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "${modelCarName}"."groupModelId" AND "GroupModels"."deletedAt" IS NULL)`
+                `(SELECT "GroupModels"."typeId" 
+                  FROM "GroupModels" 
+                  WHERE "GroupModels"."id" = "${modelCarName}"."groupModelId" 
+                    AND "GroupModels"."deletedAt" IS NULL
+                )`
               ),
               'groupModelTypeId'
             ],
-            [models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 1))`), 'latitude'],
-            [models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 2))`), 'longitude']
+            [
+              models.sequelize.literal(
+                `(SELECT split_part("${modelCarName}"."location", ',', 1))`
+              ),
+              'latitude'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT split_part("${modelCarName}"."location", ',', 2))`
+              ),
+              'longitude'
+            ]
           ]
         },
         include: [
@@ -792,30 +863,57 @@ router.get('/listingType', async (req, res) => {
           include: [
             [
               models.sequelize.literal(
-                '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+                `(SELECT MAX("Bargains"."bidAmount") 
+                  FROM "Bargains" 
+                  WHERE "Bargains"."carId" = "car"."id" 
+                    AND "Bargains"."deletedAt" IS NULL
+                )`
               ),
               'bidAmount'
             ],
             [
               models.sequelize.literal(
-                '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+                `(SELECT COUNT("Bargains"."id") 
+                  FROM "Bargains" 
+                  WHERE "Bargains"."carId" = "car"."id" 
+                    AND "Bargains"."deletedAt" IS NULL
+                )`
               ),
               'numberOfBidder'
             ],
             [
                models.sequelize.literal(
-                '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+                `(SELECT COUNT("Likes"."id") 
+                  FROM "Likes" 
+                  WHERE "Likes"."carId" = "car"."id" \
+                    AND "Likes"."status" IS TRUE 
+                    AND "Likes"."deletedAt" IS NULL
+                )`
               ),
               'like'
             ],
             [
               models.sequelize.literal(
-                '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)'
+                `(SELECT COUNT("Views"."id") 
+                  FROM "Views" \
+                  WHERE "Views"."carId" = "car"."id" 
+                    AND "Views"."deletedAt" IS NULL
+                )`
               ),
               'view'
             ],
-            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`), 'latitude'],
-            [models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`), 'longitude']
+            [
+              models.sequelize.literal(
+                `(SELECT split_part("car"."location", ',', 1))`
+              ),
+              'latitude'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT split_part("car"."location", ',', 2))`
+              ),
+              'longitude'
+            ]
           ]
         },
         include: [
@@ -1146,25 +1244,42 @@ router.get('/listingCar/:id', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+          `(SELECT COUNT("Likes"."id") 
+            FROM "Likes" 
+            WHERE "Likes"."carId" = "Car"."id" 
+              AND "Likes"."status" IS TRUE 
+              AND "Likes"."deletedAt" IS NULL
+          )`
         ),
         'like'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+          `(SELECT COUNT("Views"."id") 
+            FROM "Views" 
+            WHERE "Views"."carId" = "Car"."id" 
+              AND "Views"."deletedAt" IS NULL
+          )`
         ),
         'view'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+          `(SELECT COUNT("Bargains"."id") 
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "Car"."id" 
+              AND "Bargains"."deletedAt" IS NULL
+          )`
         ),
         'numberOfBidder'
       ],
       [
         models.sequelize.literal(
-          '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+          `(SELECT MAX("Bargains"."bidAmount") 
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "Car"."id" 
+              AND "Bargains"."deletedAt" IS NULL
+          )`
         ),
         'highestBidder'
       ]
@@ -1336,37 +1451,66 @@ router.get(
       attributes: Object.keys(models.Car.attributes).concat([
         [
           models.sequelize.literal(
-            `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${userId} AND "Likes"."deletedAt" IS NULL)`
+            `(SELECT COUNT("Likes"."id") 
+              FROM "Likes" 
+              WHERE "Likes"."carId" = "Car"."id" 
+                AND "Likes"."status" IS TRUE 
+                AND "Likes"."userId" = ${userId} 
+                AND "Likes"."deletedAt" IS NULL
+            )`
           ),
           'islike'
         ],
         [
           models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${userId} AND "Bargains"."carId" = "Car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+            `(SELECT COUNT("Bargains"."id") 
+              FROM "Bargains" 
+              WHERE "Bargains"."userId" = ${userId} 
+                AND "Bargains"."carId" = "Car"."id" 
+                AND "Bargains"."expiredAt" >= (SELECT NOW()) 
+                AND "Bargains"."deletedAt" IS NULL
+            )`
           ),
           'isBid'
         ],
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+            `(SELECT COUNT("Likes"."id") 
+              FROM "Likes" 
+              WHERE "Likes"."carId" = "Car"."id" 
+                AND "Likes"."status" IS TRUE 
+                AND "Likes"."deletedAt" IS NULL
+            )`
           ),
           'like'
         ],
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+            `(SELECT COUNT("Views"."id") 
+              FROM "Views" 
+              WHERE "Views"."carId" = "Car"."id" 
+                AND "Views"."deletedAt" IS NULL
+            )`
           ),
           'view'
         ],
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+            `(SELECT COUNT("Bargains"."id") 
+              FROM "Bargains" 
+              WHERE "Bargains"."carId" = "Car"."id" 
+                AND "Bargains"."deletedAt" IS NULL
+            )`
           ),
           'numberOfBidder'
         ],
         [
           models.sequelize.literal(
-            '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL)'
+            `(SELECT MAX("Bargains"."bidAmount") 
+              FROM "Bargains" 
+              WHERE "Bargains"."carId" = "Car"."id" 
+                AND "Bargains"."deletedAt" IS NULL
+            )`
           ),
           'highestBidder'
         ]
@@ -1522,7 +1666,15 @@ router.get('/luxuryCar', async (req, res) => {
   Object.assign(whereInclude, {
     id: {
       [Op.eq]: models.sequelize.literal(
-        '(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)'
+        `(SELECT "Bargains"."carId" 
+          FROM "Bargains" 
+          LEFT JOIN "Cars" 
+            ON "Bargains"."carId" = "Cars"."id" 
+          WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+            AND "Bargains"."deletedAt" IS NULL 
+          ORDER BY "Bargains"."bidAmount" DESC 
+          LIMIT 1
+        )`
       )
     }
   });
@@ -1531,31 +1683,66 @@ router.get('/luxuryCar', async (req, res) => {
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Bargains"."deletedAt" IS NULL)`
+          `(SELECT COUNT("Bargains"."id") 
+            FROM "Bargains" 
+            LEFT JOIN "Cars" 
+              ON "Bargains"."carId" = "Cars"."id" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "ModelYear"."price" >= ${minPrice} 
+              AND "ModelYear"."price" <= ${maxPrice} 
+              AND "Bargains"."deletedAt" IS NULL
+          )`
         ),
         'numberOfBidder'
       ],
       [
         models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Bargains"."deletedAt" IS NULL)`
+          `(SELECT MAX("Bargains"."bidAmount") 
+            FROM "Bargains" 
+            LEFT JOIN "Cars" 
+              ON "Bargains"."carId" = "Cars"."id" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "ModelYear"."price" >= ${minPrice} 
+              AND "ModelYear"."price" <= ${maxPrice} 
+              AND "Bargains"."deletedAt" IS NULL\
+          )`
         ),
         'highestBidder'
       ],
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL AND ("Cars"."status" = 0 OR "Cars"."status" = 1))`
+          `(SELECT COUNT("Cars"."id") 
+            FROM "Cars" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "ModelYear"."price" >= ${minPrice} 
+              AND "ModelYear"."price" <= ${maxPrice} 
+              AND "Cars"."deletedAt" IS NULL 
+              AND ("Cars"."status" = 0 OR "Cars"."status" = 1)
+          )`
         ),
         'numberOfCar'
       ],
       [
         models.sequelize.literal(
-          `(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
+          `(SELECT MAX("Cars"."price") 
+            FROM "Cars" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "ModelYear"."price" >= ${minPrice} 
+              AND "ModelYear"."price" <= ${maxPrice} 
+              AND "Cars"."deletedAt" IS NULL
+          )`
         ),
         'maxPrice'
       ],
       [
         models.sequelize.literal(
-          `(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice} AND "Cars"."deletedAt" IS NULL)`
+          `(SELECT MIN("Cars"."price") 
+            FROM "Cars" 
+            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+              AND "ModelYear"."price" >= ${minPrice} 
+              AND "ModelYear"."price" <= ${maxPrice} 
+              AND "Cars"."deletedAt" IS NULL
+          )`
         ),
         'minPrice'
       ]
@@ -1594,25 +1781,42 @@ router.get('/luxuryCar', async (req, res) => {
         attributes: Object.keys(models.Car.attributes).concat([
           [
             models.sequelize.literal(
-              '(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+              `SELECT MAX("Bargains"."bidAmount") 
+                FROM "Bargains" 
+                WHERE "Bargains"."carId" = "car"."id" 
+                  AND "Bargains"."deletedAt" IS NULL
+              )`
             ),
             'bidAmount'
           ],
           [
             models.sequelize.literal(
-              '(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL)'
+              `SELECT COUNT("Bargains"."id") 
+                FROM "Bargains" 
+                WHERE "Bargains"."carId" = "car"."id" 
+                  AND "Bargains"."deletedAt" IS NULL
+              )`
             ),
             'numberOfBidder'
           ],
           [
             models.sequelize.literal(
-              '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+              `SELECT COUNT("Likes"."id") 
+                FROM "Likes" 
+                WHERE "Likes"."carId" = "car"."id" 
+                  AND "Likes"."status" IS TRUE 
+                  AND "Likes"."deletedAt" IS NULL
+              )`
             ),
             'like'
           ],
           [
             models.sequelize.literal(
-              '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL AND "Views"."deletedAt" IS NULL)'
+              `SELECT COUNT("Views"."id") 
+                FROM "Views" 
+                WHERE "Views"."carId" = "car"."id" 
+                  AND "Views"."deletedAt" IS NULL
+              )`
             ),
             'view'
           ]
