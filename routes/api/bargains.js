@@ -260,7 +260,8 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
 });
 
 router.put('/bid/:id', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { id } = req.params;
+  const carId = req.params.id;
+  const userId = req.user.id;
   const { bidAmount, haveSeenCar, paymentMethod } = req.body;
 
   if (!bidAmount) {
@@ -279,7 +280,8 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
 
   const data = await models.Bargain.findOne({
     where: {
-      id,
+      carId,
+      userId,
       bidType: 0,
       negotiationType: null
     }
