@@ -80,19 +80,31 @@ router.get('/listingAll', async (req, res) => {
     attributes: Object.keys(models.GroupModel.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."groupModelId" = "GroupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+          `(SELECT MAX("Cars"."price") 
+            FROM "Cars" 
+            WHERE "Cars"."groupModelId" = "GroupModel"."id" 
+              AND "Cars"."deletedAt" IS NULL
+          )`
         ),
         'maxPrice'
       ],
       [
         models.sequelize.literal(
-          '(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."groupModelId" = "GroupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+          `(SELECT MIN("Cars"."price") 
+            FROM "Cars" 
+            WHERE "Cars"."groupModelId" = "GroupModel"."id" 
+              AND "Cars"."deletedAt" IS NULL
+          )`
         ),
         'minPrice'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."groupModelId" = "GroupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+          `(SELECT COUNT("Cars"."id") 
+            FROM "Cars" 
+            WHERE "Cars"."groupModelId" = "GroupModel"."id" 
+              AND "Cars"."deletedAt" IS NULL
+          )`
         ),
         'numberOfCar'
       ]
@@ -154,13 +166,22 @@ router.get('/listingCar/:id', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+          `(SELECT COUNT("Likes"."id") 
+            FROM "Likes" 
+            WHERE "Likes"."carId" = "Car"."id" 
+              AND "Likes"."status" IS TRUE 
+              AND "Likes"."deletedAt" IS NULL
+          )`
         ),
         'like'
       ],
       [
         models.sequelize.literal(
-          '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+          `(SELECT COUNT("Views"."id") 
+            FROM "Views" 
+            WHERE "Views"."carId" = "Car"."id" 
+              AND "Views"."deletedAt" IS NULL
+          )`
         ),
         'view'
       ]

@@ -100,19 +100,31 @@ router.get('/listingCar', async (req, res) => {
         attributes: Object.keys(models.GroupModel.attributes).concat([
           [
             models.sequelize.literal(
-              '(SELECT MAX("Cars"."price") FROM "Cars" WHERE "Cars"."groupModelId" = "groupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+              `(SELECT MAX("Cars"."price") 
+                FROM "Cars" 
+                WHERE "Cars"."groupModelId" = "groupModel"."id" 
+                  AND "Cars"."deletedAt" IS NULL
+              )`
             ),
             'maxPrice'
           ],
           [
             models.sequelize.literal(
-              '(SELECT MIN("Cars"."price") FROM "Cars" WHERE "Cars"."groupModelId" = "groupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+              `(SELECT MIN("Cars"."price") 
+                FROM "Cars" 
+                WHERE "Cars"."groupModelId" = "groupModel"."id" 
+                  AND "Cars"."deletedAt" IS NULL
+              )`
             ),
             'minPrice'
           ],
           [
             models.sequelize.literal(
-              '(SELECT COUNT("Cars"."id") FROM "Cars" WHERE "Cars"."groupModelId" = "groupModel"."id" AND "Cars"."deletedAt" IS NULL)'
+              `(SELECT COUNT("Cars"."id") 
+                FROM "Cars" 
+                WHERE "Cars"."groupModelId" = "groupModel"."id" 
+                  AND "Cars"."deletedAt" IS NULL\
+              )`
             ),
             'numberOfCar'
           ]
