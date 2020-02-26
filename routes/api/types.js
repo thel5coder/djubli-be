@@ -123,7 +123,7 @@ router.get('/listingCar', async (req, res) => {
               `(SELECT COUNT("Cars"."id") 
                 FROM "Cars" 
                 WHERE "Cars"."groupModelId" = "groupModel"."id" 
-                  AND "Cars"."deletedAt" IS NULL\
+                  AND "Cars"."deletedAt" IS NULL
               )`
             ),
             'numberOfCar'
