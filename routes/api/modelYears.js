@@ -1783,7 +1783,7 @@ router.get('/luxuryCar', async (req, res) => {
         attributes: Object.keys(models.Car.attributes).concat([
           [
             models.sequelize.literal(
-              `SELECT MAX("Bargains"."bidAmount") 
+              `(SELECT MAX("Bargains"."bidAmount") 
                 FROM "Bargains" 
                 WHERE "Bargains"."carId" = "car"."id" 
                   AND "Bargains"."deletedAt" IS NULL
@@ -1793,7 +1793,7 @@ router.get('/luxuryCar', async (req, res) => {
           ],
           [
             models.sequelize.literal(
-              `SELECT COUNT("Bargains"."id") 
+              `(SELECT COUNT("Bargains"."id") 
                 FROM "Bargains" 
                 WHERE "Bargains"."carId" = "car"."id" 
                   AND "Bargains"."deletedAt" IS NULL
@@ -1803,7 +1803,7 @@ router.get('/luxuryCar', async (req, res) => {
           ],
           [
             models.sequelize.literal(
-              `SELECT COUNT("Likes"."id") 
+              `(SELECT COUNT("Likes"."id") 
                 FROM "Likes" 
                 WHERE "Likes"."carId" = "car"."id" 
                   AND "Likes"."status" IS TRUE 
@@ -1814,7 +1814,7 @@ router.get('/luxuryCar', async (req, res) => {
           ],
           [
             models.sequelize.literal(
-              `SELECT COUNT("Views"."id") 
+              `(SELECT COUNT("Views"."id") 
                 FROM "Views" 
                 WHERE "Views"."carId" = "car"."id" 
                   AND "Views"."deletedAt" IS NULL
