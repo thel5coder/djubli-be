@@ -589,13 +589,22 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
       include: [
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+            `(SELECT COUNT("Likes"."id") 
+              FROM "Likes" 
+              WHERE "Likes"."carId" = "Car"."id" 
+                AND "Likes"."status" IS TRUE 
+                AND "Likes"."deletedAt" IS NULL
+            )`
           ),
           'like'
         ],
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+            `(SELECT COUNT("Views"."id") 
+              FROM "Views" 
+              WHERE "Views"."carId" = "Car"."id" 
+                AND "Views"."deletedAt" IS NULL
+            )`
           ),
           'view'
         ]
@@ -878,13 +887,22 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
       include: [
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)'
+            `(SELECT COUNT("Likes"."id") 
+              FROM "Likes" 
+              WHERE "Likes"."carId" = "Car"."id" 
+                AND "Likes"."status" IS TRUE 
+                AND "Likes"."deletedAt" IS NULL
+            )`
           ),
           'like'
         ],
         [
           models.sequelize.literal(
-            '(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)'
+            `(SELECT COUNT("Views"."id") 
+              FROM "Views" 
+              WHERE "Views"."carId" = "Car"."id" 
+                AND "Views"."deletedAt" IS NULL
+            )`
           ),
           'view'
         ]

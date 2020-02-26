@@ -1644,16 +1644,20 @@ router.get('/luxuryCar', async (req, res) => {
   else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
 
   const where = {};
+  let whereQuery = '';
 
   const whereInclude = {
     [Op.or]: [{ status: 0 }, { status: 1 }]
   };
+
   if (minPrice && maxPrice) {
     Object.assign(where, {
       price: {
         [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
       }
     });
+
+    whereQuery += ` AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice}`;
   }
 
   if (condition) {
@@ -1662,6 +1666,8 @@ router.get('/luxuryCar', async (req, res) => {
         [Op.eq]: condition
       }
     });
+
+    whereQuery += ` AND "Cars"."condition" = ${condition}`;
   }
 
   Object.assign(whereInclude, {
@@ -1689,8 +1695,7 @@ router.get('/luxuryCar', async (req, res) => {
             LEFT JOIN "Cars" 
               ON "Bargains"."carId" = "Cars"."id" 
             WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "ModelYear"."price" >= ${minPrice} 
-              AND "ModelYear"."price" <= ${maxPrice} 
+              ${whereQuery}
               AND "Bargains"."deletedAt" IS NULL
           )`
         ),
@@ -1703,8 +1708,7 @@ router.get('/luxuryCar', async (req, res) => {
             LEFT JOIN "Cars" 
               ON "Bargains"."carId" = "Cars"."id" 
             WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "ModelYear"."price" >= ${minPrice} 
-              AND "ModelYear"."price" <= ${maxPrice} 
+              ${whereQuery} 
               AND "Bargains"."deletedAt" IS NULL
           )`
         ),
@@ -1715,8 +1719,7 @@ router.get('/luxuryCar', async (req, res) => {
           `(SELECT COUNT("Cars"."id") 
             FROM "Cars" 
             WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "ModelYear"."price" >= ${minPrice} 
-              AND "ModelYear"."price" <= ${maxPrice} 
+              ${whereQuery}
               AND "Cars"."deletedAt" IS NULL 
               AND ("Cars"."status" = 0 OR "Cars"."status" = 1)
           )`
@@ -1728,8 +1731,7 @@ router.get('/luxuryCar', async (req, res) => {
           `(SELECT MAX("Cars"."price") 
             FROM "Cars" 
             WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "ModelYear"."price" >= ${minPrice} 
-              AND "ModelYear"."price" <= ${maxPrice} 
+              ${whereQuery} 
               AND "Cars"."deletedAt" IS NULL
           )`
         ),
@@ -1740,8 +1742,7 @@ router.get('/luxuryCar', async (req, res) => {
           `(SELECT MIN("Cars"."price") 
             FROM "Cars" 
             WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "ModelYear"."price" >= ${minPrice} 
-              AND "ModelYear"."price" <= ${maxPrice} 
+              ${whereQuery} 
               AND "Cars"."deletedAt" IS NULL
           )`
         ),
