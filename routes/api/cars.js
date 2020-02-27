@@ -408,6 +408,7 @@ router.get('/user/:id', async (req, res) => {
               AND "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."expiredAt" >= (SELECT NOW()) 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'isBid'
@@ -439,6 +440,7 @@ router.get('/user/:id', async (req, res) => {
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'numberOfBidder'
@@ -449,6 +451,7 @@ router.get('/user/:id', async (req, res) => {
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'highestBidder'
@@ -1376,6 +1379,7 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
                   FROM "Bargains" 
                   WHERE "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'highestBidder'
@@ -1386,6 +1390,7 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
                   FROM "Bargains" 
                   WHERE "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'numberOfBidder'
@@ -1431,6 +1436,7 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
                     AND "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."expiredAt" >= (SELECT NOW()) 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'isBid'
@@ -1667,6 +1673,7 @@ router.get(
               FROM "Bargains" 
               WHERE "Bargains"."carId" = "Car"."id" 
                 AND "Bargains"."deletedAt" IS NULL
+                AND "Bargains"."bidType" = 0
             )`
           ),
           'numberOfBidder'
@@ -1712,6 +1719,7 @@ router.get(
                 AND "Bargains"."carId" = "Car"."id" 
                 AND "Bargains"."expiredAt" >= (SELECT NOW()) 
                 AND "Bargains"."deletedAt" IS NULL
+                AND "Bargains"."bidType" = 0
             )`
           ),
           'isBid'
@@ -1900,6 +1908,7 @@ router.get('/id/:id', async (req, res) => {
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
             AND "Bargains"."deletedAt" IS NULL
+            AND "Bargains"."bidType" = 0
         )`
       ),
       'numberOfBidder'
@@ -1910,6 +1919,7 @@ router.get('/id/:id', async (req, res) => {
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
             AND "Bargains"."deletedAt" IS NULL
+            AND "Bargains"."bidType" = 0
         )`
       ),
       'highestBidder'
@@ -1938,6 +1948,7 @@ router.get('/id/:id', async (req, res) => {
               AND "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."expiredAt" >= (SELECT NOW()) 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'isBid'
@@ -2095,6 +2106,7 @@ router.get('/like/:id', async (req, res) => {
                     AND "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."expiredAt" >= (SELECT NOW()) 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'isBid'
@@ -2126,6 +2138,7 @@ router.get('/like/:id', async (req, res) => {
                   FROM "Bargains" 
                   WHERE "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'numberOfBidder'
@@ -2136,6 +2149,7 @@ router.get('/like/:id', async (req, res) => {
                   FROM "Bargains" 
                   WHERE "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'highestBidder'
@@ -2304,6 +2318,7 @@ router.get('/view/:id', async (req, res) => {
                     AND "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."expiredAt" >= (SELECT NOW()) 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'isBid'
@@ -2335,6 +2350,7 @@ router.get('/view/:id', async (req, res) => {
                   FROM "Bargains" 
                   WHERE "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'numberOfBidder'
@@ -2345,6 +2361,7 @@ router.get('/view/:id', async (req, res) => {
                   FROM "Bargains" 
                   WHERE "Bargains"."carId" = "car"."id" 
                     AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
                 )`
               ),
               'highestBidder'
@@ -2987,6 +3004,7 @@ router.get('/viewLike', async (req, res) => {
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'highestBidder'
@@ -2997,6 +3015,7 @@ router.get('/viewLike', async (req, res) => {
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'numberOfBidder'
@@ -3190,6 +3209,7 @@ router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), 
               AND "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."expiredAt" >= (SELECT NOW()) 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'isBid'
@@ -3241,6 +3261,7 @@ router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'highestBidder'
@@ -3251,6 +3272,7 @@ router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
           )`
         ),
         'numberOfBidder'

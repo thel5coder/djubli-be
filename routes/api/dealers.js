@@ -536,6 +536,7 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
                                         FROM "Bargains" 
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
                                     )`
                                 ),
                                 'bidAmount'
@@ -546,6 +547,7 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
                                         FROM "Bargains" 
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
                                     )`
                                 ),
                                 'numberOfBidder'
@@ -740,6 +742,7 @@ router.get('/car/sellList/:id', async (req, res) => {
                                         FROM "Bargains" 
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
                                     )`
                                 ),
                                 'bidAmount'
@@ -750,6 +753,7 @@ router.get('/car/sellList/:id', async (req, res) => {
                                         FROM "Bargains" 
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
                                     )`
                                 ),
                                 'numberOfBidder'
@@ -760,6 +764,7 @@ router.get('/car/sellList/:id', async (req, res) => {
                                         FROM "Bargains" 
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
                                     )`
                                 ),
                                 'highestBidder'
@@ -985,6 +990,7 @@ router.get('/car/bidList/:id', async (req, res) => {
                                         FROM "Bargains" 
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
                                     )`
                                 ),
                                 'bidAmount'
@@ -995,6 +1001,7 @@ router.get('/car/bidList/:id', async (req, res) => {
                                         FROM "Bargains" 
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
                                     )`
                                 ),
                                 'numberOfBidder'

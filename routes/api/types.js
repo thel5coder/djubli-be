@@ -144,6 +144,7 @@ router.get('/listingCar', async (req, res) => {
                     FROM "Bargains" 
                     WHERE "Bargains"."carId" = "Car"."id"
                       AND "Bargains"."deletedAt" IS NULL
+                      AND "Bargains"."bidType" = 0
                   )`
                 ),
                 'bidAmount'
@@ -154,6 +155,7 @@ router.get('/listingCar', async (req, res) => {
                     FROM "Bargains" 
                     WHERE "Bargains"."carId" = "Car"."id"
                       AND "Bargains"."deletedAt" IS NULL
+                      AND "Bargains"."bidType" = 0
                   )`
                 ),
                 'numberOfBidder'
