@@ -79,7 +79,7 @@ router.post('/', async (req, res) => {
   if (images) {
     const result = {};
     const tname = randomize('0', 4);
-    result.name = `djublee/images/clientCompany/${tname}${moment().format('x')}${unescape(
+    result.name = `djublee/images/file/${tname}${moment().format('x')}${unescape(
       images[0].originalname
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
@@ -129,7 +129,7 @@ router.put('/id/:id', async (req, res) => {
   if (images) {
     const result = {};
     const tname = randomize('0', 4);
-    result.name = `djublee/images/clientCompany/${tname}${moment().format('x')}${unescape(
+    result.name = `djublee/images/file/${tname}${moment().format('x')}${unescape(
       images[0].originalname
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;

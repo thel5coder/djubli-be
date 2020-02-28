@@ -226,12 +226,24 @@ router.get('/', async (req, res) => {
       {
         model: models.InteriorGalery,
         as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file'
+          }
+        ]
       },
       {
         model: models.ExteriorGalery,
         as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId']
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file'
+          }
+        ]
       }
     ],
     where,
@@ -2525,7 +2537,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   if (images) {
     const result = {};
     const tname = randomize('0', 4);
-    result.name = `djublee/images/clientCompany/${tname}${moment().format('x')}${unescape(
+    result.name = `djublee/images/car/${tname}${moment().format('x')}${unescape(
       images[0].originalname
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
