@@ -1536,7 +1536,7 @@ router.get(
           models.sequelize.literal(
             `(SELECT MAX("Bargains"."bidAmount") 
               FROM "Bargains" 
-              WHERE "Bargains"."carId" = "car"."id" 
+              WHERE "Bargains"."carId" = "Car"."id" 
                 AND "Bargains"."deletedAt" IS NULL
                 AND "Bargains"."bidType" = 0
                 AND "Bargains"."userId" = ${userId}

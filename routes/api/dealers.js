@@ -743,6 +743,7 @@ router.get('/car/sellList/:id', async (req, res) => {
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
                                             AND "Bargains"."bidType" = 0
+                                            AND "Bargains"."userId" = ${userId}
                                     )`
                                 ),
                                 'bidAmount'
@@ -991,6 +992,7 @@ router.get('/car/bidList/:id', async (req, res) => {
                                         WHERE "Bargains"."carId" = "Car"."id" 
                                             AND "Bargains"."deletedAt" IS NULL
                                             AND "Bargains"."bidType" = 0
+                                            AND "Bargains"."userId" = ${userId}
                                     )`
                                 ),
                                 'bidAmount'
@@ -1005,6 +1007,17 @@ router.get('/car/bidList/:id', async (req, res) => {
                                     )`
                                 ),
                                 'numberOfBidder'
+                            ],
+                            [
+                                models.sequelize.literal(
+                                    `(SELECT MAX("Bargains"."bidAmount") 
+                                        FROM "Bargains" 
+                                        WHERE "Bargains"."carId" = "Car"."id" 
+                                            AND "Bargains"."deletedAt" IS NULL
+                                            AND "Bargains"."bidType" = 0
+                                    )`
+                                ),
+                                'highestBidder'
                             ],
                             [
                                 models.sequelize.literal(
