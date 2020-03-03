@@ -2165,6 +2165,18 @@ router.get('/like/:id', async (req, res) => {
                 )`
               ),
               'highestBidder'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT MAX("Bargains"."bidAmount") 
+                  FROM "Bargains" 
+                  WHERE "Bargains"."carId" = "car"."id" 
+                    AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
+                    AND "Bargains"."userId" = ${id}
+                )`
+              ),
+              'bidAmount'
             ]
           ],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
@@ -2377,6 +2389,18 @@ router.get('/view/:id', async (req, res) => {
                 )`
               ),
               'highestBidder'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT MAX("Bargains"."bidAmount") 
+                  FROM "Bargains" 
+                  WHERE "Bargains"."carId" = "car"."id" 
+                    AND "Bargains"."deletedAt" IS NULL
+                    AND "Bargains"."bidType" = 0
+                    AND "Bargains"."userId" = ${id}
+                )`
+              ),
+              'bidAmount'
             ]
           ],
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
@@ -3288,6 +3312,18 @@ router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), 
           )`
         ),
         'numberOfBidder'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT MAX("Bargains"."bidAmount") 
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "Car"."id" 
+              AND "Bargains"."deletedAt" IS NULL
+              AND "Bargains"."bidType" = 0
+              AND "Bargains"."userId" = ${userId}
+          )`
+        ),
+        'bidAmount'
       ]
     ]),
     include: [

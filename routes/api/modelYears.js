@@ -1531,6 +1531,18 @@ router.get(
             )`
           ),
           'highestBidder'
+        ],
+        [
+          models.sequelize.literal(
+            `(SELECT MAX("Bargains"."bidAmount") 
+              FROM "Bargains" 
+              WHERE "Bargains"."carId" = "car"."id" 
+                AND "Bargains"."deletedAt" IS NULL
+                AND "Bargains"."bidType" = 0
+                AND "Bargains"."userId" = ${userId}
+            )`
+          ),
+          'bidAmount'
         ]
       ]),
       include: [
