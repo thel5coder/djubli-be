@@ -8,7 +8,7 @@ const { Op } = Sequelize;
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-async function carsGet(req, res) {
+async function carsGet(req, res, auth = false) {
   const {
     groupModelId,
     modelId,
@@ -171,30 +171,62 @@ async function carsGet(req, res) {
     });
   }
 
-  return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat([
+  const customFields = [
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Likes"."id") 
+          FROM "Likes" 
+          WHERE "Likes"."carId" = "Car"."id" 
+            AND "Likes"."status" IS TRUE 
+            AND "Likes"."deletedAt" IS NULL
+        )`
+      ),
+      'like'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Views"."id") 
+          FROM "Views" 
+          WHERE "Views"."carId" = "Car"."id" 
+            AND "Views"."deletedAt" IS NULL
+        )`
+      ),
+      'view'
+    ]
+  ];
+  if (auth) {
+    const userId = req.user.id;
+    customFields.push(
       [
         models.sequelize.literal(
           `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
+        FROM "Likes" 
+        WHERE "Likes"."carId" = "Car"."id" 
+          AND "Likes"."status" IS TRUE 
+          AND "Likes"."userId" = ${userId} 
+          AND "Likes"."deletedAt" IS NULL
+      )`
         ),
-        'like'
+        'islike'
       ],
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Views"."id") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
+          `(SELECT COUNT("Bargains"."id") 
+        FROM "Bargains" 
+        WHERE "Bargains"."userId" = ${userId} 
+          AND "Bargains"."carId" = "Car"."id" 
+          AND "Bargains"."expiredAt" >= (SELECT NOW()) 
+          AND "Bargains"."deletedAt" IS NULL
+          AND "Bargains"."bidType" = 0
+      )`
         ),
-        'view'
+        'isBid'
       ]
-    ]),
+    );
+  }
+
+  return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat(customFields),
     include: [
       {
         model: models.ModelYear,
