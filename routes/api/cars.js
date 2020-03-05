@@ -22,7 +22,7 @@ router.get('/', async (req, res) => {
 });
 
 router.get('/logon', passport.authenticate('user', { session: false }), async (req, res) => {
-  return carsController.carsGet(req, res);
+  return carsController.carsGet(req, res, true);
 });
 
 router.get('/user/:id', async (req, res) => {
