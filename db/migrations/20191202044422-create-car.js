@@ -32,7 +32,8 @@ module.exports = {
         type: Sequelize.NUMERIC
       },
       condition: {
-        type: Sequelize.INTEGER
+        type: Sequelize.INTEGER,
+        comment: '0 => bekas, 1 => baru'
       },
       usedFrom: {
         type: Sequelize.INTEGER
