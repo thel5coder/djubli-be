@@ -192,6 +192,28 @@ async function carsGet(req, res, auth = false) {
         )`
       ),
       'view'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT MAX("Bargains"."bidAmount") 
+        FROM "Bargains" 
+        WHERE "Bargains"."carId" = "Car"."id" 
+          AND "Bargains"."deletedAt" IS NULL
+          AND "Bargains"."bidType" = 0
+      )`
+      ),
+      'highestBidder'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Bargains"."id") 
+        FROM "Bargains" 
+        WHERE "Bargains"."carId" = "Car"."id" 
+          AND "Bargains"."deletedAt" IS NULL
+          AND "Bargains"."bidType" = 0
+      )`
+      ),
+      'numberOfBidder'
     ]
   ];
   if (auth) {
