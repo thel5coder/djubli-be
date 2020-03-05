@@ -4,3 +4,9 @@ node_modules
 package-lock.json
 config/keys_dev.js
 config/database.json
+note.log
+
+.env.djublee
+.env.example
+.env.production
+.env.development
