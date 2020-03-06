@@ -243,6 +243,18 @@ async function carsGet(req, res, auth = false) {
       )`
         ),
         'isBid'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT MAX("Bargains"."bidAmount") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "Car"."id" 
+            AND "Bargains"."deletedAt" IS NULL
+            AND "Bargains"."bidType" = 0
+            AND "Bargains"."userId" = ${userId}
+        )`
+        ),
+        'bidAmount'
       ]
     );
   }
@@ -259,7 +271,7 @@ async function carsGet(req, res, auth = false) {
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       },
       {
         model: models.Brand,
