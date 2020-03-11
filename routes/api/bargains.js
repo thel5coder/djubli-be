@@ -13,7 +13,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  let { page, limit, sort } = req.query;
+  let { page, limit, sort, by } = req.query;
   const { userId, carId, bidType, negotiationType, expiredAt } = req.query;
   let offset = 0;
 
@@ -22,10 +22,27 @@ router.get('/', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
-  if (!sort) sort = 'asc';
-  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+  if (!by) by = 'createdAt';
+  const array = [
+    'id',
+    'userId',
+    'carId',
+    'bidAmount',
+    'haveSeenCar',
+    'paymentMethod',
+    'expiredAt',
+    'comment',
+    'bidType',
+    'negotiationType',
+    'createdAt',
+    'updatedAt'
+  ];
+  if (array.indexOf(by) < 0) by = 'id';
 
+  if (sort !== 'desc') sort = 'asc';
+  else sort = 'desc';
+
+  const order = [[by, sort]];
   const where = {};
 
   if (carId) {
@@ -208,7 +225,7 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
     }
   });
 
-  if(checkIsBid.length) {
+  if (checkIsBid.length) {
     return res.status(400).json({
       success: false,
       errors: 'You have bid this car'
@@ -294,11 +311,12 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
     });
   }
 
-  return data.update({
-    bidAmount,
-    haveSeenCar,
-    paymentMethod
-  })
+  return data
+    .update({
+      bidAmount,
+      haveSeenCar,
+      paymentMethod
+    })
     .then(data => {
       res.json({
         success: true,

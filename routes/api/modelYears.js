@@ -319,7 +319,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND ("Cars"."price" >= ${minPrice} AND "Cars"."km" <= ${maxPrice})`
+    whereQuery += ` AND ("Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`
   }
 
   if (by === 'highestBidder') {
