@@ -361,6 +361,156 @@ async function carsGet(req, res, auth = false) {
     });
 }
 
+async function getCategory(req, res) {
+  let { page, limit, by, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'id';
+  const array = ['id', 'name', 'desctiption', 'createdAt'];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [[Sequelize.col(by), sort]];
+  const where = {};
+
+  return models.CarCategory.findAll({
+    attributes: {
+      exclude: ['deletedAt']
+    },
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.CarCategory.count({
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
+async function editCategory(req, res) {
+  const { id } = req.params;
+  const { name, description } = req.body;
+  const update = {};
+
+  if (name) Object.assign(update, { name });
+  if (description) Object.assign(update, { description });
+
+  const categoryExists = await models.CarCategory.findByPk(id);
+  if (!categoryExists)
+    return res.status(404).json({ success: false, errors: 'category not found' });
+
+  if (Object.keys(update).length < 1)
+    return res.status(422).json({ success: false, errors: 'invalid parameter' });
+
+  // return res.json({
+  //   success: true,
+  //   data: { message: 'parameter oke', update }
+  // });
+  return categoryExists
+    .update(update)
+    .then(async data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
+async function getCategoryById(req, res) {
+  const { id } = req.params;
+
+  const categoryExists = await models.CarCategory.findByPk(id);
+  if (!categoryExists)
+    return res.status(404).json({ success: false, errors: 'category not found' });
+
+  return res.json({
+    success: true,
+    data: categoryExists
+  });
+}
+
+async function addCategory(req, res) {
+  const { name, description } = req.body;
+  const create = {};
+
+  if (name) Object.assign(create, { name });
+  if (description) Object.assign(create, { description });
+
+  if (Object.keys(create).length < 2)
+    return res.status(422).json({ success: false, errors: 'invalid parameter' });
+
+  // return res.json({
+  //   success: true,
+  //   data: { message: 'parameter oke', create }
+  // });
+  return models.CarCategory.create(create)
+    .then(async data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
+async function delCategory(req, res) {
+  const { id } = req.params;
+
+  const categoryExists = await models.CarCategory.findByPk(id);
+  if (!categoryExists)
+    return res.status(404).json({ success: false, errors: 'category not found' });
+
+  return categoryExists
+    .destroy(id)
+    .then(async data => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
 module.exports = {
-  carsGet
+  carsGet,
+  getCategory,
+  editCategory,
+  getCategoryById,
+  addCategory,
+  delCategory
 };
