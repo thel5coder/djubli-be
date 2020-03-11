@@ -368,6 +368,15 @@ router.get('/listingAll', async (req, res) => {
     whereQuery += ` AND ${groupModelExist("Cars")}`;
   }
 
+  // HARUS diatas return
+  const countCar = models.sequelize.literal(
+    `(SELECT COUNT("Cars"."id") 
+      FROM "Cars" 
+      WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+        AND "Cars"."deletedAt" IS NULL ${customQueryWhere}
+    )`
+  );
+
   if (by === 'like') {
     modelCarName = 'Car';
     Object.assign(where, {
