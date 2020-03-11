@@ -373,17 +373,17 @@ router.get('/listingAll', async (req, res) => {
     `(SELECT COUNT("Cars"."id") 
       FROM "Cars" 
       WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-        AND "Cars"."deletedAt" IS NULL ${customQueryWhere}
+        AND "Cars"."deletedAt" IS NULL ${whereQuery}
     )`
   );
 
   if (by === 'like') {
     modelCarName = 'Car';
-    Object.assign(where, {
-      [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 1 })]
-    });
   }
-    
+  Object.assign(where, {
+    [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 1 })]
+  });
+  
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
       [ 
