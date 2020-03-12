@@ -786,8 +786,8 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   else page = 1;
 
   let order = [
-    ['createdAt', 'desc'],
-    [{ model: models.Bargain, as: 'bargain' }, 'createdAt', 'desc']
+    ['createdAt', 'desc']
+    // [{ model: models.Bargain, as: 'bargain' }, 'createdAt', 'desc']
   ];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
@@ -802,9 +802,10 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
 
   if (negotiationType == 0) {
     Object.assign(whereBargain, {
-      negotiationType: {
-        [Op.eq]: negotiationType
-      }
+      [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
+      // negotiationType: {
+      //   [Op.eq]: negotiationType
+      // }
     });
   } else if (negotiationType == 1) {
     Object.assign(whereBargain, {
@@ -818,7 +819,6 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   }
 
   const where = {};
-
   if (modelYearId) {
     Object.assign(where, {
       modelYearId: {
@@ -928,6 +928,11 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
     },
     include: [
       {
+        model: models.CarCategory,
+        as: 'category',
+        attributes: ['deletedAt']
+      },
+      {
         model: models.ModelYear,
         as: 'modelYear',
         attributes: ['id', 'year', 'modelId'],
@@ -1014,6 +1019,7 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
         attributes: {
           exclude: ['updatedAt', 'deletedAt']
         },
+        order: [['id', 'asc']],
         include: [
           {
             model: models.User,

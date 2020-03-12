@@ -103,6 +103,11 @@ module.exports = (sequelize, DataTypes) => {
       as: 'exteriorColor',
       onDelete: 'CASCADE'
     });
+    Car.belongsTo(models.CarCategory, {
+      foreignKey: 'categoryId',
+      as: 'category',
+      onDelete: 'CASCADE'
+    });
   };
   return Car;
 };

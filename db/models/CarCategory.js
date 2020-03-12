@@ -13,6 +13,12 @@ module.exports = (sequelize, DataTypes) => {
   );
   CarCategory.associate = function(models) {
     // associations can be defined here
+    CarCategory.hasMany(models.Car, {
+      foreignKey: 'categoryId',
+      sourceKey: 'id',
+      as: 'cars',
+      onDelete: 'CASCADE'
+    });
   };
   return CarCategory;
 };

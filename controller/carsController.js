@@ -265,6 +265,11 @@ async function carsGet(req, res, auth = false) {
     attributes: Object.keys(models.Car.attributes).concat(customFields),
     include: [
       {
+        model: models.CarCategory,
+        as: 'category',
+        attributes: ['deletedAt']
+      },
+      {
         model: models.ModelYear,
         as: 'modelYear',
         attributes: ['id', 'year', 'modelId'],
