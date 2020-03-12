@@ -10,6 +10,7 @@ const imageHelper = require('../../helpers/s3');
 const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
 const carsController = require('../../controller/carsController');
+const apiResponse = require('../../helpers/apiResponse');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -2256,9 +2257,10 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     engineNumber,
     STNKnumber,
     location,
-    status
+    status,
+    interior, exterior, day, startTime, endTime
   } = req.body;
-  const { interior, exterior, day, startTime, endTime } = req.body;
+  let {categoryId}=req.body;
   const { images } = req.files;
 
   if (!userId) {
@@ -2302,6 +2304,11 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
 
+  if (categoryId) {
+    const categoryExists= await models.CarCategory.findByPk(categoryId);
+    if (!categoryExists) return apiResponse._error({ res, errors: 'category not found', code: 404 });
+  } else categoryId= null;
+  
   let STNKphoto = null;
   if (images) {
     const result = {};
@@ -2317,30 +2324,30 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
 
   const trans = await models.sequelize.transaction();
   const errors = [];
+  const insert = {
+    userId,
+    brandId,
+    modelId,
+    groupModelId,
+    modelYearId,
+    exteriorColorId,
+    interiorColorId,
+    price,
+    condition,
+    usedFrom,
+    frameNumber,
+    engineNumber,
+    STNKnumber,
+    STNKphoto,
+    location: location.replace(/\s/g, ''),
+    status,
+    categoryId
+  };
+  // return apiResponse._success({ res, data:{insert, input:req.body} });
 
-  const data = await models.Car.create(
-    {
-      userId,
-      brandId,
-      modelId,
-      groupModelId,
-      modelYearId,
-      exteriorColorId,
-      interiorColorId,
-      price,
-      condition,
-      usedFrom,
-      frameNumber,
-      engineNumber,
-      STNKnumber,
-      STNKphoto,
-      location: location.replace(/\s/g, ''),
-      status
-    },
-    {
-      transaction: trans
-    }
-  ).catch(err => {
+  const data = await models.Car.create(insert, {
+    transaction: trans
+  }).catch(err => {
     trans.rollback();
     return res.status(422).json({
       success: false,
