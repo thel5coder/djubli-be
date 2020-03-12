@@ -2258,9 +2258,12 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     STNKnumber,
     location,
     status,
-    interior, exterior, day, startTime, endTime
+    interior,
+    exterior,
+    day,
+    startTime,
+    endTime
   } = req.body;
-  let {categoryId}=req.body;
   const { images } = req.files;
 
   if (!userId) {
@@ -2304,11 +2307,6 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
 
-  if (categoryId) {
-    const categoryExists= await models.CarCategory.findByPk(categoryId);
-    if (!categoryExists) return apiResponse._error({ res, errors: 'category not found', code: 404 });
-  } else categoryId= null;
-  
   let STNKphoto = null;
   if (images) {
     const result = {};
@@ -2340,8 +2338,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     STNKnumber,
     STNKphoto,
     location: location.replace(/\s/g, ''),
-    status,
-    categoryId
+    status
   };
   // return apiResponse._success({ res, data:{insert, input:req.body} });
 
