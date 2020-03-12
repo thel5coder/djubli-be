@@ -3177,4 +3177,11 @@ router.get(
   }
 );
 
+router.get(
+  '/categories',
+  /*passport.authenticate('user', { session: false }),*/ async (req, res) => {
+    return carsController.getCategory(req, res);
+  }
+);
+
 module.exports = router;
