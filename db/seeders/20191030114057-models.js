@@ -58,6 +58,62 @@ module.exports = {
         groupModelId: 4,
         createdAt: new Date(),
         updatedAt: new Date()
+      },
+      {
+        id: 9,
+        name: `V`,
+        groupModelId: 5,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 10,
+        name: `D`,
+        groupModelId: 6,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 11,
+        name: `GLXM`,
+        groupModelId: 7,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 12,
+        name: `GT`,
+        groupModelId: 8,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 13,
+        name: `E Grade`,
+        groupModelId: 9,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 14,
+        name: `650`,
+        groupModelId: 9,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 15,
+        name: `JK`,
+        groupModelId: 11,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 16,
+        name: `PHEV`,
+        groupModelId: 12,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ]),
 
