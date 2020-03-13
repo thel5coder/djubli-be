@@ -6,6 +6,8 @@ config/keys_dev.js
 config/database.json
 note.log
 
+/temp
+
 .env.djublee
 .env.example
 .env.production

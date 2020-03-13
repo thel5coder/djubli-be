@@ -928,11 +928,6 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
     },
     include: [
       {
-        model: models.CarCategory,
-        as: 'category',
-        attributes: ['deletedAt']
-      },
-      {
         model: models.ModelYear,
         as: 'modelYear',
         attributes: ['id', 'year', 'modelId'],

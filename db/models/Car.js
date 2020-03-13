@@ -18,8 +18,7 @@ module.exports = (sequelize, DataTypes) => {
       STNKphoto: DataTypes.STRING,
       location: DataTypes.STRING,
       status: DataTypes.INTEGER,
-      km: DataTypes.NUMERIC,
-      categoryId: DataTypes.INTEGER
+      km: DataTypes.NUMERIC
     },
     {
       timestamps: true,
@@ -101,11 +100,6 @@ module.exports = (sequelize, DataTypes) => {
     Car.belongsTo(models.Color, {
       foreignKey: 'exteriorColorId',
       as: 'exteriorColor',
-      onDelete: 'CASCADE'
-    });
-    Car.belongsTo(models.CarCategory, {
-      foreignKey: 'categoryId',
-      as: 'category',
       onDelete: 'CASCADE'
     });
   };
