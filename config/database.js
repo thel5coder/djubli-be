@@ -15,7 +15,8 @@ module.exports = {
       idle: 200000,
       acquire: 200000
     },
-    logging: true
+    logging: console.log,
+    operatorsAliases: false
   },
   test: {
     username: 'postgres',
