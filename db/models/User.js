@@ -12,7 +12,17 @@ module.exports = (sequelize, DataTypes) => {
       profileImageId: DataTypes.INTEGER,
       name: DataTypes.STRING(100),
       address: DataTypes.STRING(200),
-      status: DataTypes.BOOLEAN
+      status: DataTypes.BOOLEAN,
+      profileUser: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          if (this.type === 0 && this.companyType === 0) return 'End User';
+          else if (this.type === 0 && this.companyType === 1) return 'End User';
+          else if (this.type === 1 && this.companyType === 0) return 'Dealer';
+          else if (this.type === 1 && this.companyType === 1) return 'Dealer';
+          else return 'unknown';
+        }
+      }
     },
     {
       timestamps: true,

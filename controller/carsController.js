@@ -53,12 +53,24 @@ async function carsGet(req, res, auth = false) {
     'km',
     'createdAt',
     'view',
-    'like'
+    'like',
+    'profile'
   ];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
-  const fieldArr = ['view', 'like'];
-  const order = by == fieldArr.indexOf(by) < 0 ? [[by, sort]] : [[Sequelize.col(by), sort]];
+  const order = [];
+  switch (by) {
+    case 'view':
+    case 'like':
+      order.push([Sequelize.col(by), sort]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
 
   const where = {};
   if (modelYearId) {
