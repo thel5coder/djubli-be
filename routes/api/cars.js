@@ -1809,20 +1809,44 @@ router.get('/id/:id', async (req, res) => {
 
 router.get('/like/:id', async (req, res) => {
   const { id } = req.params;
-  const { by, condition } = req.query;
-  let { page, limit, sort } = req.query;
+  const { condition } = req.query;
+  let { page, limit, by, sort } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
-
-  let order = [['createdAt', 'desc']];
-  if (!sort) sort = 'asc';
-  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
-
-  if (by === 'price' || by === 'id') order = [[by, sort]];
+  
+  if (!by) by = 'id';
+  const array = [
+    'id',
+    'condition',
+    'price',
+    'km',
+    'createdAt',
+    'view',
+    'like',
+    'profile'
+  ];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'view':
+    case 'like':
+    case 'km':
+    case 'price':
+    case 'condition':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
+    case 'profile':
+      order.push([ { model: models.Car, as: 'car' }, { model: models.User, as: 'user' }, 'type', 'asc' ]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
 
   const where = {
     userId: id,
@@ -1839,6 +1863,9 @@ router.get('/like/:id', async (req, res) => {
   }
 
   return models.Like.findAll({
+    attributes: {
+      exclude: ['deletedAt']
+    },
     include: [
       {
         model: models.Car,
