@@ -49,16 +49,7 @@ router.get('/user/:id', async (req, res) => {
   else page = 1;
 
   if (!by) by = 'id';
-  const array = [
-    'id',
-    'condition',
-    'price',
-    'km',
-    'createdAt',
-    'view',
-    'like',
-    'profile'
-  ];
+  const array = ['id', 'condition', 'price', 'km', 'createdAt', 'view', 'like', 'profile'];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [];
@@ -1016,7 +1007,7 @@ router.get(
   }
 );
 
-router.get('/bid_list', passport.authenticate('user', { session: false }), async (req, res) => {
+async function bidList(req, res) {
   const { id } = req.user;
   const { status } = req.params;
   const {
@@ -1028,10 +1019,9 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
     minPrice,
     maxPrice,
     minYear,
-    maxYear,
-    by
+    maxYear
   } = req.query;
-  let { page, limit, sort } = req.query;
+  let { page, limit, sort, by } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -1039,19 +1029,44 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  let order = [
-    ['createdAt', 'desc'],
-    [
-      { model: models.Car, as: 'car' },
-      { model: models.Bargain, as: 'bargain' },
-      'createdAt',
-      'desc'
-    ]
+  if (!by) by = 'id';
+  const array = [
+    'id',
+    'userId',
+    'carId',
+    'bidAmount',
+    'haveSeenCar',
+    'paymentMethod',
+    'expiredAt',
+    'comment',
+    'bidType',
+    'negotiationType',
+    'condition',
+    'price',
+    'km',
+    'createdAt',
+    'view',
+    'like',
+    'profile'
   ];
-
-  if (!sort) sort = 'asc';
-  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
-  if (by === 'price' || by === 'id') order = [[by, sort]];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'condition':
+    case 'price':
+    case 'km':
+    case 'view':
+    case 'like':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
 
   const where = {
     userId: {
@@ -1153,69 +1168,37 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
           include: [
             [
               models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
+                `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
               ),
               'highestBidder'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
               ),
               'numberOfBidder'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
               ),
               'like'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "car"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
+                `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)`
               ),
               'view'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."userId" = ${id} 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${id} AND "Likes"."deletedAt" IS NULL)`
               ),
               'islike'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."userId" = ${id} 
-                    AND "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
               ),
               'isBid'
             ]
@@ -1277,11 +1260,6 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
               as: 'file',
               attributes: ['type', 'url']
             }
-          },
-          {
-            model: models.Bargain,
-            as: 'bargain',
-            attributes: ['createdAt']
           }
         ]
       },
@@ -1316,6 +1294,14 @@ router.get('/bid_list', passport.authenticate('user', { session: false }), async
         errors: err.message
       });
     });
+  
+}
+
+router.get('/bid_list', passport.authenticate('user', { session: false }), async (req, res) => {
+  return bidList(req, res);
+});
+router.get('/bid/list', passport.authenticate('user', { session: false }), async (req, res) => {
+  return bidList(req, res);
 });
 
 // Get sell car By Status
@@ -1836,18 +1822,9 @@ router.get('/like/:id', async (req, res) => {
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
-  
+
   if (!by) by = 'id';
-  const array = [
-    'id',
-    'condition',
-    'price',
-    'km',
-    'createdAt',
-    'view',
-    'like',
-    'profile'
-  ];
+  const array = ['id', 'condition', 'price', 'km', 'createdAt', 'view', 'like', 'profile'];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [];
@@ -1860,7 +1837,12 @@ router.get('/like/:id', async (req, res) => {
       order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
       break;
     case 'profile':
-      order.push([ { model: models.Car, as: 'car' }, { model: models.User, as: 'user' }, 'type', 'asc' ]);
+      order.push([
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        'type',
+        'asc'
+      ]);
       break;
     default:
       order.push([by, sort]);
@@ -2076,16 +2058,7 @@ router.get('/view/:id', async (req, res) => {
   else page = 1;
 
   if (!by) by = 'id';
-  const array = [
-    'id',
-    'condition',
-    'price',
-    'km',
-    'createdAt',
-    'view',
-    'like',
-    'profile'
-  ];
+  const array = ['id', 'condition', 'price', 'km', 'createdAt', 'view', 'like', 'profile'];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [];
@@ -2098,7 +2071,12 @@ router.get('/view/:id', async (req, res) => {
       order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
       break;
     case 'profile':
-      order.push([ { model: models.Car, as: 'car' }, { model: models.User, as: 'user' }, 'type', 'asc' ]);
+      order.push([
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        'type',
+        'asc'
+      ]);
       break;
     default:
       order.push([by, sort]);
