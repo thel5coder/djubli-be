@@ -1314,10 +1314,9 @@ async function sellList(req, res) {
     minPrice,
     maxPrice,
     minYear,
-    maxYear,
-    by
+    maxYear
   } = req.query;
-  let { page, limit, sort } = req.query;
+  let { page, limit, by, sort } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -2725,9 +2724,8 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
   });
 });
 
-// router get list car by like
-router.get('/viewLike', async (req, res) => {
-  let { condition, page, limit, sort } = req.query;
+async function viewLike(req, res) {
+  let { condition, page, limit, by, sort } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -2735,33 +2733,38 @@ router.get('/viewLike', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [
-    // ['createdAt', 'desc'],
-    [
-      models.sequelize.literal(`(
-        SELECT COUNT("Likes"."carId") 
-        FROM "Likes" 
-        WHERE "Likes"."carId" = "Car"."id" 
-          AND "Likes"."status" IS TRUE
-          AND "Likes"."deletedAt" IS NULL
-      )`),
-      'DESC'
-    ]
+  if (!by) by = 'jumlahLike';
+  const array = [
+    'id',
+    'condition',
+    'price',
+    'km',
+    'createdAt',
+    'jumlahView',
+    'jumlahLike',
+    'profile'
   ];
-
-  if (!sort) sort = 'asc';
-  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'jumlahView':
+    case 'jumlahLike':
+      order.push([Sequelize.col(by), sort]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
 
   const where = {
     [Op.and]: [
-      models.sequelize.literal(`(
-          (SELECT COUNT("Likes"."carId") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id"
-              AND "Likes"."status" IS TRUE
-              AND "Likes"."deletedAt" IS NULL
-          ) > 0 
-        )`)
+      models.sequelize.literal(
+        `((SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL) > 0)`
+      )
     ]
   };
 
@@ -2777,64 +2780,37 @@ router.get('/viewLike', async (req, res) => {
     attributes: Object.keys(models.Car.attributes).concat([
       [
         models.sequelize.literal(
-          `(SELECT "Brands"."name" 
-            FROM "Brands" 
-            WHERE "Brands"."id" = "Car"."brandId" 
-              AND "Brands"."deletedAt" IS NULL
-          )`
+          `(SELECT "Brands"."name" FROM "Brands" WHERE "Brands"."id" = "Car"."brandId" AND "Brands"."deletedAt" IS NULL)`
         ),
         'Brands'
       ],
       [
         models.sequelize.literal(
-          `(SELECT "Models"."name" 
-            FROM "Models" 
-            WHERE "Models"."id" = "Car"."modelId" 
-              AND "Models"."deletedAt" IS NULL
-          )`
+          `(SELECT "Models"."name" FROM "Models" WHERE "Models"."id" = "Car"."modelId" AND "Models"."deletedAt" IS NULL)`
         ),
         'Model'
       ],
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Likes"."carId") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
+          `(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL )`
         ),
         'jumlahLike'
       ],
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Views"."carId") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
+          `(SELECT COUNT("Views"."carId") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)`
         ),
         'jumlahView'
       ],
       [
         models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
+          `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
         ),
         'highestBidder'
       ],
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
+          `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
         ),
         'numberOfBidder'
       ]
@@ -2949,6 +2925,12 @@ router.get('/viewLike', async (req, res) => {
         errors: err.message
       });
     });
+}
+router.get('/viewLike', async (req, res) => {
+  return viewLike(req, res);
+});
+router.get('/view/like', async (req, res) => {
+  return viewLike(req, res);
 });
 
 // router get list car by like(Login)
