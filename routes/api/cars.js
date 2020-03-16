@@ -10,7 +10,7 @@ const imageHelper = require('../../helpers/s3');
 const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
 const carsController = require('../../controller/carsController');
-const apiResponse = require('../../helpers/apiResponse');
+// const apiResponse = require('../../helpers/apiResponse');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -37,10 +37,9 @@ router.get('/user/:id', async (req, res) => {
     minPrice,
     maxPrice,
     minYear,
-    maxYear,
-    by
+    maxYear
   } = req.query;
-  let { page, limit, sort } = req.query;
+  let { page, limit, by, sort } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -65,7 +64,6 @@ router.get('/user/:id', async (req, res) => {
       order.push([by, sort]);
       break;
   }
-
   const where = {};
 
   Object.assign(where, {
@@ -340,10 +338,9 @@ router.get('/user/:userId', passport.authenticate('user', { session: false }), a
     minPrice,
     maxPrice,
     minYear,
-    maxYear,
-    by
+    maxYear
   } = req.query;
-  let { page, limit, sort } = req.query;
+  let { page, limit, by, sort } = req.query;
   const { userId } = req.params;
   let offset = 0;
 
@@ -2037,8 +2034,8 @@ router.get('/like/:id', async (req, res) => {
 
 router.get('/view/:id', async (req, res) => {
   const { id } = req.params;
-  const { by, condition } = req.query;
-  let { page, limit, sort } = req.query;
+  const { condition } = req.query;
+  let { page, limit, by, sort } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
