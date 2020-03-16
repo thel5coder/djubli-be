@@ -2926,7 +2926,7 @@ async function viewLike(req, res) {
 router.get('/viewLike', async (req, res) => {
   return viewLike(req, res);
 });
-router.get('/view/like', async (req, res) => {
+router.get('/views/like', async (req, res) => {
   return viewLike(req, res);
 });
 
