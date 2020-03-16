@@ -2,6 +2,7 @@
 const express = require('express');
 const validator = require('validator');
 const passport = require('passport');
+const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 
@@ -12,7 +13,7 @@ const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
-  let { page, limit, sort } = req.query;
+  let { page, limit, sort, by } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -20,15 +21,61 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
-  if (!sort) sort = 'asc';
-  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+  if (!by) by = 'id';
+  const array = [
+    'id',
+    'carId',
+    'price',
+    'paymentMethod',
+    'haveSeenCar',
+    'condition',
+    'price',
+    'km',
+    'createdAt',
+    'view',
+    'like',
+    'profile'
+  ];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'km':
+    case 'price':
+    case 'condition':
+      order.push([{ model: models.Car, as: 'car' }, by, sort]);
+      break;
+    case 'view':
+    case 'like':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      // order.push([{ model: models.Car, as: 'car' }, by, sort]);
+      // order.push(['id', sort]);
+      // order.push([Sequelize.col(by), sort]);
+      // order.push([`car.view`, 'desc']);
+      // order.push([`car.view`, sort]);
+      // order.push([`car.view ${sort}`]);
+      break;
+    case 'profile':
+      order.push([
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        'type',
+        'asc'
+      ]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
 
   const where = {
     userId: id
   };
 
   return models.Purchase.findAll({
+    attributes: {
+      exclude: ['deletedAt']
+    },
     include: [
       {
         model: models.Car,
@@ -37,46 +84,25 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
           include: [
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
               ),
               'like'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "car"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
+                `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)`
               ),
               'view'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."userId" = ${id} 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
+                `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${id} AND "Likes"."deletedAt" IS NULL)`
               ),
               'islike'
             ],
             [
               models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."userId" = ${id} 
-                    AND "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-                    AND "Bargains"."deletedAt" IS NULL
-                )`
+                `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
               ),
               'isBid'
             ]
@@ -86,7 +112,9 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
           {
             model: models.User,
             as: 'user',
-            attributes: ['name', 'type', 'companyType']
+            attributes: {
+              exclude: ['deletedAt', 'password']
+            }
           },
           {
             model: models.ExteriorGalery,
@@ -157,15 +185,15 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
             }
           }
         ]
-        // attributes: ['condition']
-      },
-      {
-        model: models.User,
-        as: 'user',
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt', 'password']
-        }
       }
+      // ,
+      // {
+      //   model: models.User,
+      //   as: 'user',
+      //   attributes: {
+      //     exclude: ['createdAt', 'updatedAt', 'deletedAt', 'password']
+      //   }
+      // }
     ],
     where,
     order,
@@ -178,8 +206,8 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 
       res.json({
         success: true,
-        data,
-        pagination
+        pagination,
+        data
       });
     })
     .catch(err => {
