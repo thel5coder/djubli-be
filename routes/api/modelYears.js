@@ -595,86 +595,22 @@ router.get('/listingType', async (req, res) => {
     whereQuery += ` AND ${groupModelExist('Cars')}`;
   }
 
+  const addAttribute = await carHelper.customFields({
+    fields: [
+      'maxPrice',
+      'minPrice',
+      'numberOfCar',
+      'numberOfBidderModelYear',
+      'highestBidderModelYear',
+      'highestBidderCarId',
+      'purchase'
+    ],
+    upperCase: true,
+    whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)
+  });
+
   return models.ModelYear.findAll({
-    attributes: Object.keys(models.ModelYear.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Cars"."deletedAt" IS NULL
-              ${whereQuery}
-          )`
-        ),
-        'maxPrice'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MIN("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Cars"."deletedAt" IS NULL
-              ${whereQuery}
-          )`
-        ),
-        'minPrice'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Cars"."deletedAt" IS NULL  
-              ${whereQuery}
-          )`
-        ),
-        'numberOfCar'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-              LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-              ${whereQuery}
-          )`
-        ),
-        'numberOfBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-              LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-              ${whereQuery}
-          )`
-        ),
-        'highestBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT "Bargains"."carId" 
-            FROM "Bargains" 
-              LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Bargains"."deletedAt" IS NULL 
-              AND "Bargains"."bidType" = 0
-              ${whereQuery}
-            ORDER BY "Bargains"."bidAmount" DESC 
-            LIMIT 1
-          )`
-        ),
-        'highestBidderCarId'
-      ]
-    ]),
+    attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
       {
         model: models.Model,
@@ -1430,84 +1366,28 @@ router.get('/luxuryCar', async (req, res) => {
   Object.assign(whereInclude, {
     id: {
       [Op.eq]: models.sequelize.literal(
-        `(SELECT "Bargains"."carId" 
-          FROM "Bargains" 
-          LEFT JOIN "Cars" 
-            ON "Bargains"."carId" = "Cars"."id" 
-          WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-            AND "Bargains"."deletedAt" IS NULL 
-          ORDER BY "Bargains"."bidAmount" DESC 
-          LIMIT 1
+        `(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL ORDER BY "Bargains"."bidAmount" DESC LIMIT 1
         )`
       )
     }
   });
 
+  const addAttribute = await carHelper.customFields({
+    fields: [
+      'numberOfBidderModelYear',
+      'highestBidderModelYear',
+      'numberOfCar',
+      'maxPrice',
+      'minPrice',
+      'highestBidderCarId',
+      'purchase'
+    ],
+    upperCase: true,
+    whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)
+  });
+
   return models.ModelYear.findAll({
-    attributes: Object.keys(models.ModelYear.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              ${whereQuery}
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'numberOfBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-            LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              ${whereQuery} 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'highestBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              ${whereQuery}
-              AND "Cars"."deletedAt" IS NULL 
-              AND ("Cars"."status" = 0 OR "Cars"."status" = 1)
-          )`
-        ),
-        'numberOfCar'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              ${whereQuery} 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
-        'maxPrice'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MIN("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              ${whereQuery} 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
-        'minPrice'
-      ]
-    ]),
+    attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
       {
         model: models.Model,
@@ -1539,113 +1419,12 @@ router.get('/luxuryCar', async (req, res) => {
         as: 'car',
         where: whereInclude,
         order: [['bidAmount', 'desc']],
-        attributes: Object.keys(models.Car.attributes).concat([
-          [
-            models.sequelize.literal(
-              `(SELECT MAX("Bargains"."bidAmount") 
-                FROM "Bargains" 
-                WHERE "Bargains"."carId" = "car"."id" 
-                  AND "Bargains"."deletedAt" IS NULL
-                  AND "Bargains"."bidType" = 0
-              )`
-            ),
-            'bidAmount'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT COUNT("Bargains"."id") 
-                FROM "Bargains" 
-                WHERE "Bargains"."carId" = "car"."id" 
-                  AND "Bargains"."deletedAt" IS NULL
-                  AND "Bargains"."bidType" = 0
-              )`
-            ),
-            'numberOfBidder'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT COUNT("Likes"."id") 
-                FROM "Likes" 
-                WHERE "Likes"."carId" = "car"."id" 
-                  AND "Likes"."status" IS TRUE 
-                  AND "Likes"."deletedAt" IS NULL
-              )`
-            ),
-            'like'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT COUNT("Views"."id") 
-                FROM "Views" 
-                WHERE "Views"."carId" = "car"."id" 
-                  AND "Views"."deletedAt" IS NULL
-              )`
-            ),
-            'view'
-          ]
-        ]),
-        include: [
-          {
-            model: models.User,
-            as: 'user',
-            attributes: ['name', 'type', 'companyType']
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
-        // attributes: ['condition']
+        attributes: {
+          include: await carHelper.customFields({
+            fields: ['bidAmountModelYears', 'numberOfBidder', 'like', 'view']
+          })
+        },
+        include: await carHelper.attributes()
       }
     ],
     where,
