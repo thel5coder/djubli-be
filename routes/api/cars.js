@@ -11,6 +11,7 @@ const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
 const carsController = require('../../controller/carsController');
 // const apiResponse = require('../../helpers/apiResponse');
+const carHelper = require('../../helpers/car');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -1858,152 +1859,21 @@ router.get('/like/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
-          include: [
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."userId" = ${id} 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'islike'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."userId" = ${id} 
-                    AND "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'isBid'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'like'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "car"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
-              ),
-              'view'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'numberOfBidder'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'highestBidder'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                    AND "Bargains"."userId" = ${id}
-                )`
-              ),
+          include: await carHelper.customFields({
+            fields: [
+              'islike',
+              'isBidFromLike',
+              'like',
+              'view',
+              'numberOfBidder',
+              'highestBidder',
               'bidAmount'
-            ]
-          ],
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            ],
+            id
+          }),
+          exclude: ['deletedAt']
         },
-        include: [
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: ['id', 'year', 'modelId']
-          },
-          {
-            model: models.User,
-            as: 'user',
-            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: ['id', 'name', 'logo', 'status']
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: ['id', 'name', 'groupModelId']
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: ['id', 'name', 'brandId']
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.MeetingSchedule,
-            as: 'meetingSchedule',
-            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-          },
-          {
-            model: models.InteriorGalery,
-            as: 'interiorGalery',
-            attributes: ['id', 'fileId', 'carId'],
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: ['id', 'fileId', 'carId'],
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          }
-        ],
+        include: await carHelper.attributes(),
         where: whereCar
       }
     ],
@@ -2101,152 +1971,21 @@ router.get('/view/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
-          include: [
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."userId" = ${id} 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'islike'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."userId" = ${id} 
-                    AND "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'isBid'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'like'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "car"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
-              ),
-              'view'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'numberOfBidder'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'highestBidder'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                    AND "Bargains"."userId" = ${id}
-                )`
-              ),
+          include: await carHelper.customFields({
+            fields: [
+              'islike',
+              'isBidFromLike',
+              'like',
+              'view',
+              'numberOfBidder',
+              'highestBidder',
               'bidAmount'
-            ]
-          ],
+            ],
+            id
+          }),
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
-        include: [
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: ['id', 'year', 'modelId']
-          },
-          {
-            model: models.User,
-            as: 'user',
-            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: ['id', 'name', 'logo', 'status']
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: ['id', 'name', 'groupModelId']
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: ['id', 'name', 'brandId']
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.MeetingSchedule,
-            as: 'meetingSchedule',
-            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-          },
-          {
-            model: models.InteriorGalery,
-            as: 'interiorGalery',
-            attributes: ['id', 'fileId', 'carId'],
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: ['id', 'fileId', 'carId'],
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          }
-        ],
+        include: await carHelper.attributes(),
         where: whereCar
       }
     ],
@@ -2812,95 +2551,7 @@ async function viewLike(req, res) {
         'numberOfBidder'
       ]
     ]),
-    include: [
-      {
-        model: models.User,
-        as: 'user',
-        attributes: {
-          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-        },
-        include: [
-          {
-            model: models.File,
-            as: 'file',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Dealer,
-            as: 'dealer',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Company,
-            as: 'company',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
-      },
-      {
-        model: models.Brand,
-        as: 'brand',
-        attributes: ['id', 'name', 'logo', 'status']
-      },
-      {
-        model: models.Model,
-        as: 'model',
-        attributes: ['id', 'name', 'groupModelId']
-      },
-      {
-        model: models.GroupModel,
-        as: 'groupModel',
-        attributes: ['id', 'name', 'brandId']
-      },
-      {
-        model: models.Color,
-        as: 'interiorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.Color,
-        as: 'exteriorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.MeetingSchedule,
-        as: 'meetingSchedule',
-        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-      },
-      {
-        model: models.InteriorGalery,
-        as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId'],
-        include: {
-          model: models.File,
-          as: 'file',
-          attributes: ['type', 'url']
-        }
-      },
-      {
-        model: models.ExteriorGalery,
-        as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId'],
-        include: {
-          model: models.File,
-          as: 'file',
-          attributes: ['type', 'url']
-        }
-      },
-      {
-        model: models.ModelYear,
-        as: 'modelYear',
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        }
-      }
-    ],
+    include: await carHelper.attributes({ key: `user` }),
     where,
     order,
     offset,
