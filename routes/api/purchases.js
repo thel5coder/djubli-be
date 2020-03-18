@@ -78,7 +78,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
         attributes: {
           include: await carHelper.customFields({ fields: ['like', 'view', 'islike', 'isBid'], id })
         },
-        include: carHelper.attributes,
+        include: await carHelper.attributes(),
         where: {}
       }
     ],

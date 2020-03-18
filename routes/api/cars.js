@@ -1873,7 +1873,7 @@ router.get('/like/:id', async (req, res) => {
           }),
           exclude: ['deletedAt']
         },
-        include: carHelper.attributes,
+        include: await carHelper.attributes(),
         where: whereCar
       }
     ],
@@ -1985,7 +1985,7 @@ router.get('/view/:id', async (req, res) => {
           }),
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
-        include: carHelper.attributes,
+        include: await carHelper.attributes(),
         where: whereCar
       }
     ],
@@ -2551,95 +2551,7 @@ async function viewLike(req, res) {
         'numberOfBidder'
       ]
     ]),
-    include: [
-      {
-        model: models.User,
-        as: 'user',
-        attributes: {
-          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-        },
-        include: [
-          {
-            model: models.File,
-            as: 'file',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Dealer,
-            as: 'dealer',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Company,
-            as: 'company',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
-      },
-      {
-        model: models.Brand,
-        as: 'brand',
-        attributes: ['id', 'name', 'logo', 'status']
-      },
-      {
-        model: models.Model,
-        as: 'model',
-        attributes: ['id', 'name', 'groupModelId']
-      },
-      {
-        model: models.GroupModel,
-        as: 'groupModel',
-        attributes: ['id', 'name', 'brandId']
-      },
-      {
-        model: models.Color,
-        as: 'interiorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.Color,
-        as: 'exteriorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.MeetingSchedule,
-        as: 'meetingSchedule',
-        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-      },
-      {
-        model: models.InteriorGalery,
-        as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId'],
-        include: {
-          model: models.File,
-          as: 'file',
-          attributes: ['type', 'url']
-        }
-      },
-      {
-        model: models.ExteriorGalery,
-        as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId'],
-        include: {
-          model: models.File,
-          as: 'file',
-          attributes: ['type', 'url']
-        }
-      },
-      {
-        model: models.ModelYear,
-        as: 'modelYear',
-        attributes: {
-          exclude: ['createdAt', 'updatedAt', 'deletedAt']
-        }
-      }
-    ],
+    include: await carHelper.attributes({ key: `user` }),
     where,
     order,
     offset,

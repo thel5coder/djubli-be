@@ -5,6 +5,7 @@ const Sequelize = require('sequelize');
 const passport = require('passport');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
+const carHelper = require('../../helpers/car');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -184,7 +185,7 @@ router.get('/listingAll', async (req, res) => {
       return calDistance;
     };
 
-    distances = models.sequelize.literal(rawDistancesFunc("car"));
+    distances = models.sequelize.literal(rawDistancesFunc('car'));
     rawDistancesFunc();
   }
 
@@ -226,7 +227,7 @@ router.get('/listingAll', async (req, res) => {
             return calDistance;
           };
 
-          distances = models.sequelize.literal(rawDistancesFunc("car"));
+          distances = models.sequelize.literal(rawDistancesFunc('car'));
           rawDistancesFunc();
         }
       } else {
@@ -239,7 +240,7 @@ router.get('/listingAll', async (req, res) => {
             return calDistance;
           };
 
-          distances = models.sequelize.literal(rawDistancesFunc("car"));
+          distances = models.sequelize.literal(rawDistancesFunc('car'));
           rawDistancesFunc();
         }
       }
@@ -269,7 +270,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND "Cars"."condition" = ${condition}`
+    whereQuery += ` AND "Cars"."condition" = ${condition}`;
   }
 
   if (brandId) {
@@ -279,7 +280,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND "Cars"."brandId" = ${brandId}`
+    whereQuery += ` AND "Cars"."brandId" = ${brandId}`;
   }
 
   if (modelId) {
@@ -289,7 +290,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND "Cars"."modelId" = ${modelId}`
+    whereQuery += ` AND "Cars"."modelId" = ${modelId}`;
   }
 
   if (groupModelId) {
@@ -299,7 +300,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND "Cars"."groupModelId" = ${groupModelId}`
+    whereQuery += ` AND "Cars"."groupModelId" = ${groupModelId}`;
   }
 
   if (minKm && maxKm) {
@@ -309,7 +310,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND ("Cars"."km" >= ${minKm} AND "Cars"."km" <= ${maxKm})`
+    whereQuery += ` AND ("Cars"."km" >= ${minKm} AND "Cars"."km" <= ${maxKm})`;
   }
 
   if (minPrice && maxPrice) {
@@ -319,7 +320,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND ("Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`
+    whereQuery += ` AND ("Cars"."price" >= ${minPrice} AND "Cars"."price" <= ${maxPrice})`;
   }
 
   if (by === 'highestBidder') {
@@ -340,7 +341,7 @@ router.get('/listingAll', async (req, res) => {
       }
     });
 
-    whereQuery += ` AND ("Cars"."id" = ${highestBidder})`
+    whereQuery += ` AND ("Cars"."id" = ${highestBidder})`;
   }
 
   if (by === 'location' || by === 'area') {
@@ -348,11 +349,11 @@ router.get('/listingAll', async (req, res) => {
       [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });
 
-    whereQuery += ` AND ${rawDistances} <= ${radius}`
+    whereQuery += ` AND ${rawDistances} <= ${radius}`;
   }
 
   if (typeId) {
-    const groupModelExist = (tableName) => {
+    const groupModelExist = tableName => {
       return `EXISTS(SELECT "GroupModels"."typeId" 
         FROM "GroupModels" 
         WHERE "GroupModels"."id" = "${tableName}"."groupModelId" 
@@ -362,10 +363,10 @@ router.get('/listingAll', async (req, res) => {
     };
 
     Object.assign(whereInclude, {
-      [Op.and]: models.sequelize.literal(groupModelExist("car"))
+      [Op.and]: models.sequelize.literal(groupModelExist('car'))
     });
 
-    whereQuery += ` AND ${groupModelExist("Cars")}`;
+    whereQuery += ` AND ${groupModelExist('Cars')}`;
   }
 
   // HARUS diatas return
@@ -383,10 +384,10 @@ router.get('/listingAll', async (req, res) => {
   Object.assign(where, {
     [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 1 })]
   });
-  
+
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat([
-      [ 
+      [
         models.sequelize.literal(
           `(SELECT COUNT("Cars"."id") 
             FROM "Cars" 
@@ -395,7 +396,7 @@ router.get('/listingAll', async (req, res) => {
               ${whereQuery}
           )`
         ),
-        'numberOfCar' 
+        'numberOfCar'
       ],
       [
         models.sequelize.literal(
@@ -552,15 +553,11 @@ router.get('/listingAll', async (req, res) => {
               'groupModelTypeId'
             ],
             [
-              models.sequelize.literal(
-                `(SELECT split_part("${modelCarName}"."location", ',', 1))`
-              ),
+              models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 1))`),
               'latitude'
             ],
             [
-              models.sequelize.literal(
-                `(SELECT split_part("${modelCarName}"."location", ',', 2))`
-              ),
+              models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 2))`),
               'longitude'
             ]
           ]
@@ -753,7 +750,7 @@ router.get('/listingType', async (req, res) => {
 
   const whereModelGroup = {};
   if (typeId) {
-    const groupModelExist = (tableName) => {
+    const groupModelExist = tableName => {
       return `EXISTS(SELECT "GroupModels"."typeId" 
         FROM "GroupModels" 
         WHERE "GroupModels"."id" = "${tableName}"."groupModelId" 
@@ -763,10 +760,10 @@ router.get('/listingType', async (req, res) => {
     };
 
     Object.assign(whereInclude, {
-      [Op.and]: models.sequelize.literal(groupModelExist("car"))
+      [Op.and]: models.sequelize.literal(groupModelExist('car'))
     });
 
-    whereQuery += ` AND ${groupModelExist("Cars")}`;
+    whereQuery += ` AND ${groupModelExist('Cars')}`;
   }
 
   return models.ModelYear.findAll({
@@ -878,127 +875,20 @@ router.get('/listingType', async (req, res) => {
       {
         model: models.Car,
         as: 'car',
-        where: whereInclude,
         attributes: {
-          include: [
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'bidAmount'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'numberOfBidder'
-            ],
-            [
-               models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id"
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'like'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "car"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
-              ),
-              'view'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT split_part("car"."location", ',', 1))`
-              ),
-              'latitude'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT split_part("car"."location", ',', 2))`
-              ),
+          include: await carHelper.customFields({
+            fields: [
+              'bidAmountModelYears',
+              'highestBidder',
+              'like',
+              'view',
+              'latitude',
               'longitude'
             ]
-          ]
+          })
         },
-        include: [
-          {
-            model: models.User,
-            as: 'user',
-            attributes: ['name', 'type', 'companyType']
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
+        include: await carHelper.attributes(),
+        where: whereInclude
       }
     ],
     where,
@@ -1044,14 +934,14 @@ router.get('/listingType', async (req, res) => {
 });
 
 router.get('/listingCar/:id', async (req, res) => {
-  const { 
+  const {
     by,
     brandId,
     groupModelId,
     modelId,
-    year, 
-    maxPrice, 
-    minPrice, 
+    year,
+    maxPrice,
+    minPrice,
     condition,
     minKm,
     maxKm,
