@@ -4,13 +4,13 @@ const models = require('../db/models');
 
 async function customFields(params) {
   const fields = [];
-
+  const car = 'upperCase' in params ? `Car` : `car`;
   params.fields.map(async field => {
     switch (field) {
       case 'like':
         fields.push([
           models.sequelize.literal(
-            `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
+            `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "${car}"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
           ),
           'like'
         ]);
@@ -18,7 +18,7 @@ async function customFields(params) {
       case 'view':
         fields.push([
           models.sequelize.literal(
-            `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "car"."id" AND "Views"."deletedAt" IS NULL)`
+            `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "${car}"."id" AND "Views"."deletedAt" IS NULL)`
           ),
           'view'
         ]);
@@ -26,7 +26,7 @@ async function customFields(params) {
       case 'islike':
         fields.push([
           models.sequelize.literal(
-            `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${params.id} AND "Likes"."deletedAt" IS NULL)`
+            `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "${car}"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${params.id} AND "Likes"."deletedAt" IS NULL)`
           ),
           'islike'
         ]);
@@ -34,7 +34,7 @@ async function customFields(params) {
       case 'isBid':
         fields.push([
           models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${params.id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${params.id} AND "Bargains"."carId" = "${car}"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
           ),
           'isBid'
         ]);
@@ -42,7 +42,7 @@ async function customFields(params) {
       case 'isBidFromLike':
         fields.push([
           models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${params.id} AND "Bargains"."carId" = "car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."bidType" = 0 AND "Bargains"."deletedAt" IS NULL)`
+            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${params.id} AND "Bargains"."carId" = "${car}"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."bidType" = 0 AND "Bargains"."deletedAt" IS NULL)`
           ),
           'isBid'
         ]);
@@ -50,7 +50,7 @@ async function customFields(params) {
       case 'numberOfBidder':
         fields.push([
           models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "${car}"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
           ),
           'numberOfBidder'
         ]);
@@ -58,7 +58,7 @@ async function customFields(params) {
       case 'highestBidder':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+            `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "${car}"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
           ),
           'highestBidder'
         ]);
@@ -66,7 +66,7 @@ async function customFields(params) {
       case 'bidAmount':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0 AND "Bargains"."userId" = ${params.id})`
+            `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "${car}"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0 AND "Bargains"."userId" = ${params.id})`
           ),
           'bidAmount'
         ]);
@@ -74,20 +74,20 @@ async function customFields(params) {
       case 'bidAmountModelYears':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+            `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "${car}"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
           ),
           'bidAmount'
         ]);
         break;
       case 'latitude':
         fields.push([
-          models.sequelize.literal(`(SELECT split_part("car"."location", ',', 1))`),
+          models.sequelize.literal(`(SELECT split_part("${car}"."location", ',', 1))`),
           'latitude'
         ]);
         break;
       case 'longitude':
         fields.push([
-          models.sequelize.literal(`(SELECT split_part("car"."location", ',', 2))`),
+          models.sequelize.literal(`(SELECT split_part("${car}"."location", ',', 2))`),
           'longitude'
         ]);
         break;
@@ -197,6 +197,7 @@ async function attributes(params) {
       }
     }
   ];
+
   return attribute;
 }
 
