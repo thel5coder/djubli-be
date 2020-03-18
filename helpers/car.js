@@ -4,7 +4,7 @@ const models = require('../db/models');
 
 async function customFields(params) {
   const fields = [];
-  const car = 'upperCase' in params ? `Car` : `car`;
+  const car = 'upperCase' in params ? (params.upperCase ? `Car` : `car`) : `car`;
   params.fields.map(async field => {
     switch (field) {
       case 'like':
