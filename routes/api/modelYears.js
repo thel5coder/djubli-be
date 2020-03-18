@@ -6,6 +6,7 @@ const passport = require('passport');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
+const general = require('../../helpers/general');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -36,7 +37,12 @@ router.get('/', async (req, res) => {
     });
   }
 
+  const addAttribute = await carHelper.customFields({ fields: ['purchase'], upperCase: true });
   return models.ModelYear.findAll({
+    attributes: {
+      include: addAttribute,
+      exclude: ['deletedAt']
+    },
     where,
     order,
     offset,
@@ -105,7 +111,6 @@ router.get('/listingAll', async (req, res) => {
 
   let { page, limit, sort } = req.query;
   let offset = 0;
-  const countDataPage = 0;
   let distances = {};
   let rawDistances = '';
 
@@ -385,86 +390,22 @@ router.get('/listingAll', async (req, res) => {
     [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 1 })]
   });
 
+  const addAttribute = await carHelper.customFields({
+    fields: [
+      'numberOfCar',
+      'maxPrice',
+      'minPrice',
+      'numberOfBidderModelYear',
+      'highestBidderModelYear',
+      'highestBidderCarId',
+      'purchase'
+    ],
+    upperCase: true,
+    whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)
+  });
+
   return models.ModelYear.findAll({
-    attributes: Object.keys(models.ModelYear.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Cars"."deletedAt" IS NULL 
-              ${whereQuery}
-          )`
-        ),
-        'numberOfCar'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Cars"."deletedAt" IS NULL 
-              ${whereQuery}
-          )`
-        ),
-        'maxPrice'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MIN("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Cars"."deletedAt" IS NULL 
-              ${whereQuery}
-          )`
-        ),
-        'minPrice'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-              LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Bargains"."deletedAt" IS NULL 
-              AND "Bargains"."bidType" = 0
-              ${whereQuery}
-          )`
-        ),
-        'numberOfBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-              LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Bargains"."deletedAt" IS NULL 
-              AND "Bargains"."bidType" = 0
-              ${whereQuery}
-          )`
-        ),
-        'highestBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT "Bargains"."carId" 
-            FROM "Bargains" 
-              LEFT JOIN "Cars" 
-              ON "Bargains"."carId" = "Cars"."id" 
-            WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-              AND "Bargains"."deletedAt" IS NULL 
-              AND "Bargains"."bidType" = 0
-              ${whereQuery} 
-            ORDER BY "Bargains"."bidAmount" DESC 
-            LIMIT 1
-          )`
-        ),
-        'highestBidderCarId'
-      ]
-    ]),
+    attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
       {
         model: models.Model,
@@ -498,131 +439,20 @@ router.get('/listingAll', async (req, res) => {
         separate,
         order: orderCar,
         attributes: {
-          include: [
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "${modelCarName}"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'bidAmount'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "${modelCarName}"."id" 
-                    AND "Bargains"."deletedAt" IS NULL
-                    AND "Bargains"."bidType" = 0
-                )`
-              ),
-              'numberOfBidder'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "${modelCarName}"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'like'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "${modelCarName}"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
-              ),
-              'view'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT "GroupModels"."typeId" 
-                  FROM "GroupModels" 
-                  WHERE "GroupModels"."id" = "${modelCarName}"."groupModelId" 
-                    AND "GroupModels"."deletedAt" IS NULL
-                )`
-              ),
-              'groupModelTypeId'
-            ],
-            [
-              models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 1))`),
-              'latitude'
-            ],
-            [
-              models.sequelize.literal(`(SELECT split_part("${modelCarName}"."location", ',', 2))`),
+          include: await carHelper.customFields({
+            fields: [
+              'bidAmountModelYears',
+              'numberOfBidder',
+              'like',
+              'view',
+              'groupModelTypeId',
+              'latitude',
               'longitude'
-            ]
-          ]
+            ],
+            upperCase: true
+          })
         },
-        include: [
-          {
-            model: models.User,
-            as: 'user',
-            attributes: ['name', 'type', 'companyType']
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
+        include: await carHelper.attributes()
       }
     ],
     where,
@@ -652,7 +482,6 @@ router.get('/listingAll', async (req, res) => {
         ],
         where
       });
-
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
