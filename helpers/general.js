@@ -7,6 +7,16 @@ function mapping(objectData) {
   return tempData;
 }
 
+function customReplace(str, aw, ak) {
+  let n = str.indexOf(aw);
+  while (n >= 0) {
+    str = str.replace(aw, ak);
+    n = str.indexOf(aw);
+  }
+  return str;
+}
+
 module.exports = {
-  mapping
+  mapping,
+  customReplace
 };
