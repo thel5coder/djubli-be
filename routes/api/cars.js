@@ -154,148 +154,15 @@ router.get('/user/:id', async (req, res) => {
     });
   }
 
+  const attr = await carHelper.customFields({
+    fields: ['islike', 'isBidFromLike', 'like', 'view', 'numberOfBidder', 'highestBidder'],
+    id,
+    upperCase: true
+  });
+
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."userId" = ${id} 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'islike'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."userId" = ${id} 
-              AND "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'isBid'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'like'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Views"."id") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
-        ),
-        'view'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'numberOfBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'highestBidder'
-      ]
-    ]),
-    include: [
-      {
-        model: models.ModelYear,
-        as: 'modelYear',
-        attributes: ['id', 'year', 'modelId'],
-        where: whereYear
-      },
-      {
-        model: models.User,
-        as: 'user',
-        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
-      },
-      {
-        model: models.Brand,
-        as: 'brand',
-        attributes: ['id', 'name', 'logo', 'status']
-      },
-      {
-        model: models.Model,
-        as: 'model',
-        attributes: ['id', 'name', 'groupModelId']
-      },
-      {
-        model: models.GroupModel,
-        as: 'groupModel',
-        attributes: ['id', 'name', 'brandId']
-      },
-      {
-        model: models.Color,
-        as: 'interiorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.Color,
-        as: 'exteriorColor',
-        attributes: ['id', 'name', 'hex']
-      },
-      {
-        model: models.MeetingSchedule,
-        as: 'meetingSchedule',
-        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-      },
-      {
-        model: models.InteriorGalery,
-        as: 'interiorGalery',
-        attributes: ['id', 'fileId', 'carId'],
-        include: [
-          {
-            model: models.File,
-            as: 'file',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
-      },
-      {
-        model: models.ExteriorGalery,
-        as: 'exteriorGalery',
-        attributes: ['id', 'fileId', 'carId'],
-        include: [
-          {
-            model: models.File,
-            as: 'file',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
-      }
-    ],
+    attributes: Object.keys(models.Car.attributes).concat(attr),
+    include: await carHelper.attributes(),
     where,
     order,
     offset,
