@@ -105,8 +105,8 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     });
 });
 
-router.get('/id/:id', async (req, res) => {
-  const { userId } = req.user;
+router.get('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const userId = req.user.id;
   const { id } = req.params;
 
   return models.Purchase.findOne({
@@ -115,130 +115,12 @@ router.get('/id/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
-          include: [
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'like'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "car"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
-              ),
-              'view'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."userId" = ${userId} 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'islike'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  WHERE "Bargains"."userId" = ${userId} 
-                    AND "Bargains"."carId" = "car"."id" 
-                    AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-                    AND "Bargains"."deletedAt" IS NULL
-                )`
-              ),
-              'isBid'
-            ]
-          ]
+          include: await carHelper.customFields({
+            fields: ['like', 'view', 'islike', 'isBid'],
+            id: userId
+          })
         },
-        include: [
-          {
-            model: models.User,
-            as: 'user',
-            attributes: ['name', 'type', 'companyType']
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.InteriorGalery,
-            as: 'interiorGalery',
-            attributes: ['id', 'fileId', 'carId'],
-            include: [
-              {
-                model: models.File,
-                as: 'file',
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                }
-              }
-            ]
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
-          }
-        ]
-        // attributes: ['condition']
+        include: await carHelper.attributes()
       },
       {
         model: models.User,
