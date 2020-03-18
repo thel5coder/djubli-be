@@ -92,6 +92,40 @@ async function customFields(params) {
         ]);
         break;
 
+      case 'Brands':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT "Brands"."name" FROM "Brands" WHERE "Brands"."id" = "Car"."brandId" AND "Brands"."deletedAt" IS NULL)`
+          ),
+          'Brands'
+        ]);
+        break;
+      case 'Model':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT "Models"."name" FROM "Models" WHERE "Models"."id" = "Car"."modelId" AND "Models"."deletedAt" IS NULL)`
+          ),
+          'Model'
+        ]);
+        break;
+      case 'jumlahLike':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL )`
+          ),
+          'jumlahLike'
+        ]);
+        break;
+
+      case 'jumlahView':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT COUNT("Views"."carId") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)`
+          ),
+          'jumlahView'
+        ]);
+        break;
+
       default:
         break;
     }
