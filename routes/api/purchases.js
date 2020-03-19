@@ -115,6 +115,129 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     });
 });
 
+async function getByModelYearId(req, res, params) {
+  const { auth } = params;
+  const { modelYearId } = req.params;
+  let { page, limit, sort, by } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(modelYearId ? modelYearId.toString() : '') === false)
+    return res.status(422).json({
+      success: false,
+      errors: `model year not found`
+    });
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'id';
+  const array = [
+    'id',
+    'carId',
+    'price',
+    'paymentMethod',
+    'haveSeenCar',
+    'condition',
+    'price',
+    'km',
+    'createdAt',
+    'view',
+    'like',
+    'profile'
+  ];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'km':
+    case 'price':
+    case 'condition':
+      order.push([{ model: models.Car, as: 'car' }, by, sort]);
+      break;
+    case 'view':
+    case 'like':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
+    case 'profile':
+      order.push([
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        'type',
+        'asc'
+      ]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+
+  const where = {};
+  const whereCar = {};
+  if (modelYearId) {
+    const modelYearExists = await models.ModelYear.findByPk(modelYearId);
+    if (!modelYearExists) {
+      return res.status(404).json({
+        success: true,
+        errors: `model year not found`
+      });
+    }
+    Object.assign(whereCar, { modelYearId });
+  }
+
+  const includes = [
+    {
+      model: models.Car,
+      as: 'car',
+      attributes: {
+        include: await carHelper.customFields({
+          fields: auth ? ['like', 'view', 'islike', 'isBid'] : ['like', 'view'],
+          id: auth ? req.user.id : null
+        })
+      },
+      include: await carHelper.attributes(),
+      where: whereCar
+    }
+  ];
+  return models.Purchase.findAll({
+    attributes: ['id', 'carId', 'price', 'paymentMethod', 'haveSeenCar'],
+    include: includes,
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Purchase.count({ include: includes, where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: true,
+        errors: err.message
+      });
+    });
+}
+
+router.get('/models/years/:modelYearId', async (req, res) => {
+  return getByModelYearId(req, res, { auth: false });
+});
+
+router.get(
+  '/logon/models/years/:modelYearId',
+  passport.authenticate('user', { session: false }),
+  async (req, res) => {
+    return getByModelYearId(req, res, { auth: true });
+  }
+);
+
 router.get('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const userId = req.user.id;
   const { id } = req.params;
