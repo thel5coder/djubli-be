@@ -14,6 +14,7 @@ const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
+  const { modelYearId } = req.query;
   let { page, limit, sort, by } = req.query;
   let offset = 0;
 
@@ -63,9 +64,18 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
       break;
   }
 
-  const where = {
-    userId: id
-  };
+  const where = { userId: id };
+  const whereCar = {};
+  if (modelYearId) {
+    const modelYearExists = await models.ModelYear.findByPk(modelYearId);
+    if (!modelYearExists) {
+      return res.status(404).json({
+        success: true,
+        errors: `model year not found`
+      });
+    }
+    Object.assign(whereCar, { modelYearId });
+  }
 
   return models.Purchase.findAll({
     attributes: {
@@ -79,7 +89,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
           include: await carHelper.customFields({ fields: ['like', 'view', 'islike', 'isBid'], id })
         },
         include: await carHelper.attributes(),
-        where: {}
+        where: whereCar
       }
     ],
     where,
