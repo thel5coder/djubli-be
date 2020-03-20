@@ -1,6 +1,8 @@
 /* eslint-disable linebreak-style */
 
+const Sequelize = require('sequelize');
 const models = require('../db/models');
+const { Op } = Sequelize;
 
 async function customFields(params) {
   const fields = [];
@@ -210,6 +212,7 @@ async function customFields(params) {
 
 async function attributes(params) {
   const includes = [];
+  const wheres = { modelYear: {} };
   if (params) {
     switch (params.key) {
       case 'user':
@@ -237,7 +240,11 @@ async function attributes(params) {
           }
         );
         break;
-
+      case 'whereModelYear':
+        Object.assign(wheres.modelYear, {
+          [Op.and]: [{ year: { [Op.gte]: params.year[0] } }, { year: { [Op.lte]: params.year[1] } }]
+        });
+        break;
       default:
         break;
     }
@@ -247,64 +254,65 @@ async function attributes(params) {
     {
       model: models.ModelYear,
       as: 'modelYear',
-      attributes: ['id', 'year', 'modelId']
-    },
-    {
-      model: models.User,
-      as: 'user',
-      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
-      include: includes
-    },
-    {
-      model: models.Brand,
-      as: 'brand',
-      attributes: ['id', 'name', 'logo', 'status']
-    },
-    {
-      model: models.Model,
-      as: 'model',
-      attributes: ['id', 'name', 'groupModelId']
-    },
-    {
-      model: models.GroupModel,
-      as: 'groupModel',
-      attributes: ['id', 'name', 'brandId']
-    },
-    {
-      model: models.Color,
-      as: 'interiorColor',
-      attributes: ['id', 'name', 'hex']
-    },
-    {
-      model: models.Color,
-      as: 'exteriorColor',
-      attributes: ['id', 'name', 'hex']
-    },
-    {
-      model: models.MeetingSchedule,
-      as: 'meetingSchedule',
-      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-    },
-    {
-      model: models.InteriorGalery,
-      as: 'interiorGalery',
-      attributes: ['id', 'fileId', 'carId'],
-      include: {
-        model: models.File,
-        as: 'file',
-        attributes: ['type', 'url']
-      }
-    },
-    {
-      model: models.ExteriorGalery,
-      as: 'exteriorGalery',
-      attributes: ['id', 'fileId', 'carId'],
-      include: {
-        model: models.File,
-        as: 'file',
-        attributes: ['type', 'url']
-      }
+      attributes: ['id', 'year', 'modelId'],
+      where: wheres.modelYear
     }
+    // {
+    //   model: models.User,
+    //   as: 'user',
+    //   attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+    //   include: includes
+    // },
+    // {
+    //   model: models.Brand,
+    //   as: 'brand',
+    //   attributes: ['id', 'name', 'logo', 'status']
+    // },
+    // {
+    //   model: models.Model,
+    //   as: 'model',
+    //   attributes: ['id', 'name', 'groupModelId']
+    // },
+    // {
+    //   model: models.GroupModel,
+    //   as: 'groupModel',
+    //   attributes: ['id', 'name', 'brandId']
+    // },
+    // {
+    //   model: models.Color,
+    //   as: 'interiorColor',
+    //   attributes: ['id', 'name', 'hex']
+    // },
+    // {
+    //   model: models.Color,
+    //   as: 'exteriorColor',
+    //   attributes: ['id', 'name', 'hex']
+    // },
+    // {
+    //   model: models.MeetingSchedule,
+    //   as: 'meetingSchedule',
+    //   attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    // },
+    // {
+    //   model: models.InteriorGalery,
+    //   as: 'interiorGalery',
+    //   attributes: ['id', 'fileId', 'carId'],
+    //   include: {
+    //     model: models.File,
+    //     as: 'file',
+    //     attributes: ['type', 'url']
+    //   }
+    // },
+    // {
+    //   model: models.ExteriorGalery,
+    //   as: 'exteriorGalery',
+    //   attributes: ['id', 'fileId', 'carId'],
+    //   include: {
+    //     model: models.File,
+    //     as: 'file',
+    //     attributes: ['type', 'url']
+    //   }
+    // }
   ];
 
   return attribute;

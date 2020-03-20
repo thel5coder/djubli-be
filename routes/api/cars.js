@@ -10,7 +10,7 @@ const imageHelper = require('../../helpers/s3');
 const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
 const carsController = require('../../controller/carsController');
-// const apiResponse = require('../../helpers/apiResponse');
+const apiResponse = require('../../helpers/apiResponse');
 const carHelper = require('../../helpers/car');
 
 const { Op } = Sequelize;
@@ -1483,7 +1483,7 @@ router.get('/id/:id', async (req, res) => {
 
 router.get('/like/:id', async (req, res) => {
   const { id } = req.params;
-  const { condition } = req.query;
+  const { condition, profile, km, price, djubleeReport, radius, year, kota, area } = req.query;
   let { page, limit, by, sort } = req.query;
   let offset = 0;
 
@@ -1524,12 +1524,36 @@ router.get('/like/:id', async (req, res) => {
   };
 
   const whereCar = {};
+  const paramsAttribute = {};
   if (condition) {
-    Object.assign(whereCar, {
-      condition: {
-        [Op.eq]: condition
-      }
-    });
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(whereCar, { condition: { [Op.eq]: condition } });
+  }
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(whereCar, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(whereCar, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(paramsAttribute, { key: 'whereModelYear', year });
   }
 
   return models.Like.findAll({
@@ -1555,7 +1579,7 @@ router.get('/like/:id', async (req, res) => {
           }),
           exclude: ['deletedAt']
         },
-        include: await carHelper.attributes(),
+        include: await carHelper.attributes(paramsAttribute),
         where: whereCar
       }
     ],
