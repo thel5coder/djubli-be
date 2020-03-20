@@ -435,7 +435,7 @@ router.get('/listingAll', async (req, res) => {
             upperCase
           })
         },
-        include: await carHelper.attributes(),
+        include: await carHelper.attributes({ key: 'noModelYear' }),
         where: whereInclude
       }
     ],
