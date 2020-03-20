@@ -1536,6 +1536,7 @@ router.get('/like/:id', async (req, res) => {
   };
 
   const whereCar = {};
+  const whereProfile = {};
   const paramsAttribute = {};
   const customFields = {
     fields: [
@@ -1595,12 +1596,38 @@ router.get('/like/:id', async (req, res) => {
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
     // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
-    Object.assign(whereCar, { where: {
-      [Op.and]: [
-        Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }), 
-        Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
-      ]
-    }});
+    Object.assign(whereCar, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    switch (profile) {
+      case 'end user':
+        Object.assign(whereProfile, {
+          [Op.or]: [
+            { [Op.and]: [{ type: 0 }, { companyType: 0 }] },
+            { [Op.and]: [{ type: 0 }, { companyType: 1 }] }
+          ]
+        });
+        break;
+      default:
+        Object.assign(whereProfile, {
+          [Op.or]: [
+            { [Op.and]: [{ type: 1 }, { companyType: 0 }] },
+            { [Op.and]: [{ type: 1 }, { companyType: 1 }] }
+          ]
+        });
+        break;
+    }
+    Object.assign(paramsAttribute, { key: 'whereProfile', whereProfile });
   }
 
   return models.Like.findAll({
@@ -1612,9 +1639,7 @@ router.get('/like/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
-          include: await carHelper.customFields(
-            customFields
-          ),
+          include: await carHelper.customFields(customFields),
           exclude: ['deletedAt']
         },
         include: await carHelper.attributes(paramsAttribute),
