@@ -256,63 +256,63 @@ async function attributes(params) {
       as: 'modelYear',
       attributes: ['id', 'year', 'modelId'],
       where: wheres.modelYear
+    },
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+      include: includes
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
     }
-    // {
-    //   model: models.User,
-    //   as: 'user',
-    //   attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
-    //   include: includes
-    // },
-    // {
-    //   model: models.Brand,
-    //   as: 'brand',
-    //   attributes: ['id', 'name', 'logo', 'status']
-    // },
-    // {
-    //   model: models.Model,
-    //   as: 'model',
-    //   attributes: ['id', 'name', 'groupModelId']
-    // },
-    // {
-    //   model: models.GroupModel,
-    //   as: 'groupModel',
-    //   attributes: ['id', 'name', 'brandId']
-    // },
-    // {
-    //   model: models.Color,
-    //   as: 'interiorColor',
-    //   attributes: ['id', 'name', 'hex']
-    // },
-    // {
-    //   model: models.Color,
-    //   as: 'exteriorColor',
-    //   attributes: ['id', 'name', 'hex']
-    // },
-    // {
-    //   model: models.MeetingSchedule,
-    //   as: 'meetingSchedule',
-    //   attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-    // },
-    // {
-    //   model: models.InteriorGalery,
-    //   as: 'interiorGalery',
-    //   attributes: ['id', 'fileId', 'carId'],
-    //   include: {
-    //     model: models.File,
-    //     as: 'file',
-    //     attributes: ['type', 'url']
-    //   }
-    // },
-    // {
-    //   model: models.ExteriorGalery,
-    //   as: 'exteriorGalery',
-    //   attributes: ['id', 'fileId', 'carId'],
-    //   include: {
-    //     model: models.File,
-    //     as: 'file',
-    //     attributes: ['type', 'url']
-    //   }
-    // }
   ];
 
   return attribute;
