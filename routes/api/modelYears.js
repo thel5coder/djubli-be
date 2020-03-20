@@ -636,7 +636,8 @@ router.get('/listingType', async (req, res) => {
             ]
           })
         },
-        include: await carHelper.attributes(),
+        // include: await carHelper.attributes(),
+        include: await carHelper.attributes({ key: 'noModelYear' }),
         where: whereInclude
       }
     ],
@@ -1408,7 +1409,8 @@ router.get('/luxuryCar', async (req, res) => {
             fields: ['bidAmountModelYears', 'numberOfBidder', 'like', 'view']
           })
         },
-        include: await carHelper.attributes()
+        // include: await carHelper.attributes()
+        include: await carHelper.attributes({ key: 'noModelYear' })
       }
     ],
     where,
