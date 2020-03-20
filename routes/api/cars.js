@@ -1483,7 +1483,19 @@ router.get('/id/:id', async (req, res) => {
 
 router.get('/like/:id', async (req, res) => {
   const { id } = req.params;
-  const { condition, profile, km, price, djubleeReport, radius, year, kota, area } = req.query;
+  const {
+    condition,
+    profile,
+    km,
+    price,
+    djubleeReport,
+    radius,
+    year,
+    kota,
+    area,
+    latitude,
+    longitude
+  } = req.query;
   let { page, limit, by, sort } = req.query;
   let offset = 0;
 
@@ -1525,6 +1537,19 @@ router.get('/like/:id', async (req, res) => {
 
   const whereCar = {};
   const paramsAttribute = {};
+  const customFields = {
+    fields: [
+      'islike',
+      'isBidFromLike',
+      'like',
+      'view',
+      'numberOfBidder',
+      'highestBidder',
+      'bidAmount'
+    ],
+    id
+  };
+
   if (condition) {
     const arrCondition = [0, 1];
     if (arrCondition.indexOf(Number(condition)) < 0)
@@ -1555,6 +1580,28 @@ router.get('/like/:id', async (req, res) => {
       return apiResponse._error({ res, errors: 'invalid year[1]' });
     Object.assign(paramsAttribute, { key: 'whereModelYear', year });
   }
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+    // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(whereCar, { where: {
+      [Op.and]: [
+        Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }), 
+        Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+      ]
+    }});
+  }
 
   return models.Like.findAll({
     attributes: {
@@ -1565,18 +1612,9 @@ router.get('/like/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
-          include: await carHelper.customFields({
-            fields: [
-              'islike',
-              'isBidFromLike',
-              'like',
-              'view',
-              'numberOfBidder',
-              'highestBidder',
-              'bidAmount'
-            ],
-            id
-          }),
+          include: await carHelper.customFields(
+            customFields
+          ),
           exclude: ['deletedAt']
         },
         include: await carHelper.attributes(paramsAttribute),
@@ -1603,7 +1641,8 @@ router.get('/like/:id', async (req, res) => {
     .catch(err => {
       res.status(422).json({
         success: false,
-        errors: err.message
+        errors: err.message,
+        backEnd: err
       });
     });
 });
