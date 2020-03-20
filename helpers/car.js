@@ -203,6 +203,15 @@ async function customFields(params) {
         ]);
         break;
 
+      case 'distance':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT calculate_distance(${params.latitude}, ${params.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${car}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${car}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+          ),
+          'distance'
+        ]);
+        break;
+
       default:
         break;
     }
