@@ -213,6 +213,13 @@ async function customFields(params) {
 async function attributes(params) {
   const includes = [];
   const wheres = { modelYear: {} };
+  let modelYear = {
+    model: models.ModelYear,
+    as: 'modelYear',
+    attributes: ['id', 'year', 'modelId'],
+    where: wheres.modelYear
+  };
+
   if (params) {
     switch (params.key) {
       case 'user':
@@ -245,18 +252,21 @@ async function attributes(params) {
           [Op.and]: [{ year: { [Op.gte]: params.year[0] } }, { year: { [Op.lte]: params.year[1] } }]
         });
         break;
+      case 'noModelYear':
+        modelYear = {};
+        break;
       default:
         break;
     }
   }
 
   const attribute = [
-    {
-      model: models.ModelYear,
-      as: 'modelYear',
-      attributes: ['id', 'year', 'modelId'],
-      where: wheres.modelYear
-    },
+    // {
+    //   model: models.ModelYear,
+    //   as: 'modelYear',
+    //   attributes: ['id', 'year', 'modelId'],
+    //   where: wheres.modelYear
+    // },
     {
       model: models.User,
       as: 'user',
@@ -314,6 +324,8 @@ async function attributes(params) {
       }
     }
   ];
+
+  if (Object.keys(modelYear).length > 0) attribute.push(modelYear);
 
   return attribute;
 }
