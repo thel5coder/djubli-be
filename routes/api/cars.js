@@ -1536,8 +1536,8 @@ router.get('/like/:id', async (req, res) => {
   };
 
   const whereCar = {};
+  const whereModelYear = {};
   const whereProfile = {};
-  const paramsAttribute = {};
   const customFields = {
     fields: [
       'islike',
@@ -1579,7 +1579,9 @@ router.get('/like/:id', async (req, res) => {
       return apiResponse._error({ res, errors: 'invalid year[0]' });
     if (validator.isInt(year[1] ? year[1].toString() : '') === false)
       return apiResponse._error({ res, errors: 'invalid year[1]' });
-    Object.assign(paramsAttribute, { key: 'whereModelYear', year });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
   }
   if (radius) {
     if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
@@ -1609,25 +1611,7 @@ router.get('/like/:id', async (req, res) => {
     const arrprofile = ['end user', 'dealer'];
     if (arrprofile.indexOf(profile) < 0)
       return apiResponse._error({ res, errors: 'invalid profile' });
-    switch (profile) {
-      case 'end user':
-        Object.assign(whereProfile, {
-          [Op.or]: [
-            { [Op.and]: [{ type: 0 }, { companyType: 0 }] },
-            { [Op.and]: [{ type: 0 }, { companyType: 1 }] }
-          ]
-        });
-        break;
-      default:
-        Object.assign(whereProfile, {
-          [Op.or]: [
-            { [Op.and]: [{ type: 1 }, { companyType: 0 }] },
-            { [Op.and]: [{ type: 1 }, { companyType: 1 }] }
-          ]
-        });
-        break;
-    }
-    Object.assign(paramsAttribute, { key: 'whereProfile', whereProfile });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
   }
 
   return models.Like.findAll({
@@ -1642,8 +1626,71 @@ router.get('/like/:id', async (req, res) => {
           include: await carHelper.customFields(customFields),
           exclude: ['deletedAt']
         },
-        include: await carHelper.attributes(paramsAttribute),
-        where: whereCar
+        where: whereCar,
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: ['id', 'year', 'modelId'],
+            where: whereModelYear
+          },
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+            // where: whereProfile
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo', 'status']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.MeetingSchedule,
+            as: 'meetingSchedule',
+            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          }
+        ]
       }
     ],
     where,
