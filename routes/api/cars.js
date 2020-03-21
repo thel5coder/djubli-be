@@ -162,7 +162,7 @@ router.get('/user/:id', async (req, res) => {
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(attr),
-    include: await carHelper.attributes(),
+    include: await carHelper.extraInclude(),
     where,
     order,
     offset,
@@ -1035,7 +1035,7 @@ async function bidList(req, res) {
             id
           })
         },
-        include: await carHelper.attributes(),
+        include: await carHelper.extraInclude(),
         where: {}
       },
       {
@@ -1216,7 +1216,7 @@ async function sellList(req, res) {
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(attr),
-    include: await carHelper.attributes(),
+    include: await carHelper.extraInclude(),
     where,
     order,
     offset,
@@ -1638,7 +1638,12 @@ router.get('/like/:id', async (req, res) => {
             model: models.User,
             as: 'user',
             attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
-            // where: whereProfile
+          },
+          {
+            model: models.User,
+            as: 'profile',
+            attributes: ['id', 'type', 'companyType'],
+            where: whereProfile
           },
           {
             model: models.Brand,
@@ -1802,7 +1807,7 @@ router.get('/view/:id', async (req, res) => {
           }),
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
-        include: await carHelper.attributes(),
+        include: await carHelper.extraInclude(),
         where: whereCar
       }
     ],
@@ -2336,7 +2341,7 @@ async function viewLike(req, res) {
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(attr),
-    include: await carHelper.attributes({ key: `user` }),
+    include: await carHelper.extraInclude({ key: `user` }),
     where,
     order,
     offset,
