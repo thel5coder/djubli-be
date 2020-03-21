@@ -219,9 +219,9 @@ async function customFields(params) {
   return fields;
 }
 
-async function attributes(params) {
+async function extraInclude(params) {
   const includes = [];
-  const wheres = { modelYear: {} };
+  const wheres = { modelYear: {}, whereProfile: {} };
   let modelYear = {
     model: models.ModelYear,
     as: 'modelYear',
@@ -264,18 +264,17 @@ async function attributes(params) {
       case 'noModelYear':
         modelYear = {};
         break;
+      case 'whereProfile':
+        Object.assign(wheres, {
+          whereProfile: params.whereProfile
+        });
+        break;
       default:
         break;
     }
   }
 
   const attribute = [
-    // {
-    //   model: models.ModelYear,
-    //   as: 'modelYear',
-    //   attributes: ['id', 'year', 'modelId'],
-    //   where: wheres.modelYear
-    // },
     {
       model: models.User,
       as: 'user',
@@ -335,11 +334,17 @@ async function attributes(params) {
   ];
 
   if (Object.keys(modelYear).length > 0) attribute.push(modelYear);
+  // if (Object.keys(wheres.whereProfile).length > 0) {
+  // if (wheres.whereProfile) {
+  //   Object.assign(attribute[0], {
+  //     where: wheres.whereProfile
+  //   });
+  // }
 
   return attribute;
 }
 
 module.exports = {
-  attributes,
+  extraInclude,
   customFields
 };

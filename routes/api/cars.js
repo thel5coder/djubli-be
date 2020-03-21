@@ -162,7 +162,7 @@ router.get('/user/:id', async (req, res) => {
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(attr),
-    include: await carHelper.attributes(),
+    include: await carHelper.extraInclude(),
     where,
     order,
     offset,
@@ -1035,7 +1035,7 @@ async function bidList(req, res) {
             id
           })
         },
-        include: await carHelper.attributes(),
+        include: await carHelper.extraInclude(),
         where: {}
       },
       {
@@ -1216,7 +1216,7 @@ async function sellList(req, res) {
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(attr),
-    include: await carHelper.attributes(),
+    include: await carHelper.extraInclude(),
     where,
     order,
     offset,
@@ -1536,7 +1536,8 @@ router.get('/like/:id', async (req, res) => {
   };
 
   const whereCar = {};
-  const paramsAttribute = {};
+  const whereModelYear = {};
+  const whereProfile = {};
   const customFields = {
     fields: [
       'islike',
@@ -1578,7 +1579,9 @@ router.get('/like/:id', async (req, res) => {
       return apiResponse._error({ res, errors: 'invalid year[0]' });
     if (validator.isInt(year[1] ? year[1].toString() : '') === false)
       return apiResponse._error({ res, errors: 'invalid year[1]' });
-    Object.assign(paramsAttribute, { key: 'whereModelYear', year });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
   }
   if (radius) {
     if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
@@ -1595,12 +1598,20 @@ router.get('/like/:id', async (req, res) => {
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
     // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
-    Object.assign(whereCar, { where: {
-      [Op.and]: [
-        Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }), 
-        Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
-      ]
-    }});
+    Object.assign(whereCar, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
   }
 
   return models.Like.findAll({
@@ -1612,13 +1623,79 @@ router.get('/like/:id', async (req, res) => {
         model: models.Car,
         as: 'car',
         attributes: {
-          include: await carHelper.customFields(
-            customFields
-          ),
+          include: await carHelper.customFields(customFields),
           exclude: ['deletedAt']
         },
-        include: await carHelper.attributes(paramsAttribute),
-        where: whereCar
+        where: whereCar,
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: ['id', 'year', 'modelId'],
+            where: whereModelYear
+          },
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+          },
+          {
+            model: models.User,
+            as: 'profile',
+            attributes: ['id', 'type', 'companyType'],
+            where: whereProfile
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo', 'status']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.MeetingSchedule,
+            as: 'meetingSchedule',
+            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          }
+        ]
       }
     ],
     where,
@@ -1730,7 +1807,7 @@ router.get('/view/:id', async (req, res) => {
           }),
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
-        include: await carHelper.attributes(),
+        include: await carHelper.extraInclude(),
         where: whereCar
       }
     ],
@@ -2264,7 +2341,7 @@ async function viewLike(req, res) {
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(attr),
-    include: await carHelper.attributes({ key: `user` }),
+    include: await carHelper.extraInclude({ key: `user` }),
     where,
     order,
     offset,

@@ -88,7 +88,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
         attributes: {
           include: await carHelper.customFields({ fields: ['like', 'view', 'islike', 'isBid'], id })
         },
-        include: await carHelper.attributes(),
+        include: await carHelper.extraInclude(),
         where: whereCar
       }
     ],
@@ -196,7 +196,7 @@ async function getByModelYearId(req, res, params) {
           id: auth ? req.user.id : null
         })
       },
-      include: await carHelper.attributes(),
+      include: await carHelper.extraInclude(),
       where: whereCar
     }
   ];
@@ -253,7 +253,7 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
             id: userId
           })
         },
-        include: await carHelper.attributes()
+        include: await carHelper.extraInclude()
       },
       {
         model: models.User,
