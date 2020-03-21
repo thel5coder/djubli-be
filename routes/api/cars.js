@@ -30,10 +30,20 @@ router.get('/logon', passport.authenticate('user', { session: false }), async (r
 router.get('/user/:id', async (req, res) => {
   const { id } = req.params;
   const {
+    condition,
+    profile,
+    km,
+    price,
+    // djubleeReport,
+    radius,
+    year,
+    // kota,
+    // area,
+    latitude,
+    longitude,
     groupModelId,
     modelId,
     brandId,
-    condition,
     modelYearId,
     minPrice,
     maxPrice,
@@ -85,14 +95,6 @@ router.get('/user/:id', async (req, res) => {
     Object.assign(where, {
       groupModelId: {
         [Op.eq]: groupModelId
-      }
-    });
-  }
-
-  if (condition) {
-    Object.assign(where, {
-      condition: {
-        [Op.eq]: condition
       }
     });
   }
@@ -154,15 +156,151 @@ router.get('/user/:id', async (req, res) => {
     });
   }
 
-  const attr = await carHelper.customFields({
+  const whereModelYear = {};
+  const whereProfile = {};
+  const customFields = {
     fields: ['islike', 'isBidFromLike', 'like', 'view', 'numberOfBidder', 'highestBidder'],
     id,
     upperCase: true
-  });
+  };
 
+  if (condition) {
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(where, { condition: { [Op.eq]: condition } });
+  }
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(where, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(where, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
+  }
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+    // Object.assign(where, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(where, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
+  }
+
+  const includes = [
+    {
+      model: models.ModelYear,
+      as: 'modelYear',
+      attributes: ['id', 'year', 'modelId'],
+      where: whereModelYear
+    },
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+    },
+    {
+      model: models.User,
+      as: 'profile',
+      attributes: ['id', 'type', 'companyType'],
+      where: whereProfile
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    }
+  ];
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat(attr),
-    include: await carHelper.extraInclude(),
+    attributes: Object.keys(models.Car.attributes).concat(
+      await carHelper.customFields(customFields)
+    ),
+    include: includes,
     where,
     order,
     offset,
@@ -170,14 +308,7 @@ router.get('/user/:id', async (req, res) => {
   })
     .then(async data => {
       const count = await models.Car.count({
-        include: [
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: ['id', 'year', 'modelId'],
-            where: whereYear
-          }
-        ],
+        include: includes,
         where
       });
       const pagination = paginator.paging(page, count, limit);
@@ -2637,7 +2768,9 @@ async function viewLike(req, res) {
     }
   ];
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat(await carHelper.customFields(customFields)),
+    attributes: Object.keys(models.Car.attributes).concat(
+      await carHelper.customFields(customFields)
+    ),
     include: includes,
     where,
     order,
