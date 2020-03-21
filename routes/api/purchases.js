@@ -9,12 +9,26 @@ const carHelper = require('../../helpers/car');
 
 const router = express.Router();
 
+const { Op } = Sequelize;
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
   const { modelYearId } = req.query;
+  const {
+    condition,
+    profile,
+    km,
+    price,
+    // djubleeReport,
+    radius,
+    year,
+    // kota,
+    // area,
+    latitude,
+    longitude
+  } = req.query;
   let { page, limit, sort, by } = req.query;
   let offset = 0;
 
@@ -66,39 +80,178 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 
   const where = { userId: id };
   const whereCar = {};
+  const whereModelYear = {};
+  const whereProfile = {};
+  const customFields = {
+    fields: ['like', 'view', 'islike', 'isBid'],
+    id
+  };
+
   if (modelYearId) {
     const modelYearExists = await models.ModelYear.findByPk(modelYearId);
-    if (!modelYearExists) {
-      return res.status(404).json({
-        success: true,
-        errors: `model year not found`
-      });
-    }
+    if (!modelYearExists)
+      return apiResponse._error({ res, errors: 'model year not found', code: 404 });
     Object.assign(whereCar, { modelYearId });
   }
+  if (condition) {
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(whereCar, { condition: { [Op.eq]: condition } });
+  }
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(whereCar, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(whereCar, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
+  }
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+    // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(whereCar, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
+  }
+
+  const includes = [
+    {
+      model: models.Car,
+      as: 'car',
+      attributes: {
+        include: await carHelper.customFields(customFields),
+        exclude: ['deletedAt']
+      },
+      where: whereCar,
+      include: [
+        {
+          model: models.ModelYear,
+          as: 'modelYear',
+          attributes: ['id', 'year', 'modelId'],
+          where: whereModelYear
+        },
+        {
+          model: models.User,
+          as: 'user',
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+        },
+        {
+          model: models.User,
+          as: 'profile',
+          attributes: ['id', 'type', 'companyType'],
+          where: whereProfile
+        },
+        {
+          model: models.Brand,
+          as: 'brand',
+          attributes: ['id', 'name', 'logo', 'status']
+        },
+        {
+          model: models.Model,
+          as: 'model',
+          attributes: ['id', 'name', 'groupModelId']
+        },
+        {
+          model: models.GroupModel,
+          as: 'groupModel',
+          attributes: ['id', 'name', 'brandId']
+        },
+        {
+          model: models.Color,
+          as: 'interiorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.Color,
+          as: 'exteriorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.MeetingSchedule,
+          as: 'meetingSchedule',
+          attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+        },
+        {
+          model: models.InteriorGalery,
+          as: 'interiorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          model: models.ExteriorGalery,
+          as: 'exteriorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        }
+      ]
+    }
+  ];
 
   return models.Purchase.findAll({
     attributes: {
       exclude: ['deletedAt']
     },
-    include: [
-      {
-        model: models.Car,
-        as: 'car',
-        attributes: {
-          include: await carHelper.customFields({ fields: ['like', 'view', 'islike', 'isBid'], id })
-        },
-        include: await carHelper.extraInclude(),
-        where: whereCar
-      }
-    ],
+    include: includes,
     where,
     order,
     offset,
     limit
   })
     .then(async data => {
-      const count = await models.Purchase.count({ where });
+      const count = await models.Purchase.count({
+        include: includes,
+        where
+      });
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
