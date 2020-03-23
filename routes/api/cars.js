@@ -2392,7 +2392,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     exterior,
     day,
     startTime,
-    endTime
+    endTime,
+    km
   } = req.body;
   const { images } = req.files;
 
@@ -2408,33 +2409,33 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       errors: 'brand is mandatory'
     });
   }
-
   if (!groupModelId) {
     return res.status(400).json({
       success: false,
       errors: 'groupModel is mandatory'
     });
   }
-
   if (!modelId) {
     return res.status(400).json({
       success: false,
       errors: 'model is mandatory'
     });
   }
-
   if (!modelYearId) {
     return res.status(400).json({
       success: false,
       errors: 'model year is mandatory'
     });
   }
-
   if (!location) {
     return res.status(400).json({
       success: false,
       errors: 'location is mandatory'
     });
+  }
+  if (km) {
+    if (validator.isInt(km) === false)
+      return res.status(422).json({ success: false, errors: 'km is number' });
   }
 
   let STNKphoto = null;
@@ -2468,7 +2469,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     STNKnumber,
     STNKphoto,
     location: location.replace(/\s/g, ''),
-    status
+    status,
+    km
   };
   // return apiResponse._success({ res, data:{insert, input:req.body} });
 
