@@ -58,7 +58,8 @@ module.exports = {
         allowNull: false
       },
       km: {
-        type: Sequelize.NUMERIC
+        type: Sequelize.NUMERIC,
+        defaultValue: 0
       },
       createdAt: {
         allowNull: false,
