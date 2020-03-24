@@ -3258,18 +3258,7 @@ router.get(
           model: models.User,
           as: 'user',
           attributes: {
-            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt'],
-            include: [
-              {
-                model: models.Purchase,
-                as: 'purchase',
-                attributes: {
-                  exclude: ['deletedAt']
-                },
-                order: [['id', 'desc']],
-                limit: 1
-              }
-            ]
+            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
           },
           include: [
             {
@@ -3292,6 +3281,15 @@ router.get(
               attributes: {
                 exclude: ['createdAt', 'updatedAt', 'deletedAt']
               }
+            },
+            {
+              model: models.Purchase,
+              as: 'purchase',
+              attributes: {
+                exclude: ['deletedAt']
+              },
+              order: [['id', 'desc']],
+              limit: 1
             }
           ]
         },
