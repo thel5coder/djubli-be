@@ -391,6 +391,74 @@ router.get('/listingAll', async (req, res) => {
     ],
     whereQuery
   });
+  const includeCar = [
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+      include: [
+        {
+          model: models.Purchase,
+          as: 'purchase',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']],
+          limit: 1
+        }
+      ]
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    }
+  ];
 
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
@@ -439,7 +507,8 @@ router.get('/listingAll', async (req, res) => {
             upperCase
           })
         },
-        include: await carHelper.extraInclude({ key: 'noModelYear' }),
+        // include: await carHelper.extraInclude({ key: 'noModelYear' }),
+        include: includeCar,
         where: whereInclude
       }
     ],
@@ -597,6 +666,74 @@ router.get('/listingType', async (req, res) => {
     whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)
   });
 
+  const includeCar = [
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+      include: [
+        {
+          model: models.Purchase,
+          as: 'purchase',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']],
+          limit: 1
+        }
+      ]
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    }
+  ];
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
@@ -640,8 +777,8 @@ router.get('/listingType', async (req, res) => {
             ]
           })
         },
-        // include: await carHelper.extraInclude(),
-        include: await carHelper.extraInclude({ key: 'noModelYear' }),
+        // include: await carHelper.extraInclude({ key: 'noModelYear' }),
+        include: includeCar,
         where: whereInclude
       }
     ],
@@ -985,7 +1122,18 @@ router.get('/listingCar/:id', async (req, res) => {
       {
         model: models.User,
         as: 'user',
-        attributes: ['name', 'type', 'companyType']
+        attributes: ['name', 'type', 'companyType'],
+        include: [
+          {
+            model: models.Purchase,
+            as: 'purchase',
+            attributes: {
+              exclude: ['deletedAt']
+            },
+            order: [['id', 'desc']],
+            limit: 1
+          }
+        ]
       },
       {
         model: models.Color,
@@ -1231,7 +1379,18 @@ router.get(
         {
           model: models.User,
           as: 'user',
-          attributes: ['name', 'type', 'companyType']
+          attributes: ['name', 'type', 'companyType'],
+          include: [
+            {
+              model: models.Purchase,
+              as: 'purchase',
+              attributes: {
+                exclude: ['deletedAt']
+              },
+              order: [['id', 'desc']],
+              limit: 1
+            }
+          ]
         },
         {
           model: models.Color,
@@ -1378,6 +1537,74 @@ router.get('/luxuryCar', async (req, res) => {
     whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)
   });
 
+  const includeCar = [
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+      include: [
+        {
+          model: models.Purchase,
+          as: 'purchase',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']],
+          limit: 1
+        }
+      ]
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    }
+  ];
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
@@ -1416,8 +1643,8 @@ router.get('/luxuryCar', async (req, res) => {
             fields: ['bidAmountModelYears', 'numberOfBidder', 'like', 'view']
           })
         },
-        // include: await carHelper.extraInclude()
-        include: await carHelper.extraInclude({ key: 'noModelYear' })
+        // include: await carHelper.extraInclude({ key: 'noModelYear' })
+        include: includeCar
       }
     ],
     where,
