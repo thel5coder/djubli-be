@@ -178,7 +178,7 @@ async function carsGet(req, res, auth = false) {
       });
     }
 
-    await calculateDistance.CreateOrReplaceCalculateDistance()
+    await calculateDistance.CreateOrReplaceCalculateDistance();
     let distances = models.sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
@@ -287,7 +287,18 @@ async function carsGet(req, res, auth = false) {
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+        include: [
+          {
+            model: models.Purchase,
+            as: 'purchase',
+            attributes: {
+              exclude: ['deletedAt']
+            },
+            order: [['id', 'desc']],
+            limit: 1
+          }
+        ]
       },
       {
         model: models.Brand,
