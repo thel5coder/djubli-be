@@ -12,6 +12,7 @@ const paginator = require('../../helpers/paginator');
 const carsController = require('../../controller/carsController');
 const apiResponse = require('../../helpers/apiResponse');
 const carHelper = require('../../helpers/car');
+const calculateDistance = require('../../helpers/calculateDistance');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -207,6 +208,7 @@ router.get('/user/:id', async (req, res) => {
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
@@ -1208,6 +1210,7 @@ async function bidList(req, res) {
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
@@ -1529,6 +1532,7 @@ async function sellList(req, res) {
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
@@ -1994,6 +1998,7 @@ router.get('/like/:id', async (req, res) => {
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
@@ -2243,6 +2248,7 @@ router.get('/view/:id', async (req, res) => {
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
@@ -2914,6 +2920,7 @@ async function viewLike(req, res) {
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );

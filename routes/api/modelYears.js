@@ -7,6 +7,7 @@ const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
 const general = require('../../helpers/general');
+const calculateDistance = require('../../helpers/calculateDistance');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -186,6 +187,7 @@ router.get('/listingAll', async (req, res) => {
       });
     }
 
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const rawDistancesFunc = (tableName = 'Car') => {
       const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
       rawDistances = calDistance;
@@ -228,6 +230,7 @@ router.get('/listingAll', async (req, res) => {
         }
 
         if (city && subdistrict) {
+          await calculateDistance.CreateOrReplaceCalculateDistance()
           const rawDistancesFunc = (tableName = 'Car') => {
             const calDistance = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
             rawDistances = calDistance;
@@ -241,6 +244,7 @@ router.get('/listingAll', async (req, res) => {
         // If subdistrictId Null (Search By City & Radius)
         // eslint-disable-next-line no-lonely-if
         if (city) {
+          await calculateDistance.CreateOrReplaceCalculateDistance()
           const rawDistancesFunc = (tableName = 'Car') => {
             const calDistance = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
             rawDistances = calDistance;
@@ -746,6 +750,7 @@ router.get('/listingCar/:id', async (req, res) => {
       });
     }
 
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const rawDistances = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
     distances = models.sequelize.literal(rawDistances);
   }
@@ -782,6 +787,7 @@ router.get('/listingCar/:id', async (req, res) => {
         }
 
         if (city && subdistrict) {
+          await calculateDistance.CreateOrReplaceCalculateDistance()
           const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
           distances = models.sequelize.literal(rawDistances);
         }
@@ -789,6 +795,7 @@ router.get('/listingCar/:id', async (req, res) => {
         // If subdistrictId Null (Search By City & Radius)
         // eslint-disable-next-line no-lonely-if
         if (city) {
+          await calculateDistance.CreateOrReplaceCalculateDistance()
           const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
           distances = models.sequelize.literal(rawDistances);
         }

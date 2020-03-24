@@ -6,6 +6,7 @@ const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
+const calculateDistance = require('../../helpers/calculateDistance');
 
 const router = express.Router();
 
@@ -136,6 +137,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance()
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
