@@ -2038,7 +2038,18 @@ router.get('/like/:id', async (req, res) => {
         {
           model: models.User,
           as: 'user',
-          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+          include: [
+            {
+              model: models.Purchase,
+              as: 'purchase',
+              attributes: {
+                exclude: ['deletedAt']
+              },
+              order: [['id', 'desc']],
+              limit: 1
+            }
+          ]
         },
         {
           model: models.User,
@@ -2288,7 +2299,18 @@ router.get('/view/:id', async (req, res) => {
         {
           model: models.User,
           as: 'user',
-          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+          include: [
+            {
+              model: models.Purchase,
+              as: 'purchase',
+              attributes: {
+                exclude: ['deletedAt']
+              },
+              order: [['id', 'desc']],
+              limit: 1
+            }
+          ]
         },
         {
           model: models.User,
@@ -2973,6 +2995,15 @@ async function viewLike(req, res) {
           attributes: {
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           }
+        },
+        {
+          model: models.Purchase,
+          as: 'purchase',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']],
+          limit: 1
         }
       ]
     },
@@ -3227,7 +3258,18 @@ router.get(
           model: models.User,
           as: 'user',
           attributes: {
-            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt'],
+            include: [
+              {
+                model: models.Purchase,
+                as: 'purchase',
+                attributes: {
+                  exclude: ['deletedAt']
+                },
+                order: [['id', 'desc']],
+                limit: 1
+              }
+            ]
           },
           include: [
             {
