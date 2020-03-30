@@ -148,6 +148,16 @@ router.get('/listingAll', async (req, res) => {
     ];
   else if (by === 'km')
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
+  else if (by === 'brand')
+    order = [
+      [
+        { model: models.Model, as: 'model' },
+        { model: models.GroupModel, as: 'groupModel' },
+        { model: models.Brand, as: 'brand' },
+        'name',
+        sort
+      ]
+    ];
   else if (by === 'roleUser')
     order = [
       [
@@ -187,7 +197,7 @@ router.get('/listingAll', async (req, res) => {
       });
     }
 
-    await calculateDistance.CreateOrReplaceCalculateDistance()
+    await calculateDistance.CreateOrReplaceCalculateDistance();
     const rawDistancesFunc = (tableName = 'Car') => {
       const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
       rawDistances = calDistance;
@@ -230,7 +240,7 @@ router.get('/listingAll', async (req, res) => {
         }
 
         if (city && subdistrict) {
-          await calculateDistance.CreateOrReplaceCalculateDistance()
+          await calculateDistance.CreateOrReplaceCalculateDistance();
           const rawDistancesFunc = (tableName = 'Car') => {
             const calDistance = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
             rawDistances = calDistance;
@@ -244,7 +254,7 @@ router.get('/listingAll', async (req, res) => {
         // If subdistrictId Null (Search By City & Radius)
         // eslint-disable-next-line no-lonely-if
         if (city) {
-          await calculateDistance.CreateOrReplaceCalculateDistance()
+          await calculateDistance.CreateOrReplaceCalculateDistance();
           const rawDistancesFunc = (tableName = 'Car') => {
             const calDistance = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
             rawDistances = calDistance;
@@ -408,21 +418,21 @@ router.get('/listingAll', async (req, res) => {
         }
       ]
     },
-    {
-      model: models.Brand,
-      as: 'brand',
-      attributes: ['id', 'name', 'logo', 'status']
-    },
-    {
-      model: models.Model,
-      as: 'model',
-      attributes: ['id', 'name', 'groupModelId']
-    },
-    {
-      model: models.GroupModel,
-      as: 'groupModel',
-      attributes: ['id', 'name', 'brandId']
-    },
+    // {
+    //   model: models.Brand,
+    //   as: 'brand',
+    //   attributes: ['id', 'name', 'logo', 'status']
+    // },
+    // {
+    //   model: models.Model,
+    //   as: 'model',
+    //   attributes: ['id', 'name', 'groupModelId']
+    // },
+    // {
+    //   model: models.GroupModel,
+    //   as: 'groupModel',
+    //   attributes: ['id', 'name', 'brandId']
+    // },
     {
       model: models.Color,
       as: 'interiorColor',
@@ -887,7 +897,7 @@ router.get('/listingCar/:id', async (req, res) => {
       });
     }
 
-    await calculateDistance.CreateOrReplaceCalculateDistance()
+    await calculateDistance.CreateOrReplaceCalculateDistance();
     const rawDistances = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
     distances = models.sequelize.literal(rawDistances);
   }
@@ -924,7 +934,7 @@ router.get('/listingCar/:id', async (req, res) => {
         }
 
         if (city && subdistrict) {
-          await calculateDistance.CreateOrReplaceCalculateDistance()
+          await calculateDistance.CreateOrReplaceCalculateDistance();
           const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
           distances = models.sequelize.literal(rawDistances);
         }
@@ -932,7 +942,7 @@ router.get('/listingCar/:id', async (req, res) => {
         // If subdistrictId Null (Search By City & Radius)
         // eslint-disable-next-line no-lonely-if
         if (city) {
-          await calculateDistance.CreateOrReplaceCalculateDistance()
+          await calculateDistance.CreateOrReplaceCalculateDistance();
           const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
           distances = models.sequelize.literal(rawDistances);
         }
