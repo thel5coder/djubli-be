@@ -2,7 +2,7 @@ const Sequelize = require('sequelize');
 const models = require('../db/models');
 
 async function CreateOrReplaceCalculateDistance() {
-	const calculateDistanceFunction = `CREATE OR REPLACE FUNCTION "public"."calculate_distance"("lat1" float8, "lon1" float8, "lat2" float8, "lon2" float8, "units" varchar)
+  const calculateDistanceFunction = `CREATE OR REPLACE FUNCTION "public"."calculate_distance"("lat1" float8, "lon1" float8, "lat2" float8, "lon2" float8, "units" varchar)
         RETURNS "pg_catalog"."float8" AS $BODY$
             DECLARE
                 dist float = 0;
@@ -34,9 +34,10 @@ async function CreateOrReplaceCalculateDistance() {
             END;
         $BODY$
           	LANGUAGE plpgsql VOLATILE
-          	COST 100;`
+          	COST 100;`;
 
-    return await models.sequelize.query(calculateDistanceFunction, { type: models.sequelize.QueryTypes.SELECT })
+  // return await models.sequelize.query(calculateDistanceFunction, { type: models.sequelize.QueryTypes.SELECT })
+  return true;
 }
 
 module.exports = {
