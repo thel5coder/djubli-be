@@ -282,7 +282,7 @@ router.get('/listingAll', async (req, res) => {
     });
   }
 
-  let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1)';
+  let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
   const whereInclude = { [Op.or]: [{ status: 0 }, { status: 1 }] };
   if (condition) {
     Object.assign(whereInclude, {
