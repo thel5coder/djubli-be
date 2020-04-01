@@ -8,7 +8,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         references: {
           model: models.Dealer,
-          key: "userId"
+          key: 'userId'
         }
       },
       carId: DataTypes.INTEGER,
@@ -18,7 +18,8 @@ module.exports = (sequelize, DataTypes) => {
       expiredAt: DataTypes.DATE,
       comment: DataTypes.STRING,
       bidType: DataTypes.INTEGER,
-      negotiationType: DataTypes.INTEGER
+      negotiationType: DataTypes.INTEGER,
+      carPrice: DataTypes.NUMERIC
     },
     { timestamps: true, paranoid: true }
   );
