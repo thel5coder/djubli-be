@@ -340,7 +340,8 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     paymentMethod,
     expiredAt,
     negotiationType,
-    comment
+    comment,
+    carPrice
   } = req.body;
 
   if (validator.isInt(userId ? userId.toString() : '') === false) {
@@ -392,24 +393,43 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  const trans = await models.sequelize.transaction();
+  if (!carPrice) {
+    return res.status(400).json({
+      success: false,
+      errors: 'carPrice must be filled'
+    });
+  }
 
-  const data = await models.Bargain.create(
-    {
-      userId,
-      carId,
-      bidAmount,
-      haveSeenCar,
-      paymentMethod,
-      expiredAt,
-      bidType: 1,
-      negotiationType,
-      comment
-    },
-    {
-      transaction: trans
-    }
-  ).catch(err => {
+  if (validator.isInt(carPrice ? carPrice.toString() : '') === false) {
+    return res.status(406).json({
+      success: false,
+      errors: 'type of carPrice must be int'
+    });
+  }
+
+  const create = {
+    userId,
+    carId,
+    bidAmount,
+    haveSeenCar,
+    paymentMethod,
+    expiredAt,
+    bidType: 1,
+    negotiationType,
+    comment,
+    carPrice
+  };
+
+  // return res.status(200).json({
+  //   success: true,
+  //   message: `parameter oke`,
+  //   data: { create }
+  // });
+
+  const trans = await models.sequelize.transaction();
+  const data = await models.Bargain.create(create, {
+    transaction: trans
+  }).catch(err => {
     trans.rollback();
     return res.status(422).json({
       success: false,
