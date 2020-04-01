@@ -2985,6 +2985,23 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
   });
 });
 
+router.delete('/meet/schedules/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+  if (validator.isInt(id ? id.toString() : '') === false) return res.status(400).json({ success: false, errors: 'Invalid Parameter' });
+  
+  const data = await models.MeetingSchedule.findByPk(id);
+  if (!data) return res.status(400).json({ success: false, errors: 'Schedule not found' });
+
+  return data
+    .destroy(id)
+    .then(async data => {
+      return apiResponse._success({ res, data });
+    })
+    .catch(err => {
+      return apiResponse._error({ res, errors: err });
+    });
+});
+
 async function viewLike(req, res) {
   const {
     condition,
