@@ -2599,6 +2599,145 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   });
 });
 
+router.put('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+  const {
+    price,
+    location,
+    km,
+    meetingSchedules
+  } = req.body;
+  const { images } = req.files;
+  const update = {};
+
+  if (validator.isInt(id ? id.toString() : '') === false)
+    return res.status(400).json({
+      success: false,
+      errors: 'invalid id'
+    });
+
+  if (!price) {
+    if (validator.isInt(price ? price.toString() : '') === false)
+      return res.status(422).json({ success: false, errors: 'invalid price' });
+    
+    Object.assign(update, { price });
+  }
+  if (location) {
+    let locations = location.split(',');
+    locations[0] = general.customReplace(locations[0], ' ', '');
+    locations[1] = general.customReplace(locations[1], ' ', '');
+    if (validator.isNumeric(locations[0] ? locations[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (validator.isNumeric(locations[1] ? locations[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid longitude' });
+    
+    Object.assign(update, { location });
+  }
+  if (km) {
+    if (validator.isInt(km ? km.toString() : '') === false)
+      return res.status(422).json({ success: false, errors: 'invalid km' });
+    
+    Object.assign(update, { km });
+  }
+
+  const result = {};
+  let isUpload = false;
+  if (images) {
+    const tname = randomize('0', 4);
+    result.name = `djublee/images/car/${tname}${moment().format('x')}${unescape(
+      images[0].originalname
+    ).replace(/\s/g, '')}`;
+    result.mimetype = images[0].mimetype;
+    result.data = images[0].buffer;
+    isUpload = true;
+    Object.assign(update, { STNKphoto: result.name });
+  }
+
+  let checkDetails = { status: true, message: `ingredient oke` };
+  if (meetingSchedules) {
+    meetingSchedules.map(d => {
+      if (validator.isInt(d.id ? d.id.toString() : '') === false) {
+        Object.assign(checkDetails, { status: false, message: `invalid id ${d.id}` });
+        return;
+      }
+      if (validator.isInt(d.day ? d.day.toString() : '') === false) {
+        Object.assign(checkDetails, { status: false, message: `invalid day ${d.id}` });
+        return;
+      }
+      // if (validator.isInt(d.startTime ? d.startTime.toString() : '') === false) {
+      if (!d.startTime) {
+        Object.assign(checkDetails, { status: false, message: `invalid startTime ${d.id}` });
+        return;
+      }
+      if (!d.endTime) {
+        Object.assign(checkDetails, { status: false, message: `invalid endTime ${d.id}` });
+        return;
+      }
+    });
+    if (!checkDetails.status) return apiResponse._error({ res, status: checkDetails.status, errors: checkDetails.message, data: null });
+  }
+
+  const carExists = await models.Car.findByPk(id);
+  if (!carExists) return apiResponse._error({ res, errors: `car not found` });
+
+  const trans = await models.sequelize.transaction();
+  const errors = [];
+
+  await carExists.update(update, {
+    transaction: trans,
+  }).then(async () => {
+    if (meetingSchedules) {
+      meetingSchedules.map(async d => {
+        if (d.id > 0) {
+          return models.MeetingSchedule.update(
+            {
+              day: d.day, startTime: d.startTime, endTime: d.endTime
+            },
+            {
+              where: { id: d.id }
+            }
+          );
+        } else {
+          return models.MeetingSchedule.create(
+            {
+              carId: carExists.id, day: d.day, startTime: d.startTime, endTime: d.endTime
+            }
+          );
+        }
+      });
+    }
+  }).catch(async (err) => {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
+  
+  if (errors.length > 0) {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors
+    });
+  }
+
+  trans.commit();
+  if (isUpload) imageHelper.uploadToS3(result);
+
+  const data = await models.Car.findByPk(id, {
+    include:[
+      {
+        model: models.MeetingSchedule,
+        as: 'meetingSchedule',
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+      }
+    ]
+  });
+
+  return res.json({ success: true, data });
+});
+
 router.post('/like/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
   const car = await models.Car.findOne({
