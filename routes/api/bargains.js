@@ -823,10 +823,8 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   if (negotiationType == 0) {
     Object.assign(whereBargain, {
       [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
-      // negotiationType: {
-      //   [Op.eq]: negotiationType
-      // }
     });
+    order.push([{ model: models.Bargain, as: 'bargain' }, 'id', 'desc']);
   } else if (negotiationType == 1) {
     Object.assign(whereBargain, {
       [Op.or]: [
@@ -1034,7 +1032,7 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
         attributes: {
           exclude: ['updatedAt', 'deletedAt']
         },
-        order: [['id', 'asc']],
+        // order: [['id', 'asc']],
         include: [
           {
             model: models.User,
