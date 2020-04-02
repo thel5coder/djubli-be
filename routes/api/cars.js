@@ -2616,7 +2616,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
       errors: 'invalid id'
     });
 
-  if (!price) {
+  if (price) {
     if (validator.isInt(price ? price.toString() : '') === false)
       return res.status(422).json({ success: false, errors: 'invalid price' });
     
