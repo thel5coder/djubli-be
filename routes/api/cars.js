@@ -1347,7 +1347,8 @@ router.get('/bid/list', passport.authenticate('user', { session: false }), async
 });
 
 async function sellList(req, res) {
-  const { id } = req.user;
+  // const { id } = req.user;
+  const id =(req.user)? req.user.id:null;
   const { status } = req.params;
   const {
     condition,
@@ -1399,46 +1400,21 @@ async function sellList(req, res) {
   }
   const where = {};
 
-  Object.assign(where, {
-    status: {
-      [Op.eq]: status
-    },
-    userId: {
-      [Op.eq]: id
-    }
-  });
+  // Object.assign(where, {
+  //   status: {
+  //     [Op.eq]: status
+  //   },
+  //   userId: {
+  //     [Op.eq]: id
+  //   }
+  // });
 
-  if (modelYearId) {
-    Object.assign(where, {
-      modelYearId: {
-        [Op.eq]: modelYearId
-      }
-    });
-  }
-
-  if (groupModelId) {
-    Object.assign(where, {
-      groupModelId: {
-        [Op.eq]: groupModelId
-      }
-    });
-  }
-
-  if (modelId) {
-    Object.assign(where, {
-      modelId: {
-        [Op.eq]: modelId
-      }
-    });
-  }
-
-  if (brandId) {
-    Object.assign(where, {
-      brandId: {
-        [Op.eq]: brandId
-      }
-    });
-  }
+  if (status) Object.assign(where, { status });
+  if (id) Object.assign(where, { userId: id });
+  if (modelYearId) Object.assign(where, { modelYearId });
+  if (groupModelId) Object.assign(where, { groupModelId });
+  if (modelId) Object.assign(where, { modelId });
+  if (brandId) Object.assign(where, { brandId });
 
   if (minPrice && maxPrice) {
     Object.assign(where, {
@@ -1662,7 +1638,7 @@ router.get(
 );
 router.get(
   '/sell/list/status/:status',
-  passport.authenticate('user', { session: false }),
+  // passport.authenticate('user', { session: false }),
   async (req, res) => {
     return sellList(req, res);
   }
