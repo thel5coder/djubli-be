@@ -2397,7 +2397,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     day,
     startTime,
     endTime,
-    km
+    km,
+    address
   } = req.body;
   const { images } = req.files;
 
@@ -2484,9 +2485,12 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     status,
     km
   };
+
+  if (address) Object.assign(insert, { address });
+
   // return apiResponse._success({
   //   res,
-  //   data: { input: req.body }
+  //   data: { input: req.body, insert }
   // });
 
   const data = await models.Car.create(insert, {
