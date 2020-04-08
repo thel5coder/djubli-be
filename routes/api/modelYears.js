@@ -127,6 +127,18 @@ router.get('/listingAll', async (req, res) => {
   let separate = false;
   let modelCarName = 'car';
   let upperCase = false;
+  const carCustomFields = {
+    upperCase
+  };
+  const carFields = [
+    'bidAmountModelYears',
+    'numberOfBidder',
+    'like',
+    'view',
+    'groupModelTypeId',
+    'latitude',
+    'longitude'
+  ];
 
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
@@ -226,7 +238,6 @@ router.get('/listingAll', async (req, res) => {
         });
       }
 
-      // If subdistrictId Not Null
       if (subdistrictId) {
         const subdistrict = await models.SubDistrict.findOne({
           where: { id: subdistrictId, cityId }
@@ -251,8 +262,6 @@ router.get('/listingAll', async (req, res) => {
           rawDistancesFunc();
         }
       } else {
-        // If subdistrictId Null (Search By City & Radius)
-        // eslint-disable-next-line no-lonely-if
         if (city) {
           await calculateDistance.CreateOrReplaceCalculateDistance();
           const rawDistancesFunc = (tableName = 'Car') => {
@@ -260,6 +269,12 @@ router.get('/listingAll', async (req, res) => {
             rawDistances = calDistance;
             return calDistance;
           };
+
+          Object.assign(carCustomFields, {
+            latitude: city.latitude,
+            longitude: city.longitude
+          });
+          carFields.push('distance');
 
           distances = models.sequelize.literal(rawDistancesFunc('car'));
           rawDistancesFunc();
@@ -385,6 +400,7 @@ router.get('/listingAll', async (req, res) => {
     modelCarName = 'Car';
     upperCase = true;
   }
+
   Object.assign(where, {
     [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 1 })]
   });
@@ -418,21 +434,6 @@ router.get('/listingAll', async (req, res) => {
         }
       ]
     },
-    // {
-    //   model: models.Brand,
-    //   as: 'brand',
-    //   attributes: ['id', 'name', 'logo', 'status']
-    // },
-    // {
-    //   model: models.Model,
-    //   as: 'model',
-    //   attributes: ['id', 'name', 'groupModelId']
-    // },
-    // {
-    //   model: models.GroupModel,
-    //   as: 'groupModel',
-    //   attributes: ['id', 'name', 'brandId']
-    // },
     {
       model: models.Color,
       as: 'interiorColor',
@@ -470,6 +471,10 @@ router.get('/listingAll', async (req, res) => {
     }
   ];
 
+  Object.assign(carCustomFields, {
+    fields: carFields
+  });
+
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
@@ -504,20 +509,8 @@ router.get('/listingAll', async (req, res) => {
         separate,
         order: orderCar,
         attributes: {
-          include: await carHelper.customFields({
-            fields: [
-              'bidAmountModelYears',
-              'numberOfBidder',
-              'like',
-              'view',
-              'groupModelTypeId',
-              'latitude',
-              'longitude'
-            ],
-            upperCase
-          })
+          include: await carHelper.customFields(carCustomFields)
         },
-        // include: await carHelper.extraInclude({ key: 'noModelYear' }),
         include: includeCar,
         where: whereInclude
       }
