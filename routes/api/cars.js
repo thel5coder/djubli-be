@@ -2585,7 +2585,8 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     price,
     location,
     km,
-    meetingSchedules
+    meetingSchedules,
+    address
   } = req.body;
   const { images } = req.files;
   const update = {};
@@ -2619,7 +2620,8 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     
     Object.assign(update, { km });
   }
-
+  if (address) Object.assign(update, { address });
+  
   const result = {};
   let isUpload = false;
   if (images) {
