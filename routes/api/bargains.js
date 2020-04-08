@@ -530,7 +530,9 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
         { negotiationType: 1 },
         { negotiationType: 2 },
         { negotiationType: 3 },
-        { negotiationType: 4 }
+        { negotiationType: 4 },
+        { negotiationType: 5 },
+        { negotiationType: 6 }
       ]
     });
   }
@@ -831,7 +833,9 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
         { negotiationType: 1 },
         { negotiationType: 2 },
         { negotiationType: 3 },
-        { negotiationType: 4 }
+        { negotiationType: 4 },
+        { negotiationType: 5 },
+        { negotiationType: 6 }
       ]
     });
   }
