@@ -126,10 +126,8 @@ router.get('/listingAll', async (req, res) => {
 
   let separate = false;
   let modelCarName = 'car';
-  let upperCase = false;
-  const carCustomFields = {
-    upperCase
-  };
+  let upperCase = true;
+  const carCustomFields = {};
   const carFields = [
     'bidAmountModelYears',
     'numberOfBidder',
@@ -258,6 +256,11 @@ router.get('/listingAll', async (req, res) => {
             return calDistance;
           };
 
+          Object.assign(carCustomFields, {
+            latitude: subdistrict.latitude,
+            longitude: subdistrict.longitude
+          });
+
           distances = models.sequelize.literal(rawDistancesFunc('car'));
           rawDistancesFunc();
         }
@@ -274,12 +277,22 @@ router.get('/listingAll', async (req, res) => {
             latitude: city.latitude,
             longitude: city.longitude
           });
-          carFields.push('distance');
 
           distances = models.sequelize.literal(rawDistancesFunc('car'));
           rawDistancesFunc();
         }
       }
+      carFields.push('distance');
+      upperCase = false;
+      order = [
+        [
+          { model: models.Model, as: 'model' },
+          { model: models.GroupModel, as: 'groupModel' },
+          { model: models.Brand, as: 'brand' },
+          'name',
+          sort
+        ]
+      ];
     } else {
       return res.status(400).json({
         success: false,
@@ -472,7 +485,8 @@ router.get('/listingAll', async (req, res) => {
   ];
 
   Object.assign(carCustomFields, {
-    fields: carFields
+    fields: carFields,
+    upperCase
   });
 
   return models.ModelYear.findAll({

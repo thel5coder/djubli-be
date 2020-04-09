@@ -3,6 +3,7 @@ const Sequelize = require('sequelize');
 const models = require('../db/models');
 const paginator = require('../helpers/paginator');
 const calculateDistance = require('../helpers/calculateDistance');
+const carHelper = require('../helpers/car');
 
 const { Op } = Sequelize;
 
@@ -55,7 +56,8 @@ async function carsGet(req, res, auth = false) {
     'createdAt',
     'view',
     'like',
-    'profile'
+    'profile',
+    'area'
   ];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
@@ -64,6 +66,11 @@ async function carsGet(req, res, auth = false) {
     case 'view':
     case 'like':
       order.push([Sequelize.col(by), sort]);
+      break;
+    case 'area':
+      // order.push([Sequelize.col(by), sort]);
+      // order.push([Sequelize.literal(`"car.distance" ${sort}`)]);
+      order.push([Sequelize.col(`distance`), sort]);
       break;
     case 'profile':
       order.push([{ model: models.User, as: 'user' }, 'type', sort]);
@@ -187,6 +194,31 @@ async function carsGet(req, res, auth = false) {
     });
   }
 
+  if (by === 'area') {
+    if (!latitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Latitude not found!'
+      });
+    }
+
+    if (!longitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Longitude not found!'
+      });
+    }
+  }
+
+  const addAttribute = await carHelper.customFields({
+    fields: ['like', 'view', 'highestBidder', 'numberOfBidder', 'distance'],
+    upperCase: true,
+    latitude,
+    longitude
+  });
+
+  console.log(addAttribute);
+
   const customFields = [
     [
       models.sequelize.literal(
@@ -276,7 +308,7 @@ async function carsGet(req, res, auth = false) {
   }
 
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat(customFields),
+    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
         model: models.ModelYear,
