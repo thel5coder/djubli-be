@@ -91,7 +91,6 @@ router.get('/id/:id', async (req, res) => {
 
 router.get('/listingAll', async (req, res) => {
   const {
-    by,
     condition,
     brandId,
     groupModelId,
@@ -110,7 +109,7 @@ router.get('/listingAll', async (req, res) => {
     typeId
   } = req.query;
 
-  let { page, limit, sort } = req.query;
+  let { page, limit, sort, by } = req.query;
   let offset = 0;
   const countDataPage = 0;
   let distances = {};
@@ -121,11 +120,11 @@ router.get('/listingAll', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
+  if (!by) by = 'createdAt';
   let order = [['createdAt', 'desc']];
   let orderCar = [];
 
   let separate = false;
-  let modelCarName = 'car';
   let upperCase = true;
   const carCustomFields = {};
   const carFields = [
@@ -142,7 +141,10 @@ router.get('/listingAll', async (req, res) => {
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   if (by === 'year' || by === 'id') order = [[by, sort]];
-  else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
+  else if (by === 'createdAt') {
+    upperCase = false;
+    order = [[by, sort]];
+  } else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
   else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
   else if (by === 'like') {
     separate = true;
