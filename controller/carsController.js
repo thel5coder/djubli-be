@@ -68,8 +68,6 @@ async function carsGet(req, res, auth = false) {
       order.push([Sequelize.col(by), sort]);
       break;
     case 'area':
-      // order.push([Sequelize.col(by), sort]);
-      // order.push([Sequelize.literal(`"car.distance" ${sort}`)]);
       order.push([Sequelize.col(`distance`), sort]);
       break;
     case 'profile':
@@ -80,6 +78,10 @@ async function carsGet(req, res, auth = false) {
       break;
   }
 
+  const addAttributes = {
+    fields: ['like', 'view', 'highestBidder', 'numberOfBidder'],
+    upperCase: true
+  };
   const where = {};
   if (modelYearId) {
     Object.assign(where, {
@@ -208,16 +210,15 @@ async function carsGet(req, res, auth = false) {
         errors: 'Longitude not found!'
       });
     }
+
+    addAttributes.fields.push('distance');
+    Object.assign(addAttributes, {
+      latitude,
+      longitude
+    });
   }
 
-  const addAttribute = await carHelper.customFields({
-    fields: ['like', 'view', 'highestBidder', 'numberOfBidder', 'distance'],
-    upperCase: true,
-    latitude,
-    longitude
-  });
-
-  console.log(addAttribute);
+  const addAttribute = await carHelper.customFields(addAttributes);
 
   const customFields = [
     [
