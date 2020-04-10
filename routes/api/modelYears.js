@@ -140,27 +140,37 @@ router.get('/listingAll', async (req, res) => {
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  if (by === 'year' || by === 'id') order = [[by, sort]];
-  else if (by === 'createdAt') {
+  if (by === 'year' || by === 'id') {
     upperCase = false;
     order = [[by, sort]];
-  } else if (by === 'numberOfCar') order = [[models.sequelize.col('numberOfCar'), sort]];
-  else if (by === 'highestBidder') order = [[models.sequelize.col('highestBidder'), sort]];
-  else if (by === 'like') {
+  } else if (by === 'createdAt') {
+    upperCase = false;
+    order = [[by, sort]];
+  } else if (by === 'numberOfCar') {
+    upperCase = false;
+    order = [[models.sequelize.col('numberOfCar'), sort]];
+  } else if (by === 'highestBidder') {
+    upperCase = false;
+    order = [[models.sequelize.col('highestBidder'), sort]];
+  } else if (by === 'like') {
     separate = true;
     orderCar = [[models.sequelize.col('like'), sort]];
-  } else if (by === 'condition')
+  } else if (by === 'condition') {
+    upperCase = false;
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('condition'), sort]];
-  else if (by === 'price')
+  } else if (by === 'price') {
+    upperCase = false;
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('price'), sort]];
-  else if (by === 'listingDate')
+  } else if (by === 'listingDate') {
+    upperCase = false;
     order = [
       [models.sequelize.col('createdAt'), sort],
       [{ model: models.Car, as: 'car' }, models.sequelize.col('createdAt'), sort]
     ];
-  else if (by === 'km')
+  } else if (by === 'km') {
+    upperCase = false;
     order = [[{ model: models.Car, as: 'car' }, models.sequelize.col('km'), sort]];
-  else if (by === 'brand')
+  } else if (by === 'brand') {
     order = [
       [
         { model: models.Model, as: 'model' },
@@ -170,7 +180,9 @@ router.get('/listingAll', async (req, res) => {
         sort
       ]
     ];
-  else if (by === 'roleUser')
+    upperCase = false;
+  } else if (by === 'roleUser') {
+    upperCase = false;
     order = [
       [
         { model: models.Car, as: 'car' },
@@ -185,6 +197,7 @@ router.get('/listingAll', async (req, res) => {
         sort
       ]
     ];
+  }
 
   // Search By Location (Latitude, Longitude & Radius)
   if (by === 'location') {
