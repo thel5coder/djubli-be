@@ -177,11 +177,11 @@ router.get('/seller/:id', passport.authenticate('user', { session: false }), asy
       });
     })
     .catch(err => {
-      console.log(err)
+      console.log(err);
       res.status(422).json({
         success: false,
         errors: err.message
-      })
+      });
     });
 });
 
@@ -1632,64 +1632,98 @@ router.delete('/:id', passport.authenticate('user', { session: false }), async (
     });
 });
 
-router.post('/changePassword', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { id } = req.user;
-  const data = await models.User.findByPk(id);
-  if (!data) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Invalid parameter'
-    });
-  }
+router.post(
+  '/changePassword',
+  passport.authenticate('user', { session: false }),
+  async (req, res) => {
+    const { id } = req.user;
+    const data = await models.User.findByPk(id);
+    if (!data) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Invalid parameter'
+      });
+    }
 
-  // Check Old Password
-  const { oldPassword, password, confirmPassword } = req.body;
-  const compareOldPassword = await bcrypt.compare(oldPassword, data.password);
-  if (!compareOldPassword) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Maaf password Anda salah!'
-    });
-  }
+    // Check Old Password
+    const { oldPassword, password, confirmPassword } = req.body;
+    const compareOldPassword = await bcrypt.compare(oldPassword, data.password);
+    if (!compareOldPassword) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Maaf password Anda salah!'
+      });
+    }
 
-  // Hash password with bcrypt
-  let hashedPassword = data.password;
-  if (password) {
-    hashedPassword = await new Promise((resolve, reject) => {
-      bcrypt.genSalt(10, (error, salt) => {
-        bcrypt.hash(password, salt, (errorHash, hashedPass) => {
-          if (errorHash) reject(errorHash);
-          resolve(hashedPass);
+    // Hash password with bcrypt
+    let hashedPassword = data.password;
+    if (password) {
+      hashedPassword = await new Promise((resolve, reject) => {
+        bcrypt.genSalt(10, (error, salt) => {
+          bcrypt.hash(password, salt, (errorHash, hashedPass) => {
+            if (errorHash) reject(errorHash);
+            resolve(hashedPass);
+          });
         });
       });
-    });
-  }
+    }
 
-  // Check confirmPassword with hashedPassword
-  const comparePassword = await bcrypt.compare(confirmPassword, hashedPassword);
-  if (!comparePassword) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Konfirmasi password Anda salah!'
-    });
-  }
-
-  return data
-    .update({
-      password: hashedPassword
-    })
-    .then(() => {
-      res.json({
-        success: true,
-        message: 'Selamat, password Anda berhasil diganti.'
-      });
-    })
-    .catch(err => {
-      res.status(422).json({
+    // Check confirmPassword with hashedPassword
+    const comparePassword = await bcrypt.compare(confirmPassword, hashedPassword);
+    if (!comparePassword) {
+      return res.status(400).json({
         success: false,
-        errors: 'Something wrong!!',
-        backend: err.message
+        errors: 'Konfirmasi password Anda salah!'
       });
+    }
+
+    return data
+      .update({
+        password: hashedPassword
+      })
+      .then(() => {
+        res.json({
+          success: true,
+          message: 'Selamat, password Anda berhasil diganti.'
+        });
+      })
+      .catch(err => {
+        res.status(422).json({
+          success: false,
+          errors: 'Something wrong!!',
+          backend: err.message
+        });
+      });
+  }
+);
+
+router.post('/firebase', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { token, type, version } = req.body;
+  const userId = req.user.id;
+
+  if (!token) return res.status(400).json({ success: false, errors: 'Invalid token' });
+  if (!type) return res.status(400).json({ success: false, errors: 'Invalid type' });
+  if (type !== 'ios' && type !== 'android')
+    return res.status(400).json({ success: false, errors: 'Invalid type' });
+
+  const tokenExists = await models.UserToken.findOne({
+    where: { userId, token, type }
+  });
+
+  if (tokenExists) return res.json({ success: true, data: tokenExists });
+
+  // return res.status(200).json({ success: true, data: req.body });
+  return models.UserToken.create({
+    userId,
+    token,
+    type,
+    version: version ? version : null
+  })
+    .then(async data => {
+      res.json({ success: true, data });
+    })
+    .catch(() => {
+      res.status(422).json({ success: false, errors: 'Something wrong!!' });
     });
 });
 
