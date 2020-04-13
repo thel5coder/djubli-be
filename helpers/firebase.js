@@ -63,7 +63,7 @@ function send(
 function sendNew(params) {
   if (!('device' in params)) Object.assign(params, { device: `android` });
   const message = {
-    to: params.userToken,
+    to: params.token,
     collapseKey: params.collapseKey,
     content_available: true,
     notification: `notification`,
@@ -76,7 +76,7 @@ function sendNew(params) {
       id: params.dataReferenceId
     }
   };
-  if (device.toString() === 'ios') {
+  if (params.device.toString() === 'ios') {
     Object.assign(message, {
       notification: {
         title: params.notificationTitle,
@@ -88,15 +88,17 @@ function sendNew(params) {
   } else delete message.notification;
 
   console.log(message);
+  console.log(`sendNew`);
+  console.log(``);
 
-  // fcm.send(message, (err, response) => {
-  //   if (err) {
-  //     console.log(err);
-  //     return err;
-  //   }
-  //   console.log(response);
-  //   return response;
-  // });
+  fcm.send(message, (err, response) => {
+    if (err) {
+      console.log(err);
+      return err;
+    }
+    console.log(response);
+    return response;
+  });
 }
 
 module.exports = {

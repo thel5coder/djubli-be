@@ -13,6 +13,7 @@ const carsController = require('../../controller/carsController');
 const apiResponse = require('../../helpers/apiResponse');
 const carHelper = require('../../helpers/car');
 const calculateDistance = require('../../helpers/calculateDistance');
+const notification = require('../../helpers/notification');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -2452,8 +2453,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   }
 
   let STNKphoto = null;
+  const result = {};
   if (images) {
-    const result = {};
     const tname = randomize('0', 4);
     result.name = `djublee/images/car/${tname}${moment().format('x')}${unescape(
       images[0].originalname
@@ -2461,7 +2462,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
     STNKphoto = result.name;
-    imageHelper.uploadToS3(result);
+    // imageHelper.uploadToS3(result);
   }
 
   const trans = await models.sequelize.transaction();
@@ -2488,9 +2489,10 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
 
   if (address) Object.assign(insert, { address });
 
+  // const datas = { id: 123 };
   // return apiResponse._success({
   //   res,
-  //   data: { input: req.body, insert }
+  //   data: { userNotif, input: req.body, insert }
   // });
 
   const data = await models.Car.create(insert, {
@@ -2502,6 +2504,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       errors: err.message
     });
   });
+
+  if (Object.keys(result).length > 0) imageHelper.uploadToS3(result);
 
   if (interior) {
     let { interiorGalery } = [];
@@ -2573,6 +2577,16 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   }
   trans.commit();
 
+  const userNotif = {
+    userId: userId,
+    collapseKey: null,
+    notificationTitle: `Car Sell`,
+    notificationBody: `Car Sell #${data.id}`,
+    notificationClickAction: `carSell`,
+    dataReferenceId: data.id
+  };
+  notification.userNotif(userNotif);
+  
   return res.json({
     success: true,
     data
