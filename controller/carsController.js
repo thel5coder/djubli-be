@@ -199,13 +199,7 @@ async function carsGet(req, res, auth = false) {
   if (by === 'area') {
     if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
     if (!longitude) return res.status(400).json({ success: false, errors: 'Longitude not found!' });
-
-    if (radius.length < 2)
-      return res.status(422).json({ success: false, errors: 'invalid radius' });
-    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
-      return res.status(422).json({ success: false, errors: 'invalid radius[0]' });
-    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
-      return res.status(422).json({ success: false, errors: 'invalid radius[1]' });
+    if (!radius) return res.status(422).json({ success: false, errors: 'invalid radius' });
 
     await calculateDistance.CreateOrReplaceCalculateDistance();
     const distances = Sequelize.literal(
@@ -214,10 +208,7 @@ async function carsGet(req, res, auth = false) {
 
     Object.assign(where, {
       where: {
-        [Op.and]: [
-          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
-          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
-        ]
+        [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
       }
     });
 
