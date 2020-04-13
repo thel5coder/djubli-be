@@ -1466,6 +1466,17 @@ router.get(
               }
             }
           ]
+        },
+        {
+          required: false,
+          model: models.Bargain,
+          as: 'bargain',
+          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+          where: {
+            userId
+          },
+          limit: 1,
+          order: [['id', 'desc']]
         }
       ],
       where,
