@@ -1599,6 +1599,22 @@ router.put('/update', passport.authenticate('user', { session: false }), async (
   });
 });
 
+router.delete('/firebase', passport.authenticate('user', { session: false }), async (req, res) => {
+  const userId = req.user.id;
+  const tokenExists = await models.UserToken.findAll({
+    where: { userId }
+  });
+  
+  if (tokenExists.length <= 0)
+    return res.status(400).json({ success: false, errors: 'token not found' });
+
+  tokenExists.map(async tokenExist => {
+    await tokenExist.destroy();
+  });
+
+  return res.status(200).json({ success: true, message: `token deleted` });
+});
+
 router.delete('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
