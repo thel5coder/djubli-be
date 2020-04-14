@@ -62,30 +62,18 @@ function send(
 
 function sendNew(params) {
   if (!('device' in params)) Object.assign(params, { device: `android` });
+
   const message = {
-    to: params.token,
-    collapseKey: params.collapseKey,
-    content_available: true,
-    notification: `notification`,
+    to: params.token ? params.token : null,
+    collapse_key: params.collapseKey ? params.collapseKey : `green`,
+    notification: { title: params.notificationTitle, body: params.notificationBody },
+    priority: `high`,
     data: {
-      title: params.notificationTitle,
-      body: params.notificationBody,
-      sound: true,
-      vibrate: true,
-      routes: params.notificationClickAction,
-      id: params.dataReferenceId
+      click_action: `FLUTTER_NOTIFICATION_CLICK`,
+      id: params.dataReferenceId,
+      status: `done`
     }
   };
-  if (params.device.toString() === 'ios') {
-    Object.assign(message, {
-      notification: {
-        title: params.notificationTitle,
-        body: params.notificationBody,
-        sound: true,
-        vibrate: true
-      }
-    });
-  } else delete message.notification;
 
   console.log(message);
   console.log(`sendNew`);
