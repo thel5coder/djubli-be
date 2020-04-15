@@ -2083,6 +2083,14 @@ router.get('/like/:id', async (req, res) => {
             as: 'file',
             attributes: ['type', 'url']
           }
+        },
+        {
+          required: false,
+          model: models.Bargain,
+          as: 'bargain',
+          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+          limit: 1,
+          order: [['id', 'desc']]
         }
       ]
     }
@@ -2344,6 +2352,14 @@ router.get('/view/:id', async (req, res) => {
             as: 'file',
             attributes: ['type', 'url']
           }
+        },
+        {
+          required: false,
+          model: models.Bargain,
+          as: 'bargain',
+          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+          limit: 1,
+          order: [['id', 'desc']]
         }
       ]
     }
@@ -3512,6 +3528,14 @@ router.get(
           attributes: {
             exclude: ['createdAt', 'updatedAt', 'deletedAt']
           }
+        },
+        {
+          required: false,
+          model: models.Bargain,
+          as: 'bargain',
+          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+          limit: 1,
+          order: [['id', 'desc']]
         }
       ],
       where,
