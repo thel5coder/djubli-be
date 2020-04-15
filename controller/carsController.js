@@ -385,6 +385,14 @@ async function carsGet(req, res, auth = false) {
             as: 'file'
           }
         ]
+      },
+      {
+        required: false,
+        model: models.Bargain,
+        as: 'bargain',
+        attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+        limit: 1,
+        order: [['id', 'desc']]
       }
     ],
     where,
