@@ -76,15 +76,16 @@ function sendNew(params) {
   };
 
   console.log(message);
-  console.log(`sendNew`);
-  console.log(``);
-
   fcm.send(message, (err, response) => {
     if (err) {
       console.log(err);
+      console.log(`error sent`);
+      console.log(``);
       return err;
     }
     console.log(response);
+    console.log(`sent`);
+    console.log(``);
     return response;
   });
 }
