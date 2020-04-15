@@ -5,6 +5,7 @@ const passport = require('passport');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
+const notification = require('../../helpers/notification');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -262,7 +263,19 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
     expiredAt,
     bidType: 0
   })
-    .then(data => {
+    .then(async data => {
+      const carExists = await models.Car.findByPk(carId);
+      req.io.emit(`tabJual-${carExists.userId}`, data);
+      const userNotif = {
+        userId: carExists.userId,
+        collapseKey: null,
+        notificationTitle: `Car Negotiate`,
+        notificationBody: `${req.user.name} bargained for your carId#${carExists.id} ${bidAmount} #${data.id}`,
+        notificationClickAction: `carNegotiate`,
+        dataReferenceId: data.id
+      };
+      notification.userNotif(userNotif);
+
       res.json({
         success: true,
         data
@@ -317,7 +330,19 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
       haveSeenCar,
       paymentMethod
     })
-    .then(data => {
+    .then(async data => {
+      const carExists = await models.Car.findByPk(carId);
+      req.io.emit(`tabJual-${carExists.userId}`, data);
+      const userNotif = {
+        userId: carExists.userId,
+        collapseKey: null,
+        notificationTitle: `Car Offer`,
+        notificationBody: `${req.user.name} changed your car offer #${carExists.id} ${bidAmount} #${data.id}`,
+        notificationClickAction: `carOffer`,
+        dataReferenceId: data.id
+      };
+      notification.userNotif(userNotif);
+
       res.json({
         success: true,
         data
