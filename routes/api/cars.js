@@ -2480,8 +2480,6 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     STNKphoto = result.name;
     // imageHelper.uploadToS3(result);
   }
-
-  const trans = await models.sequelize.transaction();
   const errors = [];
   const insert = {
     userId,
@@ -2504,13 +2502,38 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   };
 
   if (address) Object.assign(insert, { address });
+  
+  const otherCarSells = await models.Car.aggregate('userId', 'DISTINCT', {
+    plain: false,
+    where: {
+      brandId,
+      modelId,
+      groupModelId,
+      userId: {
+        [Op.ne]: req.user.id
+      }
+    }
+  });
+  
+  const userNotifs = [];
+  otherCarSells.map(async otherCarSell => {
+    userNotifs.push({
+      userId: otherCarSell.DISTINCT,
+      collapseKey: null,
+      notificationTitle: `similar Car Sell`,
+      notificationBody: `similar Car Sell #[carId]`,
+      notificationClickAction: `similiarCarSell`,
+      dataReferenceId: 123
+    });
+  });
 
   // const datas = { id: 123 };
   // return apiResponse._success({
   //   res,
-  //   data: { userNotif, input: req.body, insert }
+  //   data: { input: req.body, insert, userNotifs }
   // });
 
+  const trans = await models.sequelize.transaction();
   const data = await models.Car.create(insert, {
     transaction: trans
   }).catch(err => {
@@ -2602,7 +2625,16 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     dataReferenceId: data.id
   };
   notification.userNotif(userNotif);
-  
+
+  userNotifs.map(async userNotif => {
+    Object.assign(userNotif, {
+      notificationBody: userNotif.notificationBody.replace("[carId]", data.id),
+      dataReferenceId: data.id
+    });
+    notification.userNotif(userNotif);
+    console.log(userNotif);
+  });
+
   return res.json({
     success: true,
     data
