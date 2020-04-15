@@ -492,7 +492,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     .then(data => {
       trans.commit();
 
-      req.io.emit(`tabjual-${userData.userId}`, data);
+      req.io.emit(`tabJual-${userData.userId}`, data);
       const userNotif = {
         userId: userData.userId,
         collapseKey: null,

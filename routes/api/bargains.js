@@ -265,7 +265,7 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
   })
     .then(async data => {
       const carExists = await models.Car.findByPk(carId);
-      req.io.emit(`tabjual-${carExists.userId}`, data);
+      req.io.emit(`tabJual-${carExists.userId}`, data);
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,
@@ -332,7 +332,7 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
     })
     .then(async data => {
       const carExists = await models.Car.findByPk(carId);
-      req.io.emit(`tabjual-${carExists.userId}`, data);
+      req.io.emit(`tabJual-${carExists.userId}`, data);
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,
