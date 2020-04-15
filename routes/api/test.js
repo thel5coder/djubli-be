@@ -33,7 +33,7 @@ router.post('/socket', passport.authenticate('user', { session: false }), async 
   attributeId = attributeId ? attributeId : id;
   const data = { id: 123, description: `test` };
 
-  await req.io.emit(`${socketId}-${attributeId}`, data);
+  req.io.emit(`${socketId}-${attributeId}`, JSON.stringify({ data }));
 
   return res.status(200).json({
     success: true,
