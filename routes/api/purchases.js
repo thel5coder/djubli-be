@@ -7,6 +7,7 @@ const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
 const calculateDistance = require('../../helpers/calculateDistance');
+const notification = require('../../helpers/notification');
 
 const router = express.Router();
 
@@ -137,7 +138,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
-    await calculateDistance.CreateOrReplaceCalculateDistance()
+    await calculateDistance.CreateOrReplaceCalculateDistance();
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
@@ -490,6 +491,17 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   )
     .then(data => {
       trans.commit();
+
+      const userNotif = {
+        userId: data.userId,
+        collapseKey: null,
+        notificationTitle: `Car Purchase`,
+        notificationBody: `Car Purchase #${data.id}`,
+        notificationClickAction: `carPurchase`,
+        dataReferenceId: data.id
+      };
+      notification.userNotif(userNotif);
+
       res.json({
         success: true,
         data
