@@ -26,5 +26,19 @@ router.post('/firebase', passport.authenticate('user', { session: false }), asyn
     data: `parameter oke`
   });
 });
+router.post('/socket', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.user;
+  let { socketId, attributeId } = req.body;
+  socketId = socketId ? socketId : `notification`;
+  attributeId = attributeId ? attributeId : id;
+  const data = { id: 123, description: `test` };
+
+  await req.io.emit(`${socketId}-${attributeId}`, data);
+
+  return res.status(200).json({
+    success: true,
+    data: `parameter oke`
+  });
+});
 
 module.exports = router;

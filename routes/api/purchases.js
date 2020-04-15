@@ -492,11 +492,12 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     .then(data => {
       trans.commit();
 
+      req.io.emit(`tabjual-${userData.userId}`, data);
       const userNotif = {
-        userId: data.userId,
+        userId: userData.userId,
         collapseKey: null,
         notificationTitle: `Car Purchase`,
-        notificationBody: `Car Purchase #${data.id}`,
+        notificationBody: `${req.user.name} bought your car #${data.id}`,
         notificationClickAction: `carPurchase`,
         dataReferenceId: data.id
       };
