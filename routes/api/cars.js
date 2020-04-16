@@ -2615,22 +2615,29 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
   trans.commit();
-
-  const userNotif = {
-    userId: userId,
-    collapseKey: null,
-    notificationTitle: `Car Sell`,
-    notificationBody: `Car Sell #${data.id}`,
-    notificationClickAction: `carSell`,
-    dataReferenceId: data.id
-  };
-  notification.userNotif(userNotif);
+  
+  const emit = await carHelper.emitJual({
+    id: data.id,
+    userId,
+    notifJualStatus: 2
+  });
+  // req.io.emit(`tabJual-${userId}`, JSON.stringify(emit));
+  // const userNotif = {
+  //   userId: userId,
+  //   collapseKey: null,
+  //   notificationTitle: `Car Sell`,
+  //   notificationBody: `Car Sell #${data.id}`,
+  //   notificationClickAction: `carSell`,
+  //   dataReferenceId: data.id
+  // };
+  // notification.userNotif(userNotif);
 
   userNotifs.map(async userNotif => {
     Object.assign(userNotif, {
       notificationBody: userNotif.notificationBody.replace("[carId]", data.id),
       dataReferenceId: data.id
     });
+    req.io.emit(`tabJual-${userNotif.userId}`, emit);
     notification.userNotif(userNotif);
     console.log(userNotif);
   });
@@ -3273,6 +3280,14 @@ async function viewLike(req, res) {
         as: 'file',
         attributes: ['type', 'url']
       }
+    },
+    {
+      required: false,
+      model: models.Bargain,
+      as: 'bargain',
+      attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+      limit: 1,
+      order: [['id', 'desc']]
     }
   ];
   return models.Car.findAll({

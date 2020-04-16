@@ -6,6 +6,7 @@ const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const notification = require('../../helpers/notification');
+const carHelper = require('../../helpers/car');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -265,7 +266,13 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
   })
     .then(async data => {
       const carExists = await models.Car.findByPk(carId);
-      req.io.emit(`tabJual-${carExists.userId}`, data);
+
+      const emit = await carHelper.emitJual({
+        id: carId,
+        userId: carExists.userId,
+        notifJualStatus: 3
+      });
+      req.io.emit(`tabJual-${carExists.userId}`, JSON.stringify(emit));
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,
@@ -332,7 +339,13 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
     })
     .then(async data => {
       const carExists = await models.Car.findByPk(carId);
-      req.io.emit(`tabJual-${carExists.userId}`, data);
+
+      const emit = await carHelper.emitJual({
+        id: carId,
+        userId: carExists.userId,
+        notifJualStatus: 4
+      });
+      req.io.emit(`tabJual-${carExists.userId}`, JSON.stringify(emit));
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,

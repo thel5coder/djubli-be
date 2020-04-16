@@ -438,15 +438,15 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
 router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
   const { carId, paymentMethod, haveSeenCar } = req.body;
 
-  const userData = await models.Car.findOne({
-    where: { id: carId }
-  });
-  if (!userData) {
-    return res.status(404).json({
-      success: false,
-      errors: 'User not found'
-    });
-  }
+  // const userData = await models.Car.findOne({
+  //   where: { id: carId }
+  // });
+  // if (!userData) {
+  //   return res.status(404).json({
+  //     success: false,
+  //     errors: 'User not found'
+  //   });
+  // }
 
   const carData = await models.Car.findOne({
     where: { id: carId }
@@ -489,12 +489,17 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       transaction: trans
     }
   )
-    .then(data => {
+    .then(async data => {
       trans.commit();
 
-      req.io.emit(`tabJual-${userData.userId}`, data);
+      const emit = await carHelper.emitJual({
+        id: carId,
+        userId: carData.userId,
+        notifJualStatus: 1
+      });
+      req.io.emit(`tabJual-${carData.userId}`, JSON.stringify(emit));
       const userNotif = {
-        userId: userData.userId,
+        userId: carData.userId,
         collapseKey: null,
         notificationTitle: `Car Purchase`,
         notificationBody: `${req.user.name} bought your car #${data.id}`,
