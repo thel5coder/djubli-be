@@ -45,7 +45,7 @@ router.post('/socket', passport.authenticate('user', { session: false }), async 
   });
 });
 
-router.get(
+router.post(
   '/responses/jual/:id',
   passport.authenticate('user', { session: false }),
   async (req, res) => {
@@ -55,9 +55,9 @@ router.get(
     const emit = await carHelper.emitJual({
       id,
       userId,
-      notifJualStatus: notifJualStatus ? notifJualStatus : null
+      notifJualStatus: notifJualStatus ? Number(notifJualStatus) : null
     });
-    req.io.emit(`tabJual-${userId}`, emit);
+    req.io.emit(`tabJual-${userId}`, JSON.stringify(emit));
 
     console.log(emit);
     return res.status(200).json({
