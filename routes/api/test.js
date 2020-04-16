@@ -2,7 +2,10 @@
 const express = require('express');
 const passport = require('passport');
 const Sequelize = require('sequelize');
+const models = require('../../db/models');
+
 const notification = require('../../helpers/notification');
+const carHelper = require('../../helpers/car');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -26,6 +29,7 @@ router.post('/firebase', passport.authenticate('user', { session: false }), asyn
     data: `parameter oke`
   });
 });
+
 router.post('/socket', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
   let { socketId, attributeId } = req.body;
@@ -40,5 +44,27 @@ router.post('/socket', passport.authenticate('user', { session: false }), async 
     data: `parameter oke`
   });
 });
+
+router.get(
+  '/responses/jual/:id',
+  passport.authenticate('user', { session: false }),
+  async (req, res) => {
+    const { id } = req.params;
+    const { notifJualStatus } = req.body;
+    const userId = req.user.id;
+    const emit = await carHelper.emitJual({
+      id,
+      userId,
+      notifJualStatus: notifJualStatus ? notifJualStatus : null
+    });
+    req.io.emit(`tabJual-${userId}`, emit);
+
+    console.log(emit);
+    return res.status(200).json({
+      success: true,
+      data: emit
+    });
+  }
+);
 
 module.exports = router;

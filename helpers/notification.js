@@ -9,6 +9,8 @@ async function userNotif(params) {
     }
   });
 
+  if (userTokens.length <= 0) console.log(`userId:${params.userId} firebase token IS NULL`);
+
   userTokens.map(async ut => {
     firebaseHelper.sendNew({
       token: ut.token,
