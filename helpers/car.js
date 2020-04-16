@@ -346,7 +346,192 @@ async function extraInclude(params) {
   return attribute;
 }
 
+async function emitJual(params) {
+  console.log(params);
+  console.log(`emit`);
+  console.log(``);
+
+  const { id, userId, notifJualStatus } = params;
+  const where = {};
+  const whereBargain = {};
+  return models.Car.findByPk(id, {
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."userId" = ${userId} AND "Likes"."deletedAt" IS NULL)`
+        ),
+        'islike'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${userId} AND "Bargains"."carId" = "Car"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+        ),
+        'isBid'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT "Brands"."name" FROM "Brands" WHERE "Brands"."id" = "Car"."brandId" AND "Brands"."deletedAt" IS NULL)`
+        ),
+        'Brands'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT "Models"."name" FROM "Models" WHERE "Models"."id" = "Car"."modelId" AND "Models"."deletedAt" IS NULL)`
+        ),
+        'Model'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
+        ),
+        'jumlahLike'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Views"."carId") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)`
+        ),
+        'jumlahView'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+        ),
+        'highestBidder'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+        ),
+        'numberOfBidder'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0 AND "Bargains"."userId" = ${userId})`
+        ),
+        'bidAmount'
+      ]
+    ]),
+    include: [
+      {
+        model: models.User,
+        as: 'user',
+        attributes: {
+          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Dealer,
+            as: 'dealer',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Company,
+            as: 'company',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Purchase,
+            as: 'purchase',
+            attributes: {
+              exclude: ['deletedAt']
+            },
+            order: [['id', 'desc']],
+            limit: 1
+          }
+        ]
+      },
+      {
+        model: models.Brand,
+        as: 'brand',
+        attributes: ['id', 'name', 'logo']
+      },
+      {
+        model: models.Model,
+        as: 'model',
+        attributes: ['id', 'name', 'groupModelId']
+      },
+      {
+        model: models.GroupModel,
+        as: 'groupModel',
+        attributes: ['id', 'name', 'brandId']
+      },
+      {
+        model: models.Color,
+        as: 'interiorColor',
+        attributes: ['id', 'name', 'hex']
+      },
+      {
+        model: models.Color,
+        as: 'exteriorColor',
+        attributes: ['id', 'name', 'hex']
+      },
+      {
+        model: models.MeetingSchedule,
+        as: 'meetingSchedule',
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+      },
+      {
+        model: models.InteriorGalery,
+        as: 'interiorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: {
+          model: models.File,
+          as: 'file',
+          attributes: ['type', 'url']
+        }
+      },
+      {
+        model: models.ExteriorGalery,
+        as: 'exteriorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: {
+          model: models.File,
+          as: 'file',
+          attributes: ['type', 'url']
+        }
+      },
+      {
+        model: models.ModelYear,
+        as: 'modelYear',
+        attributes: {
+          exclude: ['picture', 'pictureUrl', 'createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        required: false,
+        model: models.Bargain,
+        as: 'bargain',
+        attributes: {
+          exclude: ['deletedAt']
+        },
+        where: whereBargain,
+        limit: 1,
+        order: [['id', 'desc']]
+      }
+    ],
+    where
+  })
+    .then(async emit => {
+      return { notifJualStatus: notifJualStatus ? notifJualStatus : null, emit };
+    })
+    .catch(err => {
+      return err;
+    });
+}
+
 module.exports = {
   extraInclude,
-  customFields
+  customFields,
+  emitJual
 };
