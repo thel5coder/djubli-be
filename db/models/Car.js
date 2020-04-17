@@ -19,7 +19,9 @@ module.exports = (sequelize, DataTypes) => {
       location: DataTypes.STRING,
       status: DataTypes.INTEGER,
       km: DataTypes.NUMERIC,
-      address: DataTypes.STRING
+      address: DataTypes.STRING,
+      cityId: DataTypes.INTEGER,
+      subDistictId: DataTypes.INTEGER
     },
     {
       timestamps: true,
