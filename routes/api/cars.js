@@ -2415,7 +2415,9 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     startTime,
     endTime,
     km,
-    address
+    address,
+    cityId,
+    subDistictId
   } = req.body;
   const { images } = req.files;
 
@@ -2502,7 +2504,23 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   };
 
   if (address) Object.assign(insert, { address });
-  
+  if (cityId) {
+    const cityExist = await models.City.findByPk(cityId);
+    if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
+    Object.assign(insert, { cityId });
+  }
+  if (subDistictId) {
+    const subDistrictExist = await models.SubDistrict.findOne({
+      where: {
+        id: subDistictId,
+        cityId
+      }
+    });
+    if (!subDistrictExist)
+      return res.status(404).json({ success: false, errors: 'sub district not found' });
+    Object.assign(insert, { subDistictId });
+  }
+
   const otherCarSells = await models.Car.aggregate('userId', 'DISTINCT', {
     plain: false,
     where: {
@@ -2514,7 +2532,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       }
     }
   });
-  
+
   const userNotifs = [];
   otherCarSells.map(async otherCarSell => {
     userNotifs.push({
@@ -2615,10 +2633,10 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
   trans.commit();
-  
+
   userNotifs.map(async userNotif => {
     Object.assign(userNotif, {
-      notificationBody: userNotif.notificationBody.replace("[carId]", data.id),
+      notificationBody: userNotif.notificationBody.replace('[carId]', data.id),
       dataReferenceId: data.id,
       category: 1,
       status: 2
@@ -2642,7 +2660,9 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     location,
     km,
     meetingSchedules,
-    address
+    address,
+    cityId,
+    subDistictId
   } = req.body;
   const { images } = req.files;
   const update = {};
@@ -2713,6 +2733,23 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
       }
     });
     if (!checkDetails.status) return apiResponse._error({ res, status: checkDetails.status, errors: checkDetails.message, data: null });
+  }
+
+  if (cityId) {
+    const cityExist = await models.City.findByPk(cityId);
+    if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
+    Object.assign(update, { cityId });
+  }
+  if (subDistictId) {
+    const subDistrictExist = await models.SubDistrict.findOne({
+      where: {
+        id: subDistictId,
+        cityId
+      }
+    });
+    if (!subDistrictExist)
+      return res.status(404).json({ success: false, errors: 'sub district not found' });
+    Object.assign(update, { subDistictId });
   }
 
   const carExists = await models.Car.findByPk(id);
