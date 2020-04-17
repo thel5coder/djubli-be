@@ -2,6 +2,7 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../db/models');
 const paginator = require('../helpers/paginator');
+const carHelper = require('../helpers/car');
 
 const { Op } = Sequelize;
 
@@ -52,6 +53,9 @@ async function getAll(req, res) {
     if (fullResponse === 'true') {
       include.push({
         model: models.Car,
+        attributes: Object.keys(models.Car.attributes).concat(
+          await carHelper.emitFieldCustomCar({ userId })
+        ),
         as: 'car',
         include: [
           {

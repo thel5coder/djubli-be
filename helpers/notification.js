@@ -1,6 +1,7 @@
 /* eslint-disable array-callback-return */
 const firebaseHelper = require('./firebase');
 const models = require('../db/models');
+const carHelper = require('../helpers/car');
 
 async function userNotif(params) {
   const userTokens = await models.UserToken.findAll({
@@ -39,6 +40,9 @@ async function insertNotification(params) {
         include: [
           {
             model: models.Car,
+            attributes: Object.keys(models.Car.attributes).concat(
+              await carHelper.emitFieldCustomCar({ userId: insert.userId })
+            ),
             as: 'car',
             include: [
               {
