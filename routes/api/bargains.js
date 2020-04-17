@@ -267,20 +267,18 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
     .then(async data => {
       const carExists = await models.Car.findByPk(carId);
 
-      const emit = await carHelper.emitJual({
-        id: carId,
-        userId: carExists.userId,
-        notifJualStatus: 3
-      });
-      req.io.emit(`tabJual-${carExists.userId}`, JSON.stringify(emit));
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,
         notificationTitle: `Car Negotiate`,
         notificationBody: `${req.user.name} bargained for your carId#${carExists.id} ${bidAmount} #${data.id}`,
         notificationClickAction: `carNegotiate`,
-        dataReferenceId: data.id
+        dataReferenceId: data.id,
+        category: 1,
+        status: 3
       };
+      const emit = await notification.insertNotification(userNotif);
+      req.io.emit(`tabJual-${carExists.userId}`, emit);
       notification.userNotif(userNotif);
 
       res.json({
@@ -340,20 +338,18 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
     .then(async data => {
       const carExists = await models.Car.findByPk(carId);
 
-      const emit = await carHelper.emitJual({
-        id: carId,
-        userId: carExists.userId,
-        notifJualStatus: 4
-      });
-      req.io.emit(`tabJual-${carExists.userId}`, JSON.stringify(emit));
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,
         notificationTitle: `Car Offer`,
         notificationBody: `${req.user.name} changed your car offer #${carExists.id} ${bidAmount} #${data.id}`,
         notificationClickAction: `carOffer`,
-        dataReferenceId: data.id
+        dataReferenceId: data.id,
+        category: 1,
+        status: 4
       };
+      const emit = await notification.insertNotification(userNotif);
+      req.io.emit(`tabJual-${carExists.userId}`, emit);
       notification.userNotif(userNotif);
 
       res.json({
