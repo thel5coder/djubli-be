@@ -291,10 +291,37 @@ async function unClick(req, res) {
     });
 }
 
+async function countCategory(req, res) {
+  const userId = req.user.id;
+  const notifications = [];
+  const total = { unRead: 0, seen: 0 };
+  const categories = await models.Notification.aggregate('category', 'DISTINCT', {
+    plain: false,
+    where: { userId }
+  });
+
+  const waitingPromise = await categories.map(async category => {
+    const unRead = await models.Notification.count({
+      where: { userId, action: 0, category: category.DISTINCT }
+    });
+    const seen = await models.Notification.count({
+      where: { userId, action: 1, category: category.DISTINCT }
+    });
+
+    notifications.push({ category: category.DISTINCT, unRead, seen });
+    Object.assign(total, { unRead: total.unRead + unRead, seen: total.seen + seen });
+  });
+  await Promise.all(waitingPromise);
+  // console.log(notifications);
+
+  return res.status(200).json({ success: true, total, data: notifications });
+}
+
 module.exports = {
   getAll,
   read,
   unRead,
   click,
-  unClick
+  unClick,
+  countCategory
 };
