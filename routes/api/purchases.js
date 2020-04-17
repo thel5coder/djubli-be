@@ -496,9 +496,9 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
         userId: carData.userId,
         collapseKey: null,
         notificationTitle: `Car Purchase`,
-        notificationBody: `${req.user.name} bought your car #${data.id}`,
+        notificationBody: `Ada yang membeli mobil anda`, //`${req.user.name} bought your car #${data.id}`,
         notificationClickAction: `carPurchase`,
-        dataReferenceId: data.id,
+        dataReferenceId: carData.id,
         category: 1,
         status: 1
       };
