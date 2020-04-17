@@ -110,6 +110,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'exteriorColor',
       onDelete: 'CASCADE'
     });
+
+    Car.hasMany(models.Notification, {
+      foreignKey: 'referenceId',
+      targetKey: 'id',
+      as: 'notifications'
+    });
   };
   return Car;
 };
