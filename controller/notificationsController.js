@@ -9,7 +9,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 async function getAll(req, res) {
-  const { category, id, fullResponse } = req.query;
+  const { category, id, fullResponse, action } = req.query;
   const userId = req.user.id;
   let { page, limit, by, sort } = req.query;
   let offset = 0;
@@ -164,6 +164,12 @@ async function getAll(req, res) {
         ]
       });
     }
+  }
+  if (action) {
+    const actionArr = [0, 1, 2];
+    if (actionArr.indexOf(Number(action)) < 0)
+      return res.status(400).json({ success: false, errors: 'Invalid action' });
+    Object.assign(where, { action });
   }
 
   return models.Notification.findAll({
