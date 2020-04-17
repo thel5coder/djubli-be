@@ -9,7 +9,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 async function getAll(req, res) {
-  const { category, id } = req.query;
+  const { category, id, fullResponse } = req.query;
   const userId = req.user.id;
   let { page, limit, by, sort } = req.query;
   let offset = 0;
@@ -44,11 +44,133 @@ async function getAll(req, res) {
     Object.assign(whereCountUnRead, { category });
     Object.assign(whereCountSee, { category });
   }
+  const include = [];
+  if (fullResponse) {
+    const fullResponseArr = ['true', 'false'];
+    if (fullResponseArr.indexOf(fullResponse) < 0)
+      return res.status(400).json({ success: false, errors: 'Invalid fullResponse' });
+    if (fullResponse === 'true') {
+      include.push({
+        model: models.Car,
+        as: 'car',
+        include: [
+          {
+            model: models.User,
+            as: 'user',
+            attributes: {
+              exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Dealer,
+                as: 'dealer',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Company,
+                as: 'company',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Purchase,
+                as: 'purchase',
+                attributes: {
+                  exclude: ['deletedAt']
+                },
+                order: [['id', 'desc']],
+                limit: 1
+              }
+            ]
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.Color,
+            as: 'interiorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.Color,
+            as: 'exteriorColor',
+            attributes: ['id', 'name', 'hex']
+          },
+          {
+            model: models.MeetingSchedule,
+            as: 'meetingSchedule',
+            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          },
+          {
+            model: models.InteriorGalery,
+            as: 'interiorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: {
+              model: models.File,
+              as: 'file',
+              attributes: ['type', 'url']
+            }
+          },
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: {
+              exclude: ['picture', 'pictureUrl', 'createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            required: false,
+            model: models.Bargain,
+            as: 'bargain',
+            attributes: {
+              exclude: ['deletedAt']
+            },
+            // where: whereBargain,
+            limit: 1,
+            order: [['id', 'desc']]
+          }
+        ]
+      });
+    }
+  }
 
   return models.Notification.findAll({
     attributes: {
       exclude: ['deletedAt']
     },
+    include,
     where,
     order,
     offset,

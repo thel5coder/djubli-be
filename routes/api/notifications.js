@@ -2,9 +2,6 @@
 const express = require('express');
 const passport = require('passport');
 const Sequelize = require('sequelize');
-const models = require('../../db/models');
-
-const notification = require('../../helpers/notification');
 const notificationsController = require('../../controller/notificationsController');
 
 const { Op } = Sequelize;
