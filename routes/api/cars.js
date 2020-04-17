@@ -2616,27 +2616,14 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   }
   trans.commit();
   
-  const emit = await carHelper.emitJual({
-    id: data.id,
-    userId,
-    notifJualStatus: 2
-  });
-  // req.io.emit(`tabJual-${userId}`, JSON.stringify(emit));
-  // const userNotif = {
-  //   userId: userId,
-  //   collapseKey: null,
-  //   notificationTitle: `Car Sell`,
-  //   notificationBody: `Car Sell #${data.id}`,
-  //   notificationClickAction: `carSell`,
-  //   dataReferenceId: data.id
-  // };
-  // notification.userNotif(userNotif);
-
   userNotifs.map(async userNotif => {
     Object.assign(userNotif, {
       notificationBody: userNotif.notificationBody.replace("[carId]", data.id),
-      dataReferenceId: data.id
+      dataReferenceId: data.id,
+      category: 1,
+      status: 2
     });
+    const emit = await notification.insertNotification(userNotif);
     req.io.emit(`tabJual-${userNotif.userId}`, emit);
     notification.userNotif(userNotif);
     console.log(userNotif);
