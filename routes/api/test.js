@@ -12,12 +12,12 @@ const router = express.Router();
 
 router.post('/firebase', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
-  const { title, body, action } = req.body;
+  const { title, body, action, carId } = req.body;
   let { socketId, attributeId } = req.body;
   socketId = socketId ? socketId : `notification`;
   attributeId = attributeId ? attributeId : id;
 
-  const data = { id: 13 };
+  const data = { id: carId ? carId : 13 };
   const userNotif = {
     userId: id,
     collapseKey: null,
