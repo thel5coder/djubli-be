@@ -29,7 +29,7 @@ router.post('/firebase', passport.authenticate('user', { session: false }), asyn
     status: 1
   };
   const emit = await notification.insertNotification(userNotif);
-  req.io.emit(`${socketId}-${attributeId}`, JSON.stringify({ data }));
+  req.io.emit(`${socketId}-${attributeId}`, emit);
   notification.userNotif(userNotif);
 
   return res.status(200).json({
