@@ -2538,8 +2538,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     userNotifs.push({
       userId: otherCarSell.DISTINCT,
       collapseKey: null,
-      notificationTitle: `similar Car Sell`,
-      notificationBody: `similar Car Sell #[carId]`,
+      notificationTitle: `Notifikasi Jual`,
+      notificationBody: `mobil sejenis`,
       notificationClickAction: `similiarCarSell`,
       dataReferenceId: 123
     });
@@ -2636,7 +2636,6 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
 
   userNotifs.map(async userNotif => {
     Object.assign(userNotif, {
-      notificationBody: userNotif.notificationBody.replace('[carId]', data.id),
       dataReferenceId: data.id,
       category: 1,
       status: 2

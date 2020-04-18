@@ -270,8 +270,8 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,
-        notificationTitle: `Car Negotiate`,
-        notificationBody: `${req.user.name} bargained for your carId#${carExists.id} ${bidAmount} #${data.id}`,
+        notificationTitle: `Notifikasi Jual`,
+        notificationBody: `penawaran baru`,
         notificationClickAction: `carNegotiate`,
         dataReferenceId: carId,
         category: 1,
@@ -341,8 +341,8 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
       const userNotif = {
         userId: carExists.userId,
         collapseKey: null,
-        notificationTitle: `Car Offer`,
-        notificationBody: `${req.user.name} changed your car offer #${carExists.id} ${bidAmount} #${data.id}`,
+        notificationTitle: `Notifikasi Jual`,
+        notificationBody: `penawaran berubah`,
         notificationClickAction: `carOffer`,
         dataReferenceId: carId,
         category: 1,
