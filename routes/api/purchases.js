@@ -438,16 +438,6 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
 router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
   const { carId, paymentMethod, haveSeenCar } = req.body;
 
-  // const userData = await models.Car.findOne({
-  //   where: { id: carId }
-  // });
-  // if (!userData) {
-  //   return res.status(404).json({
-  //     success: false,
-  //     errors: 'User not found'
-  //   });
-  // }
-
   const carData = await models.Car.findOne({
     where: { id: carId }
   });
@@ -458,8 +448,28 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
 
-  const trans = await models.sequelize.transaction();
+  const userNotifs = [];
+  const likers = await models.Like.aggregate('userId', 'DISTINCT', {
+    plain: false,
+    where: { carId: carData.id }
+  });
+  likers.map(async liker => {
+    userNotifs.push({
+      userId: liker.DISTINCT,
+      collapseKey: null,
+      notificationTitle: `Mobil Terjual`,
+      notificationBody: `Mobil yang anda suka telah terjual`,
+      notificationClickAction: `carPriceSold`,
+      dataReferenceId: carData.id,
+      category: 3, // like
+      status: 2, // mobil terjual
+      typeNotif: 'tabLike'
+    });
+  });
 
+  // return res.status(200).json({ success: true, data: userNotifs });
+
+  const trans = await models.sequelize.transaction();
   await carData
     .update(
       {
@@ -492,7 +502,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     .then(async data => {
       trans.commit();
 
-      const userNotif = {
+      userNotifs.push({
         userId: carData.userId,
         collapseKey: null,
         notificationTitle: `Notifikasi Jual`,
@@ -500,16 +510,17 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
         notificationClickAction: `carPurchase`,
         dataReferenceId: carData.id,
         category: 1,
-        status: 1
-      };
-      const emit = await notification.insertNotification(userNotif);
-      req.io.emit(`tabJual-${carData.userId}`, emit);
-      notification.userNotif(userNotif);
-
-      res.json({
-        success: true,
-        data
+        status: 1,
+        typeNotif: 'tabJual'
       });
+
+      userNotifs.map(async userNotif => {
+        const emit = await notification.insertNotification(userNotif);
+        req.io.emit(`${userNotif.typeNotif}-${userNotif.userId}`, emit);
+        notification.userNotif(userNotif);
+      });
+
+      res.status(200).json({ success: true, data });
     })
     .catch(err => {
       trans.rollback();
