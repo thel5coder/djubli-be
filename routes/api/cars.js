@@ -2654,15 +2654,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
 
 router.put('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
-  const {
-    price,
-    location,
-    km,
-    meetingSchedules,
-    address,
-    cityId,
-    subDistictId
-  } = req.body;
+  const { price, location, km, meetingSchedules, address, cityId, subDistictId } = req.body;
   const { images } = req.files;
   const update = {};
 
@@ -2675,7 +2667,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   if (price) {
     if (validator.isInt(price ? price.toString() : '') === false)
       return res.status(422).json({ success: false, errors: 'invalid price' });
-    
+
     Object.assign(update, { price });
   }
   if (location) {
@@ -2686,17 +2678,17 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
       return apiResponse._error({ res, errors: 'invalid latitude' });
     if (validator.isNumeric(locations[1] ? locations[1].toString() : '') === false)
       return apiResponse._error({ res, errors: 'invalid longitude' });
-    
+
     Object.assign(update, { location });
   }
   if (km) {
     if (validator.isInt(km ? km.toString() : '') === false)
       return res.status(422).json({ success: false, errors: 'invalid km' });
-    
+
     Object.assign(update, { km });
   }
   if (address) Object.assign(update, { address });
-  
+
   const result = {};
   let isUpload = false;
   if (images) {
@@ -2731,7 +2723,13 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
         return;
       }
     });
-    if (!checkDetails.status) return apiResponse._error({ res, status: checkDetails.status, errors: checkDetails.message, data: null });
+    if (!checkDetails.status)
+      return apiResponse._error({
+        res,
+        status: checkDetails.status,
+        errors: checkDetails.message,
+        data: null
+      });
   }
 
   if (cityId) {
@@ -2754,40 +2752,82 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   const carExists = await models.Car.findByPk(id);
   if (!carExists) return apiResponse._error({ res, errors: `car not found` });
 
+  let isCheaper = false;
+  const userNotifs = [];
+  if (price) {
+    isCheaper = price < carExists.price ? true : isCheaper;
+    if (isCheaper) {
+      // notif ke penawar
+      const likers = await models.Like.aggregate('userId', 'DISTINCT', {
+        plain: false,
+        where: { carId: id }
+      });
+      likers.map(async liker => {
+        userNotifs.push({
+          userId: liker.DISTINCT,
+          collapseKey: null,
+          notificationTitle: `Harga mobil turun`,
+          notificationBody: `Mobil yang anda suka menurunkan harga`,
+          notificationClickAction: `carPriceDiskon`,
+          dataReferenceId: id,
+          category: 3, // like
+          status: 1 // menurunkan harga
+        });
+      });
+    }
+  }
+  
+  // console.log(userNotifs.length);
+  // return res
+  //   .status(200)
+  //   .json({
+  //     success: true,
+  //     userNotifs,
+  //     price,
+  //     status: price < carExists.price ? `lebih murah` : `tidak`,
+  //     data: carExists
+  //   });
+
   const trans = await models.sequelize.transaction();
   const errors = [];
 
-  await carExists.update(update, {
-    transaction: trans,
-  }).then(async () => {
-    if (meetingSchedules) {
-      meetingSchedules.map(async d => {
-        if (d.id > 0) {
-          return models.MeetingSchedule.update(
-            {
-              day: d.day, startTime: d.startTime, endTime: d.endTime
-            },
-            {
-              where: { id: d.id }
-            }
-          );
-        } else {
-          return models.MeetingSchedule.create(
-            {
-              carId: carExists.id, day: d.day, startTime: d.startTime, endTime: d.endTime
-            }
-          );
-        }
+  await carExists
+    .update(update, {
+      transaction: trans
+    })
+    .then(async () => {
+      if (meetingSchedules) {
+        meetingSchedules.map(async d => {
+          if (d.id > 0) {
+            return models.MeetingSchedule.update(
+              {
+                day: d.day,
+                startTime: d.startTime,
+                endTime: d.endTime
+              },
+              {
+                where: { id: d.id }
+              }
+            );
+          } else {
+            return models.MeetingSchedule.create({
+              carId: carExists.id,
+              day: d.day,
+              startTime: d.startTime,
+              endTime: d.endTime
+            });
+          }
+        });
+      }
+    })
+    .catch(async err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
       });
-    }
-  }).catch(async (err) => {
-    trans.rollback();
-    return res.status(422).json({
-      success: false,
-      errors: err.message
     });
-  });
-  
+
   if (errors.length > 0) {
     trans.rollback();
     return res.status(422).json({
@@ -2799,8 +2839,17 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   trans.commit();
   if (isUpload) imageHelper.uploadToS3(result);
 
+  if (userNotifs.length > 0) {
+    userNotifs.map(async userNotif => {
+      const emit = await notification.insertNotification(userNotif);
+      req.io.emit(`tabLike-${userNotif.userId}`, emit);
+      notification.userNotif(userNotif);
+      console.log(userNotif);
+    });
+  }
+
   const data = await models.Car.findByPk(id, {
-    include:[
+    include: [
       {
         model: models.MeetingSchedule,
         as: 'meetingSchedule',
@@ -2809,7 +2858,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     ]
   });
 
-  return res.json({ success: true, data });
+  return res.status(200).json({ success: true, data });
 });
 
 router.post('/like/:id', passport.authenticate('user', { session: false }), async (req, res) => {
