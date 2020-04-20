@@ -13,21 +13,40 @@ module.exports = (sequelize, DataTypes) => {
       categoryNotification: {
         type: DataTypes.VIRTUAL,
         get() {
-          const stsCategorys = ['NULL', 'notifJual'];
+          const stsCategorys = ['NULL', 'notifJual', 'notifBeli', 'notifLike'];
           return stsCategorys[this.category];
         }
       },
       statusNotification: {
         type: DataTypes.VIRTUAL,
         get() {
-          const stsStatuss = [
-            'NULL',
-            'mobil terjual',
-            'mobil sejenis',
-            'penawaran baru',
-            'penawaran beruba'
-          ];
-          return stsStatuss[this.status];
+          switch (this.category) {
+            case 1:
+              const stsJual = [
+                'NULL',
+                'mobil terjual',
+                'mobil sejenis',
+                'penawaran baru',
+                'penawaran beruba'
+              ];
+              return stsJual[this.status];
+              break;
+            case 3:
+              const stsLike = ['NULL', 'tawaran harga mobil turun'];
+              return stsLike[this.status];
+              break;
+
+            default:
+              const stsDefault = [
+                'NULL',
+                'mobil terjual',
+                'mobil sejenis',
+                'penawaran baru',
+                'penawaran beruba'
+              ];
+              return stsDefault[this.status];
+              break;
+          }
         }
       },
       actionNotification: {
