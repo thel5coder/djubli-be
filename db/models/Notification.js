@@ -32,7 +32,7 @@ module.exports = (sequelize, DataTypes) => {
               return stsJual[this.status];
               break;
             case 3:
-              const stsLike = ['NULL', 'tawaran harga mobil turun'];
+              const stsLike = ['NULL', 'tawaran harga mobil turun', 'mobil terjual'];
               return stsLike[this.status];
               break;
 
