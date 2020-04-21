@@ -21,7 +21,8 @@ module.exports = (sequelize, DataTypes) => {
       km: DataTypes.NUMERIC,
       address: DataTypes.STRING,
       cityId: DataTypes.INTEGER,
-      subDistictId: DataTypes.INTEGER
+      subDistictId: DataTypes.INTEGER,
+      roomId: DataTypes.INTEGER
     },
     {
       timestamps: true,
@@ -117,6 +118,12 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'referenceId',
       targetKey: 'id',
       as: 'notifications'
+    });
+
+    Car.belongsTo(models.Room, {
+      foreignKey: 'roomId',
+      targetKey: 'id',
+      as: 'room'
     });
   };
   return Car;
