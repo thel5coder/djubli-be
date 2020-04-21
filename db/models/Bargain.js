@@ -19,7 +19,8 @@ module.exports = (sequelize, DataTypes) => {
       comment: DataTypes.STRING,
       bidType: DataTypes.INTEGER,
       negotiationType: DataTypes.INTEGER,
-      carPrice: DataTypes.NUMERIC
+      carPrice: DataTypes.NUMERIC,
+      roomId: DataTypes.INTEGER
     },
     { timestamps: true, paranoid: true }
   );

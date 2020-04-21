@@ -217,6 +217,13 @@ router.get('/id/:id', async (req, res) => {
 router.post('/bid', passport.authenticate('user', { session: false }), async (req, res) => {
   const { userId, carId, bidAmount, haveSeenCar, paymentMethod, expiredAt } = req.body;
 
+  if (!bidAmount)
+    return res.status(400).json({ success: false, errors: 'bidAmount must be filled' });
+  if (!paymentMethod)
+    return res.status(400).json({ success: false, errors: 'paymentMethod must be filled' });
+  if (!expiredAt)
+    return res.status(400).json({ success: false, errors: 'expiredAt must be filled' });
+
   const checkIsBid = await models.Bargain.findAll({
     where: {
       carId,
@@ -226,35 +233,14 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
       }
     }
   });
+  if (checkIsBid.length)
+    return res.status(400).json({ success: false, errors: 'You have bid this car' });
 
-  if (checkIsBid.length) {
-    return res.status(400).json({
-      success: false,
-      errors: 'You have bid this car'
-    });
-  }
+  const carExists = await models.Car.findByPk(carId);
+  if (!carExists) return res.status(404).json({ success: false, errors: 'car not found' });
+  if (carExists.roomId) return res.status(422).json({ success: false, errors: `car can't bid` });
 
-  if (!bidAmount) {
-    return res.status(400).json({
-      success: false,
-      errors: 'bidAmount must be filled'
-    });
-  }
-
-  if (!paymentMethod) {
-    return res.status(400).json({
-      success: false,
-      errors: 'paymentMethod must be filled'
-    });
-  }
-
-  if (!expiredAt) {
-    return res.status(400).json({
-      success: false,
-      errors: 'expiredAt must be filled'
-    });
-  }
-
+  // return res.status(200).json({ success: true, userId, data: carExists });
   return models.Bargain.create({
     userId,
     carId,
@@ -265,7 +251,12 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
     bidType: 0
   })
     .then(async data => {
-      const carExists = await models.Car.findByPk(carId);
+      const room = await models.Room.create();
+      models.RoomMember.create({ roomId: room.id, userId: carExists.userId });
+      models.RoomMember.create({ roomId: room.id, userId });
+      await models.Bargain.update({ roomId: room.id }, { where: { id: data.id } });
+      Object.assign(data, { roomId: room.id });
+      carExists.update({ roomId: room.id });
 
       const userNotif = {
         userId: carExists.userId,
@@ -281,10 +272,7 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
       req.io.emit(`tabJual-${carExists.userId}`, emit);
       notification.userNotif(userNotif);
 
-      res.json({
-        success: true,
-        data
-      });
+      res.status(200).json({ success: true, data });
     })
     .catch(err => {
       res.status(422).json({
@@ -441,6 +429,34 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
+  const carExists = await models.Car.findByPk(carId, {
+    include: [
+      {
+        model: models.Room,
+        as: 'room',
+        include: [
+          {
+            required: false,
+            model: models.RoomMember,
+            as: 'members',
+            where: {
+              userId: {
+                [Op.ne]: req.user.id
+              }
+            }
+          }
+        ]
+      }
+    ]
+  });
+  if (!carExists) return res.status(404).json({ success: false, errors: 'car not found' });
+
+  // saat pembeli yang nego, dia masuk tab mana
+
+  // return res
+  //   .status(200)
+  //   .json({ success: true, data: carExists, roomId: carExists.room.members[0].userId });
+
   const create = {
     userId,
     carId,
@@ -484,10 +500,21 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
 
-  return res.json({
-    success: true,
-    data
-  });
+  const userNotif = {
+    userId: carExists.room.members[0].userId,
+    collapseKey: null,
+    notificationTitle: `Notifikasi Jual`,
+    notificationBody: `penawaran baru`,
+    notificationClickAction: `carNegotiate`,
+    dataReferenceId: carId,
+    category: 1,
+    status: 3
+  };
+  const emit = await notification.insertNotification(userNotif);
+  req.io.emit(`tabJual-${carExists.room.members[0].userId}`, emit);
+  notification.userNotif(userNotif);
+
+  return res.status(200).json({ success: true, data });
 });
 
 router.delete(
