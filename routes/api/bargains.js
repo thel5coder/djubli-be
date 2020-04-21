@@ -471,18 +471,16 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   });
 
-  if (data.negotiationType != 0) {
-    models.Bargain.destroy(
-      { where: { [Op.and]: [{ carId: data.carId }, { negotiationType: 0 }] } },
-      { transaction: trans }
-    ).catch(err => {
-      trans.rollback();
-      return res.status(422).json({
-        success: false,
-        errors: err.message
-      });
-    });
-  }
+  // if (data.negotiationType != 0) {
+  //   models.Bargain.destroy(
+  //     { where: { [Op.and]: [{ carId: data.carId }, { negotiationType: 0 }] } },
+  //     { transaction: trans }
+  //   ).catch(err => {
+  //     trans.rollback();
+  //     return res.status(422).json({ success: false, errors: err.message });
+  //   });
+  // }
+
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
 
