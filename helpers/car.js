@@ -42,6 +42,14 @@ async function customFields(params) {
           'isBid'
         ]);
         break;
+      case 'sumBargains':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."userId" = ${params.id} AND "Bargains"."carId" = "${car}"."id" AND "Bargains"."expiredAt" >= (SELECT NOW()) AND "Bargains"."deletedAt" IS NULL)`
+          ),
+          'sumBargains'
+        ]);
+        break;
       case 'isBidFromLike':
         fields.push([
           models.sequelize.literal(
