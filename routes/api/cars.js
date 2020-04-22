@@ -2521,6 +2521,40 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     Object.assign(insert, { subDistictId });
   }
 
+  const userNotifs = [];
+  const otherBidders = await models.Bargain.aggregate('Bargain.userId', 'DISTINCT', {
+    plain: false,
+    include:[
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: [],
+        where: {
+          brandId,
+          modelId,
+          groupModelId
+        }
+      }
+    ],
+    where: {
+      userId: {
+        [Op.ne]: req.user.id
+      }
+    }
+  });  
+  otherBidders.map(async otherBidder => {
+    userNotifs.push({
+      userId: otherBidder.DISTINCT,
+      collapseKey: null,
+      notificationTitle: `Notifikasi Beli`,
+      notificationBody: `mobil sejenis`,
+      notificationClickAction: `similiarCarBeli`,
+      dataReferenceId: 123,
+      category: 2,
+      status: 1
+    });
+  });
+
   const otherCarSells = await models.Car.aggregate('userId', 'DISTINCT', {
     plain: false,
     where: {
@@ -2532,8 +2566,6 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       }
     }
   });
-
-  const userNotifs = [];
   otherCarSells.map(async otherCarSell => {
     userNotifs.push({
       userId: otherCarSell.DISTINCT,
@@ -2541,14 +2573,15 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       notificationTitle: `Notifikasi Jual`,
       notificationBody: `mobil sejenis`,
       notificationClickAction: `similiarCarSell`,
-      dataReferenceId: 123
+      dataReferenceId: 123,
+      category: 1,
+      status: 2
     });
   });
-
-  // const datas = { id: 123 };
+  
   // return apiResponse._success({
   //   res,
-  //   data: { input: req.body, insert, userNotifs }
+  //   data: {otherBidders, userNotifs}
   // });
 
   const trans = await models.sequelize.transaction();
@@ -2636,9 +2669,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
 
   userNotifs.map(async userNotif => {
     Object.assign(userNotif, {
-      dataReferenceId: data.id,
-      category: 1,
-      status: 2
+      dataReferenceId: data.id
     });
     const emit = await notification.insertNotification(userNotif);
     req.io.emit(`tabJual-${userNotif.userId}`, emit);
