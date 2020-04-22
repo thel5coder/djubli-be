@@ -18,6 +18,11 @@ module.exports = (sequelize, DataTypes) => {
       as: 'room',
       onDelete: 'CASCADE'
     });
+    RoomMember.belongsTo(models.User, {
+      foreignKey: 'userId',
+      as: 'member',
+      onDelete: 'CASCADE'
+    });
   };
   return RoomMember;
 };
