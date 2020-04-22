@@ -3,10 +3,11 @@ const express = require('express');
 const validator = require('validator');
 const passport = require('passport');
 const Sequelize = require('sequelize');
+const moment = require('moment');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const notification = require('../../helpers/notification');
-const carHelper = require('../../helpers/car');
+// const carHelper = require('../../helpers/car');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -223,6 +224,8 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
     return res.status(400).json({ success: false, errors: 'paymentMethod must be filled' });
   if (!expiredAt)
     return res.status(400).json({ success: false, errors: 'expiredAt must be filled' });
+  if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid())
+    return res.status(400).json({ success: false, errors: 'Invalid expired date' });
 
   const checkIsBid = await models.Bargain.findAll({
     where: {
@@ -366,68 +369,25 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     carPrice
   } = req.body;
 
-  if (validator.isInt(userId ? userId.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of userId must be int'
-    });
-  }
-
-  if (validator.isInt(carId ? carId.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of carId must be int'
-    });
-  }
-
-  if (validator.isInt(negotiationType ? negotiationType.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of negotiationType must be int'
-    });
-  }
-
-  if (validator.isBoolean(haveSeenCar ? haveSeenCar.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of haveSeenCar must be boolean'
-    });
-  }
-
-  if (!bidAmount) {
-    return res.status(400).json({
-      success: false,
-      errors: 'bidAmount must be filled'
-    });
-  }
-
-  if (!paymentMethod) {
-    return res.status(400).json({
-      success: false,
-      errors: 'paymentMethod must be filled'
-    });
-  }
-
-  if (!expiredAt) {
-    return res.status(400).json({
-      success: false,
-      errors: 'expiredAt must be filled'
-    });
-  }
-
-  if (!carPrice) {
-    return res.status(400).json({
-      success: false,
-      errors: 'carPrice must be filled'
-    });
-  }
-
-  if (validator.isInt(carPrice ? carPrice.toString() : '') === false) {
-    return res.status(406).json({
-      success: false,
-      errors: 'type of carPrice must be int'
-    });
-  }
+  if (validator.isInt(userId ? userId.toString() : '') === false)
+    return res.status(406).json({ success: false, errors: 'type of userId must be int' });
+  if (validator.isInt(carId ? carId.toString() : '') === false)
+    return res.status(406).json({ success: false, errors: 'type of carId must be int' });
+  if (validator.isInt(negotiationType ? negotiationType.toString() : '') === false)
+    return res.status(406).json({ success: false, errors: 'type of negotiationType must be int' });
+  if (validator.isBoolean(haveSeenCar ? haveSeenCar.toString() : '') === false)
+    return res.status(406).json({ success: false, errors: 'type of haveSeenCar must be boolean' });
+  if (!bidAmount)
+    return res.status(400).json({ success: false, errors: 'bidAmount must be filled' });
+  if (!paymentMethod)
+    return res.status(400).json({ success: false, errors: 'paymentMethod must be filled' });
+  if (!expiredAt)
+    return res.status(400).json({ success: false, errors: 'expiredAt must be filled' });
+  if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid())
+    return res.status(400).json({ success: false, errors: 'Invalid expired date' });
+  if (!carPrice) return res.status(400).json({ success: false, errors: 'carPrice must be filled' });
+  if (validator.isInt(carPrice ? carPrice.toString() : '') === false)
+    return res.status(406).json({ success: false, errors: 'type of carPrice must be int' });
 
   const carExists = await models.Car.findByPk(carId, {
     include: [
@@ -450,12 +410,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     ]
   });
   if (!carExists) return res.status(404).json({ success: false, errors: 'car not found' });
-
   // saat pembeli yang nego, dia masuk tab mana
-
-  // return res
-  //   .status(200)
-  //   .json({ success: true, data: carExists, roomId: carExists.room.members[0].userId });
 
   const create = {
     userId,
@@ -470,32 +425,17 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     carPrice
   };
 
-  // return res.status(200).json({
-  //   success: true,
-  //   message: `parameter oke`,
-  //   data: { create }
-  // });
+  // return res
+  //   .status(200)
+  //   .json({ success: true, data: carExists, roomId: carExists.room.members[0].userId });
 
   const trans = await models.sequelize.transaction();
   const data = await models.Bargain.create(create, {
     transaction: trans
   }).catch(err => {
     trans.rollback();
-    return res.status(422).json({
-      success: false,
-      errors: err.message
-    });
+    return res.status(422).json({ success: false, errors: err.message });
   });
-
-  // if (data.negotiationType != 0) {
-  //   models.Bargain.destroy(
-  //     { where: { [Op.and]: [{ carId: data.carId }, { negotiationType: 0 }] } },
-  //     { transaction: trans }
-  //   ).catch(err => {
-  //     trans.rollback();
-  //     return res.status(422).json({ success: false, errors: err.message });
-  //   });
-  // }
 
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
@@ -811,6 +751,46 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
                 attributes: {
                   exclude: ['createdAt', 'updatedAt', 'deletedAt']
                 }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        model: models.Room,
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        as: 'room',
+        include: [
+          {
+            required: false,
+            model: models.RoomMember,
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            as: 'members',
+            where: {
+              userId: {
+                [Op.ne]: id
+              }
+            },
+            include: [
+              {
+                model: models.User,
+                attributes: {
+                  exclude: ['password', 'deletedAt']
+                },
+                as: 'member',
+                include: [
+                  {
+                    model: models.File,
+                    as: 'file',
+                    attributes: {
+                      exclude: ['type', 'createdAt', 'updatedAt', 'deletedAt']
+                    }
+                  }
+                ]
               }
             ]
           }

@@ -95,6 +95,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'notifications',
       onDelete: 'CASCADE'
     });
+    User.hasMany(models.RoomMember, {
+      foreignKey: 'userId',
+      sourceKey: 'id',
+      as: 'members',
+      onDelete: 'CASCADE'
+    });
   };
   return User;
 };
