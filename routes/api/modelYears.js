@@ -587,6 +587,92 @@ router.get('/listingAll', async (req, res) => {
     });
 });
 
+router.get('/listingAllNew', async (req, res) => {
+  let { page, limit, by, sort } = req.query;
+  const { id, groupModelId } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  const order = [[by, sort]];
+  const where = {};
+  if (id) Object.assign(where, { id });
+  if (groupModelId) Object.assign(where, { groupModelId });
+  // console.log(groupModelId);
+
+  return models.Model.findAll({
+    include: [
+      {
+        model: models.GroupModel,
+        as: 'groupModel',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Type,
+            as: 'type',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Car,
+            as: 'cars',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            // attributes: ['id', 'groupModelId'],
+            include: [
+              {
+                model: models.ModelYear,
+                as: 'modelYear',
+                // attributes: ['modelId', 'year']
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Model.count({ where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
 router.get('/listingType', async (req, res) => {
   const {
     by,
