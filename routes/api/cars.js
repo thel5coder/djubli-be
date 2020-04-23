@@ -2551,7 +2551,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       notificationClickAction: `similiarCarBeli`,
       dataReferenceId: 123,
       category: 2,
-      status: 1
+      status: 1,
+      tab: `tabBeli`
     });
   });
 
@@ -2575,7 +2576,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       notificationClickAction: `similiarCarSell`,
       dataReferenceId: 123,
       category: 1,
-      status: 2
+      status: 2,
+      tab: `tabJual`
     });
   });
   
@@ -2672,7 +2674,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       dataReferenceId: data.id
     });
     const emit = await notification.insertNotification(userNotif);
-    req.io.emit(`tabJual-${userNotif.userId}`, emit);
+    req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
     notification.userNotif(userNotif);
     console.log(userNotif);
   });
