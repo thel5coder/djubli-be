@@ -2421,41 +2421,13 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   } = req.body;
   const { images } = req.files;
 
-  if (!userId) {
-    return res.status(400).json({
-      success: false,
-      errors: 'user is mandatory'
-    });
-  }
-  if (!brandId) {
-    return res.status(400).json({
-      success: false,
-      errors: 'brand is mandatory'
-    });
-  }
-  if (!groupModelId) {
-    return res.status(400).json({
-      success: false,
-      errors: 'groupModel is mandatory'
-    });
-  }
-  if (!modelId) {
-    return res.status(400).json({
-      success: false,
-      errors: 'model is mandatory'
-    });
-  }
-  if (!modelYearId) {
-    return res.status(400).json({
-      success: false,
-      errors: 'model year is mandatory'
-    });
-  }
+  if (!userId) return res.status(400).json({ success: false, errors: 'user is mandatory' });
+  if (!brandId) return res.status(400).json({ success: false, errors: 'brand is mandatory' });
+  if (!groupModelId) return res.status(400).json({ success: false, errors: 'groupModel is mandatory' });
+  if (!modelId) return res.status(400).json({ success: false, errors: 'model is mandatory' });
+  if (!modelYearId) return res.status(400).json({ success: false, errors: 'model year is mandatory' });
   if (!location) {
-    return res.status(400).json({
-      success: false,
-      errors: 'location is mandatory'
-    });
+    return res.status(400).json({ success: false, errors: 'location is mandatory' });
   } else {
     let locations = location.split(',');
     locations[0] = general.customReplace(locations[0], ' ', '');
@@ -2692,11 +2664,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   const update = {};
 
   if (validator.isInt(id ? id.toString() : '') === false)
-    return res.status(400).json({
-      success: false,
-      errors: 'invalid id'
-    });
-
+    return res.status(400).json({ success: false, errors: 'invalid id' });
   if (price) {
     if (validator.isInt(price ? price.toString() : '') === false)
       return res.status(422).json({ success: false, errors: 'invalid price' });
@@ -2790,7 +2758,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   if (price) {
     isCheaper = price < carExists.price ? true : isCheaper;
     if (isCheaper) {
-      // notif ke penawar
+      // notif ke penyuka
       const likers = await models.Like.aggregate('userId', 'DISTINCT', {
         plain: false,
         where: { carId: id }
@@ -2804,7 +2772,26 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
           notificationClickAction: `carPriceDiskon`,
           dataReferenceId: id,
           category: 3, // like
-          status: 1 // menurunkan harga
+          status: 1, // menurunkan harga
+          tab: `tabLike`
+        });
+      });
+
+      const bidders = await models.Bargain.aggregate('userId', 'DISTINCT', {
+        plain: false,
+        where: { carId: id }
+      });
+      bidders.map(async bidder => {
+        userNotifs.push({
+          userId: bidder.DISTINCT,
+          collapseKey: null,
+          notificationTitle: `Harga mobil turun`,
+          notificationBody: `Mobil yang anda tawar menurunkan harga`,
+          notificationClickAction: `carPriceDiskon`,
+          dataReferenceId: id,
+          category: 2, // bid
+          status: 2, // menurunkan harga
+          tab: `tabBeli`
         });
       });
     }
@@ -2875,7 +2862,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   if (userNotifs.length > 0) {
     userNotifs.map(async userNotif => {
       const emit = await notification.insertNotification(userNotif);
-      req.io.emit(`tabLike-${userNotif.userId}`, emit);
+      req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
       notification.userNotif(userNotif);
       console.log(userNotif);
     });
