@@ -31,7 +31,16 @@ router.get('/', async (req, res) => {
       {
         model: models.Type,
         as: 'type',
-        attribute: ['id', 'name', 'status']
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        model: models.Brand,
+        as: 'brand',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
       }
     ],
     where,
