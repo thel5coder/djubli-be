@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post('/firebase', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
-  const { title, body, action, carId } = req.body;
+  const { title, body, action, carId, category, status } = req.body;
   let { socketId, attributeId } = req.body;
   socketId = socketId ? socketId : `notification`;
   attributeId = attributeId ? attributeId : id;
@@ -25,8 +25,8 @@ router.post('/firebase', passport.authenticate('user', { session: false }), asyn
     notificationBody: body ? `${body} #${data.id}` : `Car Sell #${data.id}`,
     notificationClickAction: action ? action : `carSell`,
     dataReferenceId: data.id,
-    category: 1,
-    status: 1
+    category: category ? category : 1,
+    status: status ? status : 1
   };
   const emit = await notification.insertNotification(userNotif);
   req.io.emit(`${socketId}-${attributeId}`, emit);

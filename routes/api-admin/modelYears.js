@@ -31,6 +31,40 @@ router.get('/', async (req, res) => {
 
   return models.ModelYear.findAll({
     where,
+    include: [
+      {
+        model: models.Model,
+        as: 'model',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: [
+              {
+                model: models.Type,
+                as: 'type',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              },
+              {
+                model: models.Brand,
+                as: 'brand',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
     order,
     offset,
     limit
@@ -97,36 +131,42 @@ router.post('/', async (req, res) => {
   const { year, modelId, price } = req.body;
   const { images } = req.files;
 
+  if (!year) return res.status(422).json({ success: false, errors: 'year mandatory' });
+  if (!modelId) return res.status(422).json({ success: false, errors: 'modelId mandatory' });
+  if (!price) return res.status(422).json({ success: false, errors: 'price mandatory' });
+
+  const modelExist = await models.Model.findByPk(modelId);
+  if (!modelExist) return res.status(404).json({ success: false, errors: 'modelId not found' });
+
+  const create = {
+    year,
+    modelId,
+    price
+  };
+
   let picture = null;
+  const result = {};
   if (images) {
-    const result = {};
     const tname = randomize('0', 4);
+    const img = images[0].mimetype.split('/');
     result.name = `djublee/images/modelYear/${tname}${moment().format('x')}${unescape(
-      images[0].originalname
+      `.${img[1]}`
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
     picture = result.name;
-    imageHelper.uploadToS3(result);
+    // imageHelper.uploadToS3(result);
+    Object.assign(create, { picture });
   }
 
-  return models.ModelYear.create({
-    year,
-    picture,
-    modelId,
-    price
-  })
+  // return res.json({ success: true, data: create });
+  return models.ModelYear.create(create)
     .then(data => {
-      res.json({
-        success: true,
-        data
-      });
+      if (picture) imageHelper.uploadToS3(result);
+      res.json({ success: true, data });
     })
     .catch(err => {
-      res.status(422).json({
-        success: false,
-        errors: err.message
-      });
+      res.status(422).json({ success: false, errors: err.message });
     });
 });
 
