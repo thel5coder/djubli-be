@@ -410,6 +410,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     ]
   });
   if (!carExists) return res.status(404).json({ success: false, errors: 'car not found' });
+  if (!carExists.roomId) return res.status(422).json({ success: false, errors: 'room null' });
   // saat pembeli yang nego, dia masuk tab mana
 
   const create = {
@@ -425,9 +426,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     carPrice
   };
 
-  // return res
-  //   .status(200)
-  //   .json({ success: true, data: carExists, roomId: carExists.room.members[0].userId });
+  // return res.status(200).json({ success: true, data: carExists });
 
   const trans = await models.sequelize.transaction();
   const data = await models.Bargain.create(create, {
