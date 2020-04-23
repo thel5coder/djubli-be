@@ -80,7 +80,16 @@ async function carsGet(req, res, auth = false) {
 
   const userId = auth ? req.user.id : null;
   const addAttributes = {
-    fields: ['like', 'islike', 'isBid', 'view', 'highestBidder', 'numberOfBidder', 'sumBargains'],
+    fields: [
+      'like',
+      'islike',
+      'isBid',
+      'view',
+      'highestBidder',
+      'numberOfBidder',
+      'sumBargains',
+      'bidAmount'
+    ],
     upperCase: true,
     id: userId
   };
