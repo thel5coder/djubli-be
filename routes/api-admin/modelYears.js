@@ -11,11 +11,12 @@ const paginator = require('../../helpers/paginator');
 const { Op } = Sequelize;
 const router = express.Router();
 
-const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
+const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 30;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  let { page, limit, sort } = req.query;
+  let { page, limit, sort, by } = req.query;
+  const { id } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -23,11 +24,13 @@ router.get('/', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
+  if (!by) by = 'id';
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
+  const order = [[by, sort]];
   const where = {};
+  if (id) Object.assign(where, { id });
 
   return models.ModelYear.findAll({
     where,
