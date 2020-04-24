@@ -22,6 +22,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'car',
       onDelete: 'CASCADE'
     });
+    Model.hasMany(models.ModelYear, {
+      foreignKey: 'modelId',
+      sourceKey: 'id',
+      as: 'modelYears',
+      onDelete: 'CASCADE'
+    });
   };
   return Model;
 };

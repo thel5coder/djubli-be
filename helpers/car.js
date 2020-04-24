@@ -7,7 +7,7 @@ const { Op } = Sequelize;
 
 async function customFields(params) {
   const fields = [];
-  const car = 'upperCase' in params ? (params.upperCase ? `Car` : `car`) : `car`;
+  let car = 'upperCase' in params ? (params.upperCase ? `Car` : `car`) : `car`;
   params.fields.map(async field => {
     switch (field) {
       case 'like':
@@ -176,14 +176,6 @@ async function customFields(params) {
             `(SELECT COUNT("Bargains"."id") FROM "Bargains" LEFT JOIN "Cars" as "Car" ON "Bargains"."carId" = "Car"."id" WHERE "Car"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0 ${params.whereQuery} )`
           ),
           'numberOfBidder'
-        ]);
-        break;
-      case 'highestBidderModelYear':
-        fields.push([
-          models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" LEFT JOIN "Cars" as "Car" ON "Bargains"."carId" = "Car"."id" WHERE "Car"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0 ${params.whereQuery} )`
-          ),
-          'highestBidder'
         ]);
         break;
       case 'highestBidderModelYear':
