@@ -2670,7 +2670,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     if (validator.isInt(price ? price.toString() : '') === false)
       return res.status(422).json({ success: false, errors: 'invalid price' });
 
-    Object.assign(update, { price, oldPrice:price });
+    Object.assign(update, { price });
   }
   if (location) {
     let locations = location.split(',');
@@ -2753,6 +2753,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
 
   const carExists = await models.Car.findByPk(id);
   if (!carExists) return apiResponse._error({ res, errors: `car not found` });
+  Object.assign(update, { oldPrice: carExists.price });
 
   let isCheaper = false;
   const userNotifs = [];
@@ -2797,7 +2798,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
       });
     }
   }
-  
+
   // console.log(userNotifs.length);
   // return res
   //   .status(200)
