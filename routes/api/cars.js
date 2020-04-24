@@ -2472,7 +2472,8 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     STNKphoto,
     location: location.replace(/\s/g, ''),
     status,
-    km
+    km,
+    oldPrice:price
   };
 
   if (address) Object.assign(insert, { address });
@@ -2669,7 +2670,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     if (validator.isInt(price ? price.toString() : '') === false)
       return res.status(422).json({ success: false, errors: 'invalid price' });
 
-    Object.assign(update, { price });
+    Object.assign(update, { price, oldPrice:price });
   }
   if (location) {
     let locations = location.split(',');

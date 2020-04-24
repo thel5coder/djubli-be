@@ -22,7 +22,8 @@ module.exports = (sequelize, DataTypes) => {
       address: DataTypes.STRING,
       cityId: DataTypes.INTEGER,
       subDistictId: DataTypes.INTEGER,
-      roomId: DataTypes.INTEGER
+      roomId: DataTypes.INTEGER,
+      oldPrice: DataTypes.NUMERIC
     },
     {
       timestamps: true,
