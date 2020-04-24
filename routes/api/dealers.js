@@ -14,136 +14,134 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-    let {
-        page,
-        limit,
-        sort,
-        brandId,
-        condition
-    } = req.query;
-    let offset = 0;
+  let { page, limit, by, sort, brandId, condition } = req.query;
+  let offset = 0;
 
-    if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-    if (limit > MAX_LIMIT) limit = MAX_LIMIT;
-    if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
-    else page = 1;
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
 
-    let order = [
-        ['createdAt', 'desc']
-    ];
-    if (!sort) sort = 'asc';
-    else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+  if (!by) by = 'createdAt';
+  if (!sort) sort = 'asc';
+  else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+  let order = [[by, sort]];
 
-    const where = {
-        isPartner: true
-    };
+  const where = {
+    isPartner: true
+  };
 
-    if (brandId) {
-        Object.assign(where, {
-            authorizedBrandId: brandId
-        });
+  if (brandId) {
+    Object.assign(where, {
+      authorizedBrandId: brandId
+    });
+  }
+
+  const whereCar = {
+    userId: {
+      [Op.eq]: models.sequelize.col('Dealer.userId')
     }
+  };
 
-    const whereCar = {
-        userId: {
-            [Op.eq]: models.sequelize.col('Dealer.userId')
+  let whereCondition = '';
+  if (condition) {
+    Object.assign(whereCar, {
+      condition
+    });
+
+    whereCondition = `AND "Cars"."condition" = ${condition}`;
+  }
+
+  return models.Dealer.findAll({
+    attributes: Object.keys(models.Dealer.attributes).concat([
+      [
+        models.sequelize.literal(
+          `(SELECT COUNT("Cars"."id") 
+                          FROM "Cars" 
+                          WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
+                              ${whereCondition} 
+                              AND "Cars"."userId" = "Dealer"."userId" 
+                              AND "Cars"."deletedAt" IS NULL
+                      )`
+        ),
+        'countListing'
+      ],
+      [
+        models.sequelize.literal(
+          `(SELECT "GroupModels"."name" 
+                          FROM "GroupModels" 
+                          WHERE "GroupModels"."brandId" = "Dealer"."authorizedBrandId" 
+                              AND "GroupModels"."deletedAt" IS NULL 
+                          ORDER BY (SELECT COUNT("Cars"."id") 
+                              FROM "Cars" 
+                              WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
+                                  ${whereCondition} 
+                                  AND "Cars"."userId" = "Dealer"."userId" 
+                                  AND "Cars"."deletedAt" IS NULL) DESC 
+                          LIMIT 1
+                      )`
+        ),
+        'groupModelMostListing'
+      ]
+    ]),
+    include: [
+      {
+        model: models.User,
+        as: 'user',
+        attributes: {
+          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        model: models.Car,
+        as: 'car',
+        where: whereCar,
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
-    };
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Dealer.count({
+        distinct: true,
+        col: 'id',
+        include: [
+          {
+            model: models.Car,
+            as: 'car',
+            where: whereCar
+          }
+        ],
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
 
-    let whereCondition = '';
-    if (condition) {
-        Object.assign(whereCar, {
-            condition
-        });
-
-        whereCondition = `AND "Cars"."condition" = ${condition}`
-    }
-
-    return models.Dealer.findAll({
-            attributes: Object.keys(models.Dealer.attributes).concat([
-                [
-                    models.sequelize.literal(
-                        `(SELECT COUNT("Cars"."id") 
-                            FROM "Cars" 
-                            WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
-                                ${whereCondition} 
-                                AND "Cars"."userId" = "Dealer"."userId" 
-                                AND "Cars"."deletedAt" IS NULL
-                        )`
-                    ),
-                    'countListing'
-                ],
-                [
-                    models.sequelize.literal(
-                        `(SELECT "GroupModels"."name" 
-                            FROM "GroupModels" 
-                            WHERE "GroupModels"."brandId" = "Dealer"."authorizedBrandId" 
-                                AND "GroupModels"."deletedAt" IS NULL 
-                            ORDER BY (SELECT COUNT("Cars"."id") 
-                                FROM "Cars" 
-                                WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
-                                    ${whereCondition} 
-                                    AND "Cars"."userId" = "Dealer"."userId" 
-                                    AND "Cars"."deletedAt" IS NULL) DESC 
-                            LIMIT 1
-                        )`
-                    ),
-                    'groupModelMostListing'
-                ]
-            ]),
-            include: [
-            	{
-                    model: models.User,
-                    as: 'user',
-                    attributes: {
-                        exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-                    },
-                    include: [{
-                        model: models.File,
-                        as: 'file',
-                        attributes: {
-                            exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                        }
-                    }]
-                },
-                {
-                    model: models.Car,
-                    as: 'car',
-                    where: whereCar,
-                    attributes: {
-                        exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                    }
-                }
-            ],
-            where,
-            offset,
-            limit
-        })
-        .then(async data => {
-            const count = await models.Dealer.count({
-                distinct: true,
-                col: 'id',
-                include: [{
-                    model: models.Car,
-                    as: 'car',
-                    where: whereCar
-                }],
-                where
-            });
-            const pagination = paginator.paging(page, count, limit);
-
-            res.json({
-                success: true,
-                pagination,
-                data
-            });
-        })
-        .catch(err => {
-            res.status(422).json({
-                success: false,
-                errors: err.message
-            });
-        });
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 });
 
 router.get('/id/:id', async (req, res) => {
@@ -673,7 +671,6 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
             });
         });
 });
-
 
 router.get('/car/sellList/:id', async (req, res) => {
   let { page, limit, sort } = req.query;
