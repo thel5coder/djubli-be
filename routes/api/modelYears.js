@@ -589,7 +589,26 @@ router.get('/listingAll', async (req, res) => {
 
 router.get('/listingAllNew', async (req, res) => {
   let { page, limit, by, sort } = req.query;
-  const { id, groupModelId } = req.query;
+  // const { id, groupModelId } = req.query;
+  const {
+    id,
+    condition,
+    brandId,
+    groupModelId,
+    modelId,
+    minPrice,
+    maxPrice,
+    minKm,
+    maxKm,
+    minYear,
+    maxYear,
+    radius,
+    latitude,
+    longitude,
+    cityId,
+    subdistrictId,
+    typeId
+  } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -601,10 +620,59 @@ router.get('/listingAllNew', async (req, res) => {
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   const order = [[by, sort]];
+  let required = false;
   const where = {};
   let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
   if (id) Object.assign(where, { id });
-  if (groupModelId) Object.assign(where, { groupModelId });
+  // if (groupModelId) Object.assign(where, { groupModelId });
+
+  const whereModelYear = {};
+  if (minYear && maxYear)
+    Object.assign(whereModelYear, {
+      year: { [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }] }
+    });
+
+  const whereCar = { [Op.or]: [{ status: 0 }, { status: 1 }] };
+  if (condition) {
+    Object.assign(whereCar, { condition });
+    required = true;
+    whereQuery += ` AND "Car"."condition" = ${condition}`;
+  }
+
+  const whereBrand = {};
+  if (brandId) {
+    Object.assign(whereBrand, { id: brandId });
+    required = true;
+    whereQuery += ` AND "Car"."brandId" = ${brandId}`;
+  }
+
+  if (modelId) {
+    Object.assign(whereCar, { modelId });
+    required = true;
+    whereQuery += ` AND "Car"."modelId" = ${modelId}`;
+  }
+
+  if (groupModelId) {
+    Object.assign(whereCar, { groupModelId });
+    required = true;
+    whereQuery += ` AND "Car"."groupModelId" = ${groupModelId}`;
+  }
+
+  if (minKm && maxKm) {
+    Object.assign(whereCar, { km: { [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }] } });
+    required = true;
+
+    whereQuery += ` AND ("Car"."km" >= ${minKm} AND "Car"."km" <= ${maxKm})`;
+  }
+
+  if (minPrice && maxPrice) {
+    Object.assign(whereCar, {
+      price: { [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }] }
+    });
+    required = true;
+
+    whereQuery += ` AND ("Car"."price" >= ${minPrice} AND "Car"."price" <= ${maxPrice})`;
+  }
 
   // let upperCase = false;
   // const carCustomFields = {};
@@ -635,7 +703,6 @@ router.get('/listingAllNew', async (req, res) => {
   //   ],
   //   whereQuery
   // });
-
 
   // Object.assign(where, {
   //   [Op.and]: [ Sequelize.where(`(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`, { [Op.gte]: 1 }) ]
@@ -708,7 +775,8 @@ router.get('/listingAllNew', async (req, res) => {
             as: 'brand',
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            }
+            },
+            where: whereBrand
           },
           {
             model: models.Type,
@@ -773,9 +841,10 @@ router.get('/listingAllNew', async (req, res) => {
             'purchase'
           ]
         ],
+        where: whereModelYear,
         include: [
           {
-            required: false,
+            required,
             model: models.Car,
             as: 'cars',
             attributes: [
@@ -848,9 +917,10 @@ router.get('/listingAllNew', async (req, res) => {
               ]
             ],
             include: includeCar,
-            where:{
-              [Op.or]: [{status: 0}, {status: 1}]
-            }
+            where: whereCar
+            // where:{
+            //   [Op.or]: [{status: 0}, {status: 1}]
+            // }
           }
         ]
       }

@@ -290,19 +290,10 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
   const userId = req.user.id;
   const { bidAmount, haveSeenCar, paymentMethod } = req.body;
 
-  if (!bidAmount) {
-    return res.status(400).json({
-      success: false,
-      errors: 'bidAmount must be filled'
-    });
-  }
-
-  if (!paymentMethod) {
-    return res.status(400).json({
-      success: false,
-      errors: 'paymentMethod must be filled'
-    });
-  }
+  if (!bidAmount)
+    return res.status(400).json({ success: false, errors: 'bidAmount must be filled' });
+  if (!paymentMethod)
+    return res.status(400).json({ success: false, errors: 'paymentMethod must be filled' });
 
   const data = await models.Bargain.findOne({
     where: {
@@ -313,12 +304,7 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
     }
   });
 
-  if (!data) {
-    return res.status(400).json({
-      success: false,
-      errors: 'Transaksi not found'
-    });
-  }
+  if (!data) return res.status(400).json({ success: false, errors: 'Transaksi not found' });
 
   return data
     .update({
