@@ -589,7 +589,6 @@ router.get('/listingAll', async (req, res) => {
 
 router.get('/listingAllNew', async (req, res) => {
   let { page, limit, by, sort } = req.query;
-  // const { id, groupModelId } = req.query;
   const {
     id,
     condition,
@@ -602,12 +601,12 @@ router.get('/listingAllNew', async (req, res) => {
     maxKm,
     minYear,
     maxYear,
+    typeId,
     radius,
     latitude,
     longitude,
     cityId,
-    subdistrictId,
-    typeId
+    subdistrictId
   } = req.query;
   let offset = 0;
 
@@ -616,15 +615,31 @@ router.get('/listingAllNew', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
+  if (!by) by = 'id';
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  const order = [[by, sort]];
+  // const order = [[by, sort]];
+  const order = [];
+  switch (by) {
+    case 'view':
+    case 'like':
+      //   order.push([Sequelize.col(by), sort]);
+      //   order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      order.push([Sequelize.literal(`"Cars.${by}" ${sort}`)]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+
   let required = false;
   const where = {};
   let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
   if (id) Object.assign(where, { id });
-  // if (groupModelId) Object.assign(where, { groupModelId });
 
   const whereModelYear = {};
   if (minYear && maxYear)
@@ -674,6 +689,13 @@ router.get('/listingAllNew', async (req, res) => {
     whereQuery += ` AND ("Car"."price" >= ${minPrice} AND "Car"."price" <= ${maxPrice})`;
   }
 
+  const whereGroupModel = {};
+  if (typeId) {
+    Object.assign(whereGroupModel, { typeId });
+
+    // whereQuery += ` AND ${groupModelExist('Car')}`;
+  }
+
   // let upperCase = false;
   // const carCustomFields = {};
   // const carFields = [
@@ -704,9 +726,11 @@ router.get('/listingAllNew', async (req, res) => {
   //   whereQuery
   // });
 
-  // Object.assign(where, {
-  //   [Op.and]: [ Sequelize.where(`(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`, { [Op.gte]: 1 }) ]
-  // });
+  let queryCountCar = `(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`;
+  const whereCarNotNull = Sequelize.literal(`(${queryCountCar})`);
+  Object.assign(whereModelYear, {
+    whereModelYear: Sequelize.where(whereCarNotNull, { [Op.gt]: 0 })
+  });
 
   const includeCar = [
     {
@@ -769,6 +793,7 @@ router.get('/listingAllNew', async (req, res) => {
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
+        where: whereGroupModel,
         include: [
           {
             model: models.Brand,
