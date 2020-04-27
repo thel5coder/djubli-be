@@ -603,12 +603,12 @@ router.get('/listingAllNew', async (req, res) => {
     maxYear,
     typeId,
     radius,
-    latitude,
-    longitude,
     cityId,
     subdistrictId
   } = req.query;
+  let { latitude, longitude } = req.query;
   let offset = 0;
+  let distances = {};
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
@@ -619,17 +619,116 @@ router.get('/listingAllNew', async (req, res) => {
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  // const order = [[by, sort]];
+  const array = [
+    'id',
+    'highestBidder',
+    'price',
+    'km',
+    'listingDate',
+    'roleUser',
+    'condition',
+    'location',
+    // 'like',
+    'brand;',
+    'area'
+  ];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  // *highestBidder; price; km; listingDate; roleUser; condition; location; like; brand, area
+  let separate = false;
   const order = [];
+  let orderCar = [];
   switch (by) {
-    case 'view':
     case 'like':
-      //   order.push([Sequelize.col(by), sort]);
-      //   order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
-      order.push([Sequelize.literal(`"Cars.${by}" ${sort}`)]);
+      orderCar.push([Sequelize.literal(`"modelYears.cars.like" ${sort}`)]);
+      // order.push([Sequelize.literal(`"modelYears.cars.like" ${sort}`)]);
+      break;
+    case 'price':
+    case 'km':
+      order.push([
+        { model: models.ModelYear, as: 'modelYears' },
+        { model: models.Car, as: 'cars' },
+        by,
+        sort
+      ]);
       break;
     case 'profile':
       order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    case 'location':
+      // Search By Location (Latitude, Longitude & Radius)
+      if (by === 'location') {
+        if (!latitude)
+          return res.status(400).json({ success: false, errors: 'Latitude not found!' });
+        if (!longitude)
+          return res.status(400).json({ success: false, errors: 'Longitude not found!' });
+        if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
+
+        await calculateDistance.CreateOrReplaceCalculateDistance();
+        const rawDistancesFunc = (tableName = 'Car') => {
+          const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+          rawDistances = calDistance;
+          return calDistance;
+        };
+
+        distances = models.sequelize.literal(rawDistancesFunc('modelYears->cars'));
+        rawDistancesFunc();
+
+        orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
+        // order.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
+      }
+      break;
+    case 'area':
+      // order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      // Search by City, Subdistrict/Area & Radius
+      if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
+      if (cityId) {
+        const city = await models.City.findByPk(cityId);
+        if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+        if (subdistrictId) {
+          const subdistrict = await models.SubDistrict.findOne({
+            where: { id: subdistrictId, cityId }
+          });
+          if (!subdistrict)
+            return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+          if (city && subdistrict) {
+            await calculateDistance.CreateOrReplaceCalculateDistance();
+            const rawDistancesFunc = (tableName = 'Car') => {
+              const calDistance = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+              rawDistances = calDistance;
+              return calDistance;
+            };
+            latitude = city.latitude;
+            longitude = city.longitude;
+
+            distances = models.sequelize.literal(rawDistancesFunc('modelYears->cars'));
+            rawDistancesFunc();
+
+            orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
+            // order.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
+          }
+        } else {
+          if (city) {
+            await calculateDistance.CreateOrReplaceCalculateDistance();
+            const rawDistancesFunc = (tableName = 'Cars') => {
+              const calDistance = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+              rawDistances = calDistance;
+              return calDistance;
+            };
+            latitude = city.latitude;
+            longitude = city.longitude;
+
+            distances = models.sequelize.literal(rawDistancesFunc('modelYears->cars'));
+            rawDistancesFunc();
+
+            orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
+            // order.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
+          }
+        }
+      } else {
+        return res.status(400).json({ success: false, errors: 'Please Select City!' });
+      }
       break;
     default:
       order.push([by, sort]);
@@ -696,36 +795,6 @@ router.get('/listingAllNew', async (req, res) => {
     // whereQuery += ` AND ${groupModelExist('Car')}`;
   }
 
-  // let upperCase = false;
-  // const carCustomFields = {};
-  // const carFields = [
-  //   'bidAmountModelYears',
-  //   'numberOfBidder',
-  //   'like',
-  //   'view',
-  //   'groupModelTypeId',
-  //   'latitude',
-  //   'longitude'
-  // ];
-
-  // Object.assign(carCustomFields, {
-  //   fields: carFields,
-  //   table: `Cars`,
-  //   upperCase
-  // });
-  // const addAttribute = await carHelper.customFields({
-  //   fields: [
-  //     'numberOfCar',
-  //     'maxPrice',
-  //     'minPrice',
-  //     'numberOfBidderModelYear',
-  //     'highestBidderModelYear',
-  //     'highestBidderCarId',
-  //     'purchase'
-  //   ],
-  //   whereQuery
-  // });
-
   let queryCountCar = `(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`;
   const whereCarNotNull = Sequelize.literal(`(${queryCountCar})`);
   Object.assign(whereModelYear, {
@@ -785,6 +854,85 @@ router.get('/listingAllNew', async (req, res) => {
       }
     }
   ];
+  const attributeCar = [
+    'id',
+    'userId',
+    'brandId',
+    'modelId',
+    'groupModelId',
+    'modelYearId',
+    'exteriorColorId',
+    'interiorColorId',
+    'price',
+    'condition',
+    'usedFrom',
+    'frameNumber',
+    'engineNumber',
+    'STNKnumber',
+    'STNKphoto',
+    'location',
+    'status',
+    'km',
+    'address',
+    'cityId',
+    'subDistictId',
+    'roomId',
+    'oldPrice',
+    'createdAt',
+    'updatedAt',
+    [
+      models.sequelize.literal(
+        `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "modelYears->cars"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+      ),
+      'bidAmount'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "modelYears->cars"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
+      ),
+      'numberOfBidder'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "modelYears->cars"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
+      ),
+      'like'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "modelYears->cars"."id" AND "Views"."deletedAt" IS NULL)`
+      ),
+      'view'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "modelYears->cars"."groupModelId" AND "GroupModels"."deletedAt" IS NULL)`
+      ),
+      'groupModelTypeId'
+    ],
+    [
+      models.sequelize.literal(`(SELECT split_part("modelYears->cars"."location", ',', 1))`),
+      'latitude'
+    ],
+    [
+      models.sequelize.literal(`(SELECT split_part("modelYears->cars"."location", ',', 2))`),
+      'longitude'
+    ]
+  ];
+
+  if (latitude && longitude) {
+    Object.assign(whereCar, {
+      [Op.and]: [models.Sequelize.where(distances, { [Op.lte]: radius })]
+    });
+
+    attributeCar.push([
+      models.sequelize.literal(
+        `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("modelYears->cars"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("modelYears->cars"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+      ),
+      'distance'
+    ]);
+  }
+
   return models.Model.findAll({
     include: [
       {
@@ -872,80 +1020,11 @@ router.get('/listingAllNew', async (req, res) => {
             required,
             model: models.Car,
             as: 'cars',
-            attributes: [
-              'id',
-              'userId',
-              'brandId',
-              'modelId',
-              'groupModelId',
-              'modelYearId',
-              'exteriorColorId',
-              'interiorColorId',
-              'price',
-              'condition',
-              'usedFrom',
-              'frameNumber',
-              'engineNumber',
-              'STNKnumber',
-              'STNKphoto',
-              'location',
-              'status',
-              'km',
-              'address',
-              'cityId',
-              'subDistictId',
-              'roomId',
-              'oldPrice',
-              'createdAt',
-              'updatedAt',
-              [
-                models.sequelize.literal(
-                  `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "modelYears->cars"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
-                ),
-                'bidAmount'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "modelYears->cars"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
-                ),
-                'numberOfBidder'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "modelYears->cars"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
-                ),
-                'like'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "modelYears->cars"."id" AND "Views"."deletedAt" IS NULL)`
-                ),
-                'view'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "modelYears->cars"."groupModelId" AND "GroupModels"."deletedAt" IS NULL)`
-                ),
-                'groupModelTypeId'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT split_part("modelYears->cars"."location", ',', 1))`
-                ),
-                'latitude'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT split_part("modelYears->cars"."location", ',', 2))`
-                ),
-                'longitude'
-              ]
-            ],
+            separate,
+            attributes: attributeCar,
             include: includeCar,
-            where: whereCar
-            // where:{
-            //   [Op.or]: [{status: 0}, {status: 1}]
-            // }
+            where: whereCar,
+            order: orderCar
           }
         ]
       }
