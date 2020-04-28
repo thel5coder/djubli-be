@@ -644,7 +644,6 @@ router.get('/listingAllNew', async (req, res) => {
       break;
     case 'like':
       orderCar.push([Sequelize.literal(`"modelYears.cars.like" ${sort}`)]);
-      // order.push([Sequelize.literal(`"modelYears.cars.like" ${sort}`)]);
       break;
     case 'price':
     case 'km':
@@ -678,11 +677,9 @@ router.get('/listingAllNew', async (req, res) => {
         rawDistancesFunc();
 
         orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
-        // order.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
       }
       break;
     case 'area':
-      // order.push([{ model: models.User, as: 'user' }, 'type', sort]);
       // Search by City, Subdistrict/Area & Radius
       if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
       if (cityId) {
@@ -710,7 +707,6 @@ router.get('/listingAllNew', async (req, res) => {
             rawDistancesFunc();
 
             orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
-            // order.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
           }
         } else {
           if (city) {
@@ -727,7 +723,6 @@ router.get('/listingAllNew', async (req, res) => {
             rawDistancesFunc();
 
             orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
-            // order.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
           }
         }
       } else {
@@ -934,14 +929,14 @@ router.get('/listingAllNew', async (req, res) => {
   ];
 
   if (latitude && longitude) {
-    Object.assign(whereCar, {
-      where: {
-        [Op.and]: [
-          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
-          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
-        ]
-      }
-    });
+    // Object.assign(whereCar, {
+    //   where: {
+    //     [Op.and]: [
+    //       Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+    //       Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+    //     ]
+    //   }
+    // });
 
     whereQuery += ` AND ${rawDistances} >= ${Number(radius[0])} AND ${rawDistances} <= ${Number(
       radius[1]
