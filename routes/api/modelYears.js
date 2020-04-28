@@ -602,11 +602,10 @@ router.get('/listingAllNew', async (req, res) => {
     minYear,
     maxYear,
     typeId,
-    radius,
     cityId,
     subdistrictId
   } = req.query;
-  let { latitude, longitude } = req.query;
+  let { radius, latitude, longitude } = req.query;
   let offset = 0;
   let distances = {};
 
@@ -628,7 +627,7 @@ router.get('/listingAllNew', async (req, res) => {
     'roleUser',
     'condition',
     'location',
-    // 'like',
+    'like',
     'brand;',
     'area'
   ];
@@ -637,7 +636,11 @@ router.get('/listingAllNew', async (req, res) => {
   let separate = false;
   const order = [];
   let orderCar = [];
+  const orderModelYear = [];
   switch (by) {
+    case 'highestBidder':
+      orderModelYear.push([Sequelize.literal(`"modelYears.highestBidder" ${sort}`)]);
+      break;
     case 'like':
       orderCar.push([Sequelize.literal(`"modelYears.cars.like" ${sort}`)]);
       // order.push([Sequelize.literal(`"modelYears.cars.like" ${sort}`)]);
@@ -739,6 +742,11 @@ router.get('/listingAllNew', async (req, res) => {
   const where = {};
   let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
   if (id) Object.assign(where, { id });
+
+  if (radius) {
+    if (radius.length < 2)
+      return res.status(422).json({ success: false, errors: 'incomplete radius' });
+  }
 
   const whereModelYear = {};
   if (minYear && maxYear)
@@ -921,8 +929,16 @@ router.get('/listingAllNew', async (req, res) => {
   ];
 
   if (latitude && longitude) {
+    // Object.assign(whereCar, {
+    //   // [Op.and]: [models.Sequelize.where(distances, { [Op.lte]: radius })]
+    // });
     Object.assign(whereCar, {
-      [Op.and]: [models.Sequelize.where(distances, { [Op.lte]: radius })]
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
     });
 
     attributeCar.push([
@@ -1015,6 +1031,7 @@ router.get('/listingAllNew', async (req, res) => {
           ]
         ],
         where: whereModelYear,
+        order: orderModelYear,
         include: [
           {
             required,
