@@ -17,6 +17,9 @@ router.post('/firebase', passport.authenticate('user', { session: false }), asyn
   socketId = socketId ? socketId : `notification`;
   attributeId = attributeId ? attributeId : id;
 
+  const carExist = models.Car.findByPk(carId);
+  if (!carExist) return res.status(404).json({ success: false, errors: 'Car not found!' });
+
   const data = { id: carId ? carId : 13 };
   const userNotif = {
     userId: id,
