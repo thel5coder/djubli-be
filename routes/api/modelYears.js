@@ -608,6 +608,7 @@ router.get('/listingAllNew', async (req, res) => {
   let { radius, latitude, longitude } = req.query;
   let offset = 0;
   let distances = {};
+  let rawDistances = ``;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
@@ -813,12 +814,6 @@ router.get('/listingAllNew', async (req, res) => {
     // whereQuery += ` AND ${groupModelExist('Car')}`;
   }
 
-  let queryCountCar = `(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`;
-  const whereCarNotNull = Sequelize.literal(`(${queryCountCar})`);
-  Object.assign(whereModelYear, {
-    whereModelYear: Sequelize.where(whereCarNotNull, { [Op.gt]: 0 })
-  });
-
   const includeCar = [
     {
       model: models.User,
@@ -948,6 +943,10 @@ router.get('/listingAllNew', async (req, res) => {
       }
     });
 
+    whereQuery += ` AND ${rawDistances} >= ${Number(radius[0])} AND ${rawDistances} <= ${Number(
+      radius[1]
+    )}`;
+
     attributeCar.push([
       models.sequelize.literal(
         `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("modelYears->cars"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("modelYears->cars"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
@@ -955,6 +954,12 @@ router.get('/listingAllNew', async (req, res) => {
       'distance'
     ]);
   }
+
+  let queryCountCar = `(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`;
+  const whereCarNotNull = Sequelize.literal(`(${queryCountCar})`);
+  Object.assign(whereModelYear, {
+    whereModelYear: Sequelize.where(whereCarNotNull, { [Op.gt]: 0 })
+  });
 
   // return res.status(200).json({ success: true, whereCar });
   return models.Model.findAll({
