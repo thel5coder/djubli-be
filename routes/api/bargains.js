@@ -343,6 +343,7 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
 });
 
 router.post('/negotiate', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.user;
   const {
     userId,
     carId,
@@ -399,6 +400,33 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
   if (!carExists.roomId) return res.status(422).json({ success: false, errors: 'room null' });
   // saat pembeli yang nego, dia masuk tab mana
 
+  const userNotifs = [];
+  if (id === carExists.userId) {
+    userNotifs.push({
+      userId: carExists.room.members[0].userId,
+      collapseKey: null,
+      notificationTitle: `Notifikasi Nego Beli`,
+      notificationBody: `Diajak ke ruang nego`,
+      notificationClickAction: `carNegotiate`,
+      dataReferenceId: carId,
+      category: 4,
+      status: 2,
+      tab: `tabNego-${carExists.room.members[0].userId}`
+    });
+  } else {
+    userNotifs.push({
+      userId: carExists.room.members[0].userId,
+      collapseKey: null,
+      notificationTitle: `Notifikasi Nego Jual`,
+      notificationBody: `Pembeli menjawab`,
+      notificationClickAction: `carNegotiate`,
+      dataReferenceId: carId,
+      category: 4,
+      status: 1,
+      tab: `tabNego-${carExists.room.members[0].userId}`
+    });
+  }
+
   const create = {
     userId,
     carId,
@@ -413,7 +441,6 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
   };
 
   // return res.status(200).json({ success: true, data: carExists });
-
   const trans = await models.sequelize.transaction();
   const data = await models.Bargain.create(create, {
     transaction: trans
@@ -425,19 +452,26 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
 
-  const userNotif = {
-    userId: carExists.room.members[0].userId,
-    collapseKey: null,
-    notificationTitle: `Notifikasi Jual`,
-    notificationBody: `penawaran baru`,
-    notificationClickAction: `carNegotiate`,
-    dataReferenceId: carId,
-    category: 1,
-    status: 3
-  };
-  const emit = await notification.insertNotification(userNotif);
-  req.io.emit(`tabJual-${carExists.room.members[0].userId}`, emit);
-  notification.userNotif(userNotif);
+  // const userNotif = {
+  //   userId: carExists.room.members[0].userId,
+  //   collapseKey: null,
+  //   notificationTitle: `Notifikasi Jual`,
+  //   notificationBody: `penawaran baru`,
+  //   notificationClickAction: `carNegotiate`,
+  //   dataReferenceId: carId,
+  //   category: 1,
+  //   status: 3
+  // };
+  // const emit = await notification.insertNotification(userNotif);
+  // req.io.emit(`tabJual-${carExists.room.members[0].userId}`, emit);
+  // notification.userNotif(userNotif);
+
+  userNotifs.map(async userNotif => {
+    const emit = await notification.insertNotification(userNotif);
+    req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
+    notification.userNotif(userNotif);
+    console.log(userNotif);
+  });
 
   return res.status(200).json({ success: true, data });
 });
