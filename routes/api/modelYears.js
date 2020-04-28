@@ -746,6 +746,16 @@ router.get('/listingAllNew', async (req, res) => {
   if (radius) {
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
+
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const rawDistancesFunc = (tableName = 'Car') => {
+      const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+      rawDistances = calDistance;
+      return calDistance;
+    };
+
+    distances = models.sequelize.literal(rawDistancesFunc('modelYears->cars'));
+    rawDistancesFunc();
   }
 
   const whereModelYear = {};
@@ -929,9 +939,6 @@ router.get('/listingAllNew', async (req, res) => {
   ];
 
   if (latitude && longitude) {
-    // Object.assign(whereCar, {
-    //   // [Op.and]: [models.Sequelize.where(distances, { [Op.lte]: radius })]
-    // });
     Object.assign(whereCar, {
       where: {
         [Op.and]: [
@@ -949,6 +956,7 @@ router.get('/listingAllNew', async (req, res) => {
     ]);
   }
 
+  // return res.status(200).json({ success: true, whereCar });
   return models.Model.findAll({
     include: [
       {
@@ -1055,7 +1063,7 @@ router.get('/listingAllNew', async (req, res) => {
       const count = await models.Model.count({ where });
       const pagination = paginator.paging(page, count, limit);
 
-      res.json({
+      res.status(200).json({
         success: true,
         pagination,
         data
