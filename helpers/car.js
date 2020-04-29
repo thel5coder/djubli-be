@@ -217,7 +217,7 @@ async function customFields(params) {
       case 'maxPriceModel':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MAX("Car"."price") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+            `(SELECT MAX("Car"."price") FROM "Cars" as "Car" WHERE "Car"."modelId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
           ),
           'maxPrice'
         ]);
@@ -225,7 +225,7 @@ async function customFields(params) {
       case 'minPriceModel':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MIN("Car"."price") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+            `(SELECT MIN("Car"."price") FROM "Cars" as "Car" WHERE "Car"."modelId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
           ),
           'minPrice'
         ]);
@@ -233,7 +233,7 @@ async function customFields(params) {
       case 'maxKm':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MAX("Car"."km") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+            `(SELECT MAX("Car"."km") FROM "Cars" as "Car" WHERE "Car"."modelId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
           ),
           'maxKm'
         ]);
@@ -241,7 +241,7 @@ async function customFields(params) {
       case 'minKm':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MIN("Car"."km") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+            `(SELECT MIN("Car"."km") FROM "Cars" as "Car" WHERE "Car"."modelId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
           ),
           'minKm'
         ]);
@@ -249,7 +249,7 @@ async function customFields(params) {
       case 'maxYear':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MAX("ModelYear"."year") FROM "Cars" as "Car" LEFT JOIN "ModelYears" as "ModelYear" ON "Car"."modelYearId" = "ModelYear"."id" WHERE "Car"."modelYearId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+            `(SELECT "ModelYear"."year" FROM "Cars" as "Car" LEFT JOIN "ModelYears" as "ModelYear" ON "Car"."modelYearId" = "ModelYear"."id" WHERE "Car"."modelId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery} ORDER BY "ModelYear"."year" DESC LIMIT 1)`
           ),
           'maxYear'
         ]);
@@ -257,7 +257,7 @@ async function customFields(params) {
       case 'minYear':
         fields.push([
           models.sequelize.literal(
-            `(SELECT MIN("ModelYear"."year") FROM "Cars" as "Car" LEFT JOIN "ModelYears" as "ModelYear" ON "Car"."modelYearId" = "ModelYear"."id" WHERE "Car"."modelYearId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+            `(SELECT "ModelYear"."year" FROM "Cars" as "Car" LEFT JOIN "ModelYears" as "ModelYear" ON "Car"."modelYearId" = "ModelYear"."id" WHERE "Car"."modelId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery} ORDER BY "ModelYear"."year" ASC LIMIT 1)`
           ),
           'minYear'
         ]);
