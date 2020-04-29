@@ -140,7 +140,7 @@ async function customFields(params) {
       case 'purchase':
         fields.push([
           models.sequelize.literal(
-            `(SELECT COUNT("Purchase"."id") FROM "Purchases" as "Purchase" LEFT JOIN "Cars" as "Car" ON "Purchase"."carId" = "Car"."id" WHERE "Car"."status"=2 AND "Car"."modelYearId" = "ModelYear"."id")`
+            `(SELECT COUNT("Purchase"."id") FROM "Purchases" as "Purchase" LEFT JOIN "Cars" as "Car" ON "Purchase"."carId" = "Car"."id" WHERE "Car"."status"=2 AND "Car"."modelYearId" = "ModelYear"."id" AND "Car"."deletedAt" IS NULL)`
           ),
           'purchase'
         ]);
