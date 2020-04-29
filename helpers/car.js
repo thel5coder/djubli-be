@@ -214,6 +214,55 @@ async function customFields(params) {
         ]);
         break;
 
+      case 'maxPriceModel':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT MAX("Car"."price") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+          ),
+          'maxPrice'
+        ]);
+        break;
+      case 'minPriceModel':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT MIN("Car"."price") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+          ),
+          'minPrice'
+        ]);
+        break;
+      case 'maxKm':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT MAX("Car"."km") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+          ),
+          'maxKm'
+        ]);
+        break;
+      case 'minKm':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT MIN("Car"."km") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+          ),
+          'minKm'
+        ]);
+        break;
+      case 'maxYear':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT MAX("ModelYear"."year") FROM "Cars" as "Car" LEFT JOIN "ModelYears" as "ModelYear" ON "Car"."modelYearId" = "ModelYear"."id" WHERE "Car"."modelYearId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+          ),
+          'maxYear'
+        ]);
+        break;
+      case 'minYear':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT MIN("ModelYear"."year") FROM "Cars" as "Car" LEFT JOIN "ModelYears" as "ModelYear" ON "Car"."modelYearId" = "ModelYear"."id" WHERE "Car"."modelYearId"="Model"."id" AND "Car"."deletedAt" IS NULL ${params.whereQuery})`
+          ),
+          'minYear'
+        ]);
+        break;
+
       default:
         break;
     }

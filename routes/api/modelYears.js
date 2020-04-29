@@ -957,7 +957,12 @@ router.get('/listingAllNew', async (req, res) => {
   });
 
   // return res.status(200).json({ success: true, whereCar });
+  const modelAttribute = await carHelper.customFields({
+    fields: ['maxPriceModel', 'minPriceModel', 'maxKm', 'minKm', 'maxYear', 'minYear'],
+    whereQuery
+  });
   return models.Model.findAll({
+    attributes: Object.keys(models.Model.attributes).concat(modelAttribute),
     include: [
       {
         model: models.GroupModel,
