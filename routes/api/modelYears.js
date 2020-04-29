@@ -1033,7 +1033,7 @@ router.get('/listingAllNew', async (req, res) => {
           ],
           [
             models.sequelize.literal(
-              `(SELECT COUNT("Purchase"."id") FROM "Purchases" as "Purchase" LEFT JOIN "Cars" as "Car" ON "Purchase"."carId" = "Car"."id" WHERE "Car"."status"=2 AND "Car"."modelYearId" = "modelYears"."id")`
+              `(SELECT COUNT("Purchase"."id") FROM "Purchases" as "Purchase" LEFT JOIN "Cars" as "Car" ON "Purchase"."carId" = "Car"."id" WHERE "Car"."status"=2 AND "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL)`
             ),
             'purchase'
           ]
