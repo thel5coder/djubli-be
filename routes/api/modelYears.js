@@ -1380,7 +1380,6 @@ async function listingCar(req, res, auth = false) {
     brandId,
     groupModelId,
     modelId,
-    year,
     maxPrice,
     minPrice,
     condition,
@@ -1389,12 +1388,9 @@ async function listingCar(req, res, auth = false) {
     minYear,
     maxYear,
     radius,
-    // latitude,
-    // longitude,
     cityId,
-    subdistrictId,
+    subDistrictId,
     typeId
-    // modelYearId
   } = req.query;
   let { latitude, longitude } = req.query;
 
@@ -1428,7 +1424,7 @@ async function listingCar(req, res, auth = false) {
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area') {
     if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
-    if (!cityId && !subdistictId)
+    if (!cityId && !subDistrictId)
       return res.status(422).json({ success: false, errors: 'invalid city or subDistrictId!' });
   }
 
@@ -1436,6 +1432,8 @@ async function listingCar(req, res, auth = false) {
   const whereModelYear = {};
 
   if (radius) {
+    if (!Array.isArray(radius))
+      return res.status(422).json({ success: false, errors: 'invalid radius' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
 
@@ -1519,7 +1517,7 @@ async function listingCar(req, res, auth = false) {
     longitude = city.longitude;
   }
 
-  if (subdistrictId) {
+  if (subDistrictId) {
     if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
