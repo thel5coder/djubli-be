@@ -1353,7 +1353,6 @@ router.get('/listingType', async (req, res) => {
 
 router.get('/listingCar/:id', async (req, res) => {
   const {
-    by,
     brandId,
     groupModelId,
     modelId,
@@ -1366,23 +1365,26 @@ router.get('/listingCar/:id', async (req, res) => {
     minYear,
     maxYear,
     radius,
-    latitude,
-    longitude,
+    // latitude,
+    // longitude,
     cityId,
     subdistrictId,
     typeId
+    // modelYearId
   } = req.query;
+  let { latitude, longitude } = req.query;
 
   const { id } = req.params;
-  let { page, limit, sort } = req.query;
+  let { page, limit, sort, by } = req.query;
   let offset = 0;
+  let distances = {};
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
   if (limit > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  let order = [['createdAt', 'desc']];
+  let order = [];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
@@ -1390,6 +1392,7 @@ router.get('/listingCar/:id', async (req, res) => {
   else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
   else if (by === 'userType')
     order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
+  else [['createdAt', 'desc']];
 
   // Search By Location (Latitude, Longitude & Radius)
   if (by === 'location') {
@@ -1472,19 +1475,22 @@ router.get('/listingCar/:id', async (req, res) => {
     }
   }
 
-  const where = {
-    [Op.or]: [{ status: 0 }, { status: 1 }],
-    modelYearId: id
-  };
+  const where = { [Op.or]: [{ status: 0 }, { status: 1 }], modelYearId: id };
+  const whereModelYear = {};
 
-  const includeWhere = {};
+  if (radius) {
+    if (radius.length < 2)
+      return res.status(422).json({ success: false, errors: 'incomplete radius' });
 
-  if (year) {
-    Object.assign(includeWhere, {
-      year: {
-        [Op.eq]: year
-      }
-    });
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const rawDistancesFunc = (tableName = 'Car') => {
+      const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+      rawDistances = calDistance;
+      return calDistance;
+    };
+
+    distances = models.sequelize.literal(rawDistancesFunc('Car'));
+    rawDistancesFunc();
   }
 
   if (condition) {
@@ -1519,6 +1525,12 @@ router.get('/listingCar/:id', async (req, res) => {
     });
   }
 
+  if (minYear && maxYear) {
+    Object.assign(whereModelYear, {
+      year: { [Op.and]: [{ [Op.lte]: maxYear }, { [Op.gte]: minYear }] }
+    });
+  }
+
   if (groupModelId) {
     Object.assign(where, {
       groupModelId: {
@@ -1533,6 +1545,40 @@ router.get('/listingCar/:id', async (req, res) => {
         [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
       }
     });
+  }
+
+  if (cityId) {
+    if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
+    if (radius.length < 2)
+      return res.status(422).json({ success: false, errors: 'incomplete radius' });
+
+    const city = await models.City.findByPk(cityId);
+    if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+    distances = models.sequelize.literal(rawDistances);
+    latitude = city.latitude;
+    longitude = city.longitude;
+  }
+
+  if (subdistrictId) {
+    if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
+    if (radius.length < 2)
+      return res.status(422).json({ success: false, errors: 'incomplete radius' });
+
+    const whereSubDistrict = { id: subdistrictId };
+    if (cityId) Object.assign(whereSubDistrict, { cityId });
+
+    const subdistrict = await models.SubDistrict.findOne({ where: whereSubDistrict });
+    if (!subdistrict)
+      return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+    distances = models.sequelize.literal(rawDistances);
+    latitude = subdistrict.latitude;
+    longitude = subdistrict.longitude;
   }
 
   if (by === 'highestBidder') {
@@ -1573,57 +1619,47 @@ router.get('/listingCar/:id', async (req, res) => {
     });
   }
 
+  const carAttributes = {
+    fields: [
+      'like',
+      'view',
+      'numberOfBidder',
+      'highestBidder'
+      // 'maxPriceModel',
+      // 'minPriceModel',
+      // 'maxKm',
+      // 'minKm',
+      // 'maxYear',
+      // 'minYear'
+    ],
+    upperCase: true
+  };
+
+  if (latitude && longitude) {
+    carAttributes.fields.push('distance');
+    Object.assign(carAttributes, { latitude, longitude, whereQuery: `` });
+
+    Object.assign(where, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+    order = [[Sequelize.col(`distance`), sort]];
+  }
+
+  const carAttribute = await carHelper.customFields(carAttributes);
+
+  // return res.status(200).json({ success: true, data: { order, carAttribute } });
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'like'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Views"."id") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
-        ),
-        'view'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'numberOfBidder'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'highestBidder'
-      ]
-    ]),
+    attributes: Object.keys(models.Car.attributes).concat(carAttribute),
     include: [
       {
         model: models.ModelYear,
         as: 'modelYear',
-        where: includeWhere,
+        where: whereModelYear,
         include: [
           {
             model: models.Model,
@@ -1725,14 +1761,14 @@ router.get('/listingCar/:id', async (req, res) => {
           {
             model: models.ModelYear,
             as: 'modelYear',
-            where: includeWhere
+            where: whereModelYear
           }
         ],
         where
       });
       const pagination = paginator.paging(page, count, limit);
 
-      res.json({
+      res.status(200).json({
         success: true,
         pagination,
         data
