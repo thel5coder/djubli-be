@@ -1068,9 +1068,32 @@ router.get('/listingAllNew', async (req, res) => {
       const count = await models.Model.count({ where });
       const pagination = paginator.paging(page, count, limit);
 
+      const additional = await models.Car.findAll({
+        attributes: [
+          [Sequelize.fn('max', Sequelize.col('price')), 'maxPrice'],
+          [Sequelize.fn('min', Sequelize.col('price')), 'minPrice'],
+          [Sequelize.fn('max', Sequelize.col('km')), 'maxKm'],
+          [Sequelize.fn('min', Sequelize.col('km')), 'minKm'],
+          [
+            models.sequelize.literal(
+              `(SELECT MAX("ModelYear"."year") FROM "ModelYears" as "ModelYear" INNER JOIN "Cars" as "Car" ON "ModelYear"."id" = "Car"."modelYearId" WHERE "Car"."deletedAt" IS NULL)`
+            ),
+            'maxYear'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT MIN("ModelYear"."year") FROM "ModelYears" as "ModelYear" INNER JOIN "Cars" as "Car" ON "ModelYear"."id" = "Car"."modelYearId" WHERE "Car"."deletedAt" IS NULL)`
+            ),
+            'minYear'
+          ]
+        ],
+        raw: true
+      });
+
       res.status(200).json({
         success: true,
         pagination,
+        additional: additional.length > 0 ? additional[additional.length - 1] : {},
         data
       });
     })
