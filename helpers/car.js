@@ -26,6 +26,7 @@ async function customFields(params) {
           'view'
         ]);
         break;
+      case 'isLike':
       case 'islike':
         fields.push([
           models.sequelize.literal(
