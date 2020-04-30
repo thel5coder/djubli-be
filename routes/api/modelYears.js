@@ -1419,83 +1419,63 @@ router.get('/listingCar/:id', async (req, res) => {
 
   // Search By Location (Latitude, Longitude & Radius)
   if (by === 'location') {
-    if (!latitude) {
-      return res.status(400).json({
-        success: false,
-        errors: 'Latitude not found!'
-      });
-    }
+    if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
+    if (!longitude) return res.status(400).json({ success: false, errors: 'Longitude not found!' });
+    if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
 
-    if (!longitude) {
-      return res.status(400).json({
-        success: false,
-        errors: 'Longitude not found!'
-      });
-    }
-
-    if (!radius) {
-      return res.status(400).json({
-        success: false,
-        errors: 'Radius not found!'
-      });
-    }
-
-    await calculateDistance.CreateOrReplaceCalculateDistance();
-    const rawDistances = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-    distances = models.sequelize.literal(rawDistances);
+    // await calculateDistance.CreateOrReplaceCalculateDistance();
+    // const rawDistances = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+    // distances = models.sequelize.literal(rawDistances);
   }
 
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area') {
-    if (!radius) {
-      return res.status(400).json({
-        success: false,
-        errors: 'Radius not found!'
-      });
-    }
+    if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
+    if (!cityId && !subdistictId)
+      return res.status(422).json({ success: false, errors: 'invalid city or subDistrictId!' });
 
-    if (cityId) {
-      const city = await models.City.findByPk(cityId);
-      if (!city) {
-        return res.status(400).json({
-          success: false,
-          errors: 'City not found!'
-        });
-      }
+    // if (cityId) {
+    //   const city = await models.City.findByPk(cityId);
+    //   if (!city) {
+    //     return res.status(400).json({
+    //       success: false,
+    //       errors: 'City not found!'
+    //     });
+    //   }
 
-      // If subdistrictId Not Null
-      if (subdistrictId) {
-        const subdistrict = await models.SubDistrict.findOne({
-          where: { id: subdistrictId, cityId }
-        });
+    //   // If subdistrictId Not Null
+    //   if (subdistrictId) {
+    //     const subdistrict = await models.SubDistrict.findOne({
+    //       where: { id: subdistrictId, cityId }
+    //     });
 
-        if (!subdistrict) {
-          return res.status(400).json({
-            success: false,
-            errors: 'Subdistrict not found!'
-          });
-        }
+    //     if (!subdistrict) {
+    //       return res.status(400).json({
+    //         success: false,
+    //         errors: 'Subdistrict not found!'
+    //       });
+    //     }
 
-        if (city && subdistrict) {
-          await calculateDistance.CreateOrReplaceCalculateDistance();
-          const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-          distances = models.sequelize.literal(rawDistances);
-        }
-      } else {
-        // If subdistrictId Null (Search By City & Radius)
-        // eslint-disable-next-line no-lonely-if
-        if (city) {
-          await calculateDistance.CreateOrReplaceCalculateDistance();
-          const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-          distances = models.sequelize.literal(rawDistances);
-        }
-      }
-    } else {
-      return res.status(400).json({
-        success: false,
-        errors: 'Please Select City!'
-      });
-    }
+    //     if (city && subdistrict) {
+    //       await calculateDistance.CreateOrReplaceCalculateDistance();
+    //       const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+    //       distances = models.sequelize.literal(rawDistances);
+    //     }
+    //   } else {
+    //     // If subdistrictId Null (Search By City & Radius)
+    //     // eslint-disable-next-line no-lonely-if
+    //     if (city) {
+    //       await calculateDistance.CreateOrReplaceCalculateDistance();
+    //       const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+    //       distances = models.sequelize.literal(rawDistances);
+    //     }
+    //   }
+    // } else {
+    //   return res.status(400).json({
+    //     success: false,
+    //     errors: 'Please Select City!'
+    //   });
+    // }
   }
 
   const where = { [Op.or]: [{ status: 0 }, { status: 1 }], modelYearId: id };
@@ -1623,9 +1603,15 @@ router.get('/listingCar/:id', async (req, res) => {
   }
 
   if (by === 'location' || by === 'area') {
-    Object.assign(where, {
-      [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
-    });
+    if (!radius) return res.status(422).json({ success: false, errors: 'invalid radius' });
+    if (radius.length < 2)
+      return res.status(422).json({ success: false, errors: 'incomplete radius' });
+    if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
+    if (!longitude) return res.status(400).json({ success: false, errors: 'Longitude not found!' });
+
+    // Object.assign(where, {
+    //   [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
+    // });
   }
 
   if (typeId) {
@@ -1672,10 +1658,11 @@ router.get('/listingCar/:id', async (req, res) => {
     });
     order = [[Sequelize.col(`distance`), sort]];
   }
-
+  console.log(latitude);
+  console.log(longitude);
   const carAttribute = await carHelper.customFields(carAttributes);
 
-  // return res.status(200).json({ success: true, data: { order, carAttribute } });
+  // return res.status(200).json({ success: true, data: { order, carAttribute, where } });
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(carAttribute),
     include: [
