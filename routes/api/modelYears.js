@@ -1374,7 +1374,8 @@ router.get('/listingType', async (req, res) => {
     });
 });
 
-router.get('/listingCar/:id', async (req, res) => {
+async function listingCar(req, res, auth = false) {
+  const userId = auth ? req.user.id : null;
   const {
     brandId,
     groupModelId,
@@ -1422,10 +1423,6 @@ router.get('/listingCar/:id', async (req, res) => {
     if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
     if (!longitude) return res.status(400).json({ success: false, errors: 'Longitude not found!' });
     if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
-
-    // await calculateDistance.CreateOrReplaceCalculateDistance();
-    // const rawDistances = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-    // distances = models.sequelize.literal(rawDistances);
   }
 
   // Search by City, Subdistrict/Area & Radius
@@ -1433,49 +1430,6 @@ router.get('/listingCar/:id', async (req, res) => {
     if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
     if (!cityId && !subdistictId)
       return res.status(422).json({ success: false, errors: 'invalid city or subDistrictId!' });
-
-    // if (cityId) {
-    //   const city = await models.City.findByPk(cityId);
-    //   if (!city) {
-    //     return res.status(400).json({
-    //       success: false,
-    //       errors: 'City not found!'
-    //     });
-    //   }
-
-    //   // If subdistrictId Not Null
-    //   if (subdistrictId) {
-    //     const subdistrict = await models.SubDistrict.findOne({
-    //       where: { id: subdistrictId, cityId }
-    //     });
-
-    //     if (!subdistrict) {
-    //       return res.status(400).json({
-    //         success: false,
-    //         errors: 'Subdistrict not found!'
-    //       });
-    //     }
-
-    //     if (city && subdistrict) {
-    //       await calculateDistance.CreateOrReplaceCalculateDistance();
-    //       const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-    //       distances = models.sequelize.literal(rawDistances);
-    //     }
-    //   } else {
-    //     // If subdistrictId Null (Search By City & Radius)
-    //     // eslint-disable-next-line no-lonely-if
-    //     if (city) {
-    //       await calculateDistance.CreateOrReplaceCalculateDistance();
-    //       const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-    //       distances = models.sequelize.literal(rawDistances);
-    //     }
-    //   }
-    // } else {
-    //   return res.status(400).json({
-    //     success: false,
-    //     errors: 'Please Select City!'
-    //   });
-    // }
   }
 
   const where = { [Op.or]: [{ status: 0 }, { status: 1 }], modelYearId: id };
@@ -1629,20 +1583,16 @@ router.get('/listingCar/:id', async (req, res) => {
   }
 
   const carAttributes = {
-    fields: [
-      'like',
-      'view',
-      'numberOfBidder',
-      'highestBidder'
-      // 'maxPriceModel',
-      // 'minPriceModel',
-      // 'maxKm',
-      // 'minKm',
-      // 'maxYear',
-      // 'minYear'
-    ],
+    fields: ['like', 'view', 'numberOfBidder', 'highestBidder'],
     upperCase: true
   };
+
+  if (userId) {
+    carAttributes.fields.push('isLike');
+    carAttributes.fields.push('isBid');
+    carAttributes.fields.push('bidAmount');
+    Object.assign(carAttributes, { id: userId });
+  }
 
   if (latitude && longitude) {
     carAttributes.fields.push('distance');
@@ -1658,11 +1608,9 @@ router.get('/listingCar/:id', async (req, res) => {
     });
     order = [[Sequelize.col(`distance`), sort]];
   }
-  console.log(latitude);
-  console.log(longitude);
   const carAttribute = await carHelper.customFields(carAttributes);
 
-  // return res.status(200).json({ success: true, data: { order, carAttribute, where } });
+  // return res.status(200).json({ success: true, data: { order, carAttributes, where } });
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(carAttribute),
     include: [
@@ -1790,276 +1738,288 @@ router.get('/listingCar/:id', async (req, res) => {
         errors: err.message
       });
     });
+}
+
+router.get('/listingCar/:id', async (req, res) => {
+  return listingCar(req, res);
 });
 
 router.get(
   '/listingCarLogon/:id',
   passport.authenticate('user', { session: false }),
   async (req, res) => {
-    const { by, year, maxPrice, minPrice, condition } = req.query;
-    const { id } = req.params;
-    const userId = await req.user.id;
-    let { page, limit, sort } = req.query;
-    let offset = 0;
-
-    if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-    if (limit > MAX_LIMIT) limit = MAX_LIMIT;
-    if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
-    else page = 1;
-
-    let order = [['createdAt', 'desc']];
-    if (!sort) sort = 'asc';
-    else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
-
-    if (by === 'price' || by === 'id' || by === 'km' || by === 'condition') order = [[by, sort]];
-    else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
-    else if (by === 'userType')
-      order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
-
-    const where = {
-      [Op.or]: [{ status: 0 }, { status: 1 }],
-      modelYearId: id
-    };
-
-    const includeWhere = {};
-
-    if (year) {
-      Object.assign(includeWhere, {
-        year: {
-          [Op.eq]: year
-        }
-      });
-    }
-
-    if (condition) {
-      Object.assign(where, {
-        condition: {
-          [Op.eq]: condition
-        }
-      });
-    }
-
-    if (maxPrice && minPrice) {
-      Object.assign(where, {
-        price: {
-          [Op.and]: [{ [Op.lte]: maxPrice }, { [Op.gte]: minPrice }]
-        }
-      });
-    }
-
-    return models.Car.findAll({
-      attributes: Object.keys(models.Car.attributes).concat([
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Likes"."id") 
-              FROM "Likes" 
-              WHERE "Likes"."carId" = "Car"."id" 
-                AND "Likes"."status" IS TRUE 
-                AND "Likes"."userId" = ${userId} 
-                AND "Likes"."deletedAt" IS NULL
-            )`
-          ),
-          'islike'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") 
-              FROM "Bargains" 
-              WHERE "Bargains"."userId" = ${userId} 
-                AND "Bargains"."carId" = "Car"."id" 
-                AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-                AND "Bargains"."deletedAt" IS NULL
-                AND "Bargains"."bidType" = 0
-            )`
-          ),
-          'isBid'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Likes"."id") 
-              FROM "Likes" 
-              WHERE "Likes"."carId" = "Car"."id" 
-                AND "Likes"."status" IS TRUE 
-                AND "Likes"."deletedAt" IS NULL
-            )`
-          ),
-          'like'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Views"."id") 
-              FROM "Views" 
-              WHERE "Views"."carId" = "Car"."id" 
-                AND "Views"."deletedAt" IS NULL
-            )`
-          ),
-          'view'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") 
-              FROM "Bargains" 
-              WHERE "Bargains"."carId" = "Car"."id" 
-                AND "Bargains"."deletedAt" IS NULL
-                AND "Bargains"."bidType" = 0
-            )`
-          ),
-          'numberOfBidder'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") 
-              FROM "Bargains" 
-              WHERE "Bargains"."carId" = "Car"."id" 
-                AND "Bargains"."deletedAt" IS NULL
-                AND "Bargains"."bidType" = 0
-            )`
-          ),
-          'highestBidder'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") 
-              FROM "Bargains" 
-              WHERE "Bargains"."carId" = "Car"."id" 
-                AND "Bargains"."deletedAt" IS NULL
-                AND "Bargains"."bidType" = 0
-                AND "Bargains"."userId" = ${userId}
-            )`
-          ),
-          'bidAmount'
-        ]
-      ]),
-      include: [
-        {
-          model: models.ModelYear,
-          as: 'modelYear',
-          where: includeWhere,
-          include: [
-            {
-              model: models.Model,
-              as: 'model',
-              attributes: ['name'],
-              include: [
-                {
-                  model: models.GroupModel,
-                  as: 'groupModel',
-                  attributes: ['name'],
-                  include: [
-                    {
-                      model: models.Brand,
-                      as: 'brand',
-                      attributes: ['name']
-                    }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          model: models.User,
-          as: 'user',
-          attributes: ['name', 'type', 'companyType'],
-          include: [
-            {
-              model: models.Purchase,
-              as: 'purchase',
-              attributes: {
-                exclude: ['deletedAt']
-              },
-              order: [['id', 'desc']],
-              limit: 1
-            }
-          ]
-        },
-        {
-          model: models.Color,
-          as: 'interiorColor',
-          attributes: ['name']
-        },
-        {
-          model: models.Color,
-          as: 'exteriorColor',
-          attributes: ['name']
-        },
-        {
-          model: models.MeetingSchedule,
-          as: 'meetingSchedule',
-          attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-        },
-        {
-          model: models.InteriorGalery,
-          as: 'interiorGalery',
-          attributes: ['id', 'fileId', 'carId'],
-          include: [
-            {
-              model: models.File,
-              as: 'file',
-              attributes: {
-                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              }
-            }
-          ]
-        },
-        {
-          model: models.ExteriorGalery,
-          as: 'exteriorGalery',
-          attributes: ['id', 'fileId', 'carId'],
-          include: [
-            {
-              model: models.File,
-              as: 'file',
-              attributes: {
-                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              }
-            }
-          ]
-        },
-        {
-          required: false,
-          model: models.Bargain,
-          as: 'bargain',
-          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
-          where: {
-            userId
-          },
-          limit: 1,
-          order: [['id', 'desc']]
-        }
-      ],
-      where,
-      order,
-      offset,
-      limit
-    })
-      .then(async data => {
-        const count = await models.Car.count({
-          include: [
-            {
-              model: models.ModelYear,
-              as: 'modelYear',
-              where: includeWhere
-            }
-          ],
-          where
-        });
-        const pagination = paginator.paging(page, count, limit);
-
-        res.json({
-          success: true,
-          pagination,
-          data
-        });
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
-      });
+    return listingCar(req, res, true);
   }
 );
+
+// router.get(
+//   '/listingCarLogon/:id',
+//   passport.authenticate('user', { session: false }),
+//   async (req, res) => {
+//     const { by, year, maxPrice, minPrice, condition } = req.query;
+//     const { id } = req.params;
+//     const userId = await req.user.id;
+//     let { page, limit, sort } = req.query;
+//     let offset = 0;
+
+//     if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+//     if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+//     if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+//     else page = 1;
+
+//     let order = [['createdAt', 'desc']];
+//     if (!sort) sort = 'asc';
+//     else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+//     if (by === 'price' || by === 'id' || by === 'km' || by === 'condition') order = [[by, sort]];
+//     else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
+//     else if (by === 'userType')
+//       order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
+
+//     const where = {
+//       [Op.or]: [{ status: 0 }, { status: 1 }],
+//       modelYearId: id
+//     };
+
+//     const includeWhere = {};
+
+//     if (year) {
+//       Object.assign(includeWhere, {
+//         year: {
+//           [Op.eq]: year
+//         }
+//       });
+//     }
+
+//     if (condition) {
+//       Object.assign(where, {
+//         condition: {
+//           [Op.eq]: condition
+//         }
+//       });
+//     }
+
+//     if (maxPrice && minPrice) {
+//       Object.assign(where, {
+//         price: {
+//           [Op.and]: [{ [Op.lte]: maxPrice }, { [Op.gte]: minPrice }]
+//         }
+//       });
+//     }
+
+//     return models.Car.findAll({
+//       attributes: Object.keys(models.Car.attributes).concat([
+//         [
+//           models.sequelize.literal(
+//             `(SELECT COUNT("Likes"."id")
+//               FROM "Likes"
+//               WHERE "Likes"."carId" = "Car"."id"
+//                 AND "Likes"."status" IS TRUE
+//                 AND "Likes"."userId" = ${userId}
+//                 AND "Likes"."deletedAt" IS NULL
+//             )`
+//           ),
+//           'islike'
+//         ],
+//         [
+//           models.sequelize.literal(
+//             `(SELECT COUNT("Bargains"."id")
+//               FROM "Bargains"
+//               WHERE "Bargains"."userId" = ${userId}
+//                 AND "Bargains"."carId" = "Car"."id"
+//                 AND "Bargains"."expiredAt" >= (SELECT NOW())
+//                 AND "Bargains"."deletedAt" IS NULL
+//                 AND "Bargains"."bidType" = 0
+//             )`
+//           ),
+//           'isBid'
+//         ],
+//         [
+//           models.sequelize.literal(
+//             `(SELECT COUNT("Likes"."id")
+//               FROM "Likes"
+//               WHERE "Likes"."carId" = "Car"."id"
+//                 AND "Likes"."status" IS TRUE
+//                 AND "Likes"."deletedAt" IS NULL
+//             )`
+//           ),
+//           'like'
+//         ],
+//         [
+//           models.sequelize.literal(
+//             `(SELECT COUNT("Views"."id")
+//               FROM "Views"
+//               WHERE "Views"."carId" = "Car"."id"
+//                 AND "Views"."deletedAt" IS NULL
+//             )`
+//           ),
+//           'view'
+//         ],
+//         [
+//           models.sequelize.literal(
+//             `(SELECT COUNT("Bargains"."id")
+//               FROM "Bargains"
+//               WHERE "Bargains"."carId" = "Car"."id"
+//                 AND "Bargains"."deletedAt" IS NULL
+//                 AND "Bargains"."bidType" = 0
+//             )`
+//           ),
+//           'numberOfBidder'
+//         ],
+//         [
+//           models.sequelize.literal(
+//             `(SELECT MAX("Bargains"."bidAmount")
+//               FROM "Bargains"
+//               WHERE "Bargains"."carId" = "Car"."id"
+//                 AND "Bargains"."deletedAt" IS NULL
+//                 AND "Bargains"."bidType" = 0
+//             )`
+//           ),
+//           'highestBidder'
+//         ],
+//         [
+//           models.sequelize.literal(
+//             `(SELECT MAX("Bargains"."bidAmount")
+//               FROM "Bargains"
+//               WHERE "Bargains"."carId" = "Car"."id"
+//                 AND "Bargains"."deletedAt" IS NULL
+//                 AND "Bargains"."bidType" = 0
+//                 AND "Bargains"."userId" = ${userId}
+//             )`
+//           ),
+//           'bidAmount'
+//         ]
+//       ]),
+//       include: [
+//         {
+//           model: models.ModelYear,
+//           as: 'modelYear',
+//           where: includeWhere,
+//           include: [
+//             {
+//               model: models.Model,
+//               as: 'model',
+//               attributes: ['name'],
+//               include: [
+//                 {
+//                   model: models.GroupModel,
+//                   as: 'groupModel',
+//                   attributes: ['name'],
+//                   include: [
+//                     {
+//                       model: models.Brand,
+//                       as: 'brand',
+//                       attributes: ['name']
+//                     }
+//                   ]
+//                 }
+//               ]
+//             }
+//           ]
+//         },
+//         {
+//           model: models.User,
+//           as: 'user',
+//           attributes: ['name', 'type', 'companyType'],
+//           include: [
+//             {
+//               model: models.Purchase,
+//               as: 'purchase',
+//               attributes: {
+//                 exclude: ['deletedAt']
+//               },
+//               order: [['id', 'desc']],
+//               limit: 1
+//             }
+//           ]
+//         },
+//         {
+//           model: models.Color,
+//           as: 'interiorColor',
+//           attributes: ['name']
+//         },
+//         {
+//           model: models.Color,
+//           as: 'exteriorColor',
+//           attributes: ['name']
+//         },
+//         {
+//           model: models.MeetingSchedule,
+//           as: 'meetingSchedule',
+//           attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+//         },
+//         {
+//           model: models.InteriorGalery,
+//           as: 'interiorGalery',
+//           attributes: ['id', 'fileId', 'carId'],
+//           include: [
+//             {
+//               model: models.File,
+//               as: 'file',
+//               attributes: {
+//                 exclude: ['createdAt', 'updatedAt', 'deletedAt']
+//               }
+//             }
+//           ]
+//         },
+//         {
+//           model: models.ExteriorGalery,
+//           as: 'exteriorGalery',
+//           attributes: ['id', 'fileId', 'carId'],
+//           include: [
+//             {
+//               model: models.File,
+//               as: 'file',
+//               attributes: {
+//                 exclude: ['createdAt', 'updatedAt', 'deletedAt']
+//               }
+//             }
+//           ]
+//         },
+//         {
+//           required: false,
+//           model: models.Bargain,
+//           as: 'bargain',
+//           attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+//           where: {
+//             userId
+//           },
+//           limit: 1,
+//           order: [['id', 'desc']]
+//         }
+//       ],
+//       where,
+//       order,
+//       offset,
+//       limit
+//     })
+//       .then(async data => {
+//         const count = await models.Car.count({
+//           include: [
+//             {
+//               model: models.ModelYear,
+//               as: 'modelYear',
+//               where: includeWhere
+//             }
+//           ],
+//           where
+//         });
+//         const pagination = paginator.paging(page, count, limit);
+
+//         res.json({
+//           success: true,
+//           pagination,
+//           data
+//         });
+//       })
+//       .catch(err => {
+//         res.status(422).json({
+//           success: false,
+//           errors: err.message
+//         });
+//       });
+//   }
+// );
 
 router.get('/luxuryCar', async (req, res) => {
   const { minPrice, maxPrice, condition } = req.query;
