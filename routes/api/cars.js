@@ -2417,7 +2417,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     km,
     address,
     cityId,
-    subDistictId
+    subsistrictId
   } = req.body;
   const { images } = req.files;
 
@@ -2482,16 +2482,16 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
     Object.assign(insert, { cityId });
   }
-  if (subDistictId) {
+  if (subsistrictId) {
     const subDistrictExist = await models.SubDistrict.findOne({
       where: {
-        id: subDistictId,
+        id: subsistrictId,
         cityId
       }
     });
     if (!subDistrictExist)
       return res.status(404).json({ success: false, errors: 'sub district not found' });
-    Object.assign(insert, { subDistictId });
+    Object.assign(insert, { subsistrictId });
   }
 
   const userNotifs = [];
@@ -2660,7 +2660,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
 
 router.put('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
-  const { price, location, km, meetingSchedules, address, cityId, subDistictId } = req.body;
+  const { price, location, km, meetingSchedules, address, cityId, subsistrictId } = req.body;
   const { images } = req.files;
   const update = {};
 
@@ -2739,16 +2739,16 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
     Object.assign(update, { cityId });
   }
-  if (subDistictId) {
+  if (subsistrictId) {
     const subDistrictExist = await models.SubDistrict.findOne({
       where: {
-        id: subDistictId,
+        id: subsistrictId,
         cityId
       }
     });
     if (!subDistrictExist)
       return res.status(404).json({ success: false, errors: 'sub district not found' });
-    Object.assign(update, { subDistictId });
+    Object.assign(update, { subsistrictId });
   }
 
   const carExists = await models.Car.findByPk(id);
