@@ -745,6 +745,29 @@ router.get('/listingAllNew', async (req, res) => {
       order.push([{ model: models.User, as: 'user' }, 'type', sort]);
       break;
     case 'distance':
+      if (cityId) {
+        const city = await models.City.findByPk(cityId);
+        if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+        if (subdistrictId) {
+          const subdistrict = await models.SubDistrict.findOne({
+            where: { id: subdistrictId, cityId }
+          });
+          if (!subdistrict)
+            return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+          if (city && subdistrict) {
+            latitude = subdistrict.latitude;
+            longitude = subdistrict.longitude;
+          }
+        } else {
+          if (city) {  
+            latitude = city.latitude;
+            longitude = city.longitude;
+          }
+        }
+      }
+
       separate = true;
       orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
       tableCarName = 'Car'
@@ -1091,6 +1114,15 @@ router.get('/listingAllNew', async (req, res) => {
         radius[1]
       )}`;
     }
+
+    console.log()
+    console.log()
+    console.log()
+    console.log(latitude)
+    console.log(longitude)
+    console.log()
+    console.log()
+    console.log()
 
     attributeCar.push([
       models.sequelize.literal(
