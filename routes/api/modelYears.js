@@ -760,6 +760,8 @@ router.get('/listingAllNew', async (req, res) => {
         distances = models.sequelize.literal(rawDistancesFunc('modelYears->cars'));
         rawDistancesFunc();
 
+        // upperCase = true;
+        // separate = true;
         orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
       }
       break;
@@ -1013,7 +1015,7 @@ router.get('/listingAllNew', async (req, res) => {
     'km',
     'address',
     'cityId',
-    'subDistictId',
+    'subdistrictId',
     'roomId',
     'oldPrice',
     'createdAt',
