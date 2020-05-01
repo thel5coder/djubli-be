@@ -234,13 +234,13 @@ router.get('/listingAll', async (req, res) => {
   }
 
   // Search by City, Subdistrict/Area & Radius
-  if (by === 'area') {
-    if (!radius) {
-      return res.status(400).json({
-        success: false,
-        errors: 'Radius not found!'
-      });
-    }
+  if (by === 'area' && radius) {
+    // if (!radius) {
+    //   return res.status(400).json({
+    //     success: false,
+    //     errors: 'Radius not found!'
+    //   });
+    // }
 
     if (cityId) {
       const city = await models.City.findByPk(cityId);
@@ -327,6 +327,75 @@ router.get('/listingAll', async (req, res) => {
 
   let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
   const whereInclude = { [Op.or]: [{ status: 0 }, { status: 1 }] };
+
+  // Search by City, Subdistrict/Area without Radius
+  if (by === 'area' && !radius) {
+    if (cityId) {
+      const city = await models.City.findByPk(cityId);
+      if (!city) {
+        return res.status(400).json({
+          success: false,
+          errors: 'City not found!'
+        });
+      }
+
+      if (subdistrictId) {
+        const subdistrict = await models.SubDistrict.findOne({
+          where: { id: subdistrictId, cityId }
+        });
+
+        if (!subdistrict) {
+          return res.status(400).json({
+            success: false,
+            errors: 'Subdistrict not found!'
+          });
+        }
+
+        if (city && subdistrict) {
+          Object.assign(whereInclude, {
+            cityId,
+            subdistrictId
+          });
+
+          whereQuery += ` AND "Car"."cityId" = ${cityId} AND "Car"."subdistrictId" = ${subdistrictId}`;
+
+          Object.assign(carCustomFields, {
+            latitude: subdistrict.latitude,
+            longitude: subdistrict.longitude
+          });
+        }
+      } else {
+        if (city) {
+          Object.assign(whereInclude, {
+            cityId
+          });
+
+          whereQuery += ` AND "Car"."cityId" = ${cityId}`;
+
+          Object.assign(carCustomFields, {
+            latitude: city.latitude,
+            longitude: city.longitude
+          });
+        }
+      }
+      upperCase = false;
+      order = [
+        [
+          { model: models.Model, as: 'model' },
+          { model: models.GroupModel, as: 'groupModel' },
+          { model: models.Brand, as: 'brand' },
+          'name',
+          sort
+        ]
+      ];
+    } else {
+      return res.status(400).json({
+        success: false,
+        errors: 'Please Select City!'
+      });
+    }
+  }
+
   if (condition) {
     Object.assign(whereInclude, {
       condition: {
@@ -399,7 +468,7 @@ router.get('/listingAll', async (req, res) => {
     whereQuery += ` AND ("Car"."id" = ${highestBidder})`;
   }
 
-  if (by === 'location' || by === 'area') {
+  if (by === 'location' || by === 'area' && radius) {
     Object.assign(whereInclude, {
       [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });
@@ -580,6 +649,7 @@ router.get('/listingAll', async (req, res) => {
       });
     })
     .catch(err => {
+      console.log(err)
       res.status(422).json({
         success: false,
         errors: err.message
@@ -681,8 +751,8 @@ router.get('/listingAllNew', async (req, res) => {
       break;
     case 'area':
       // Search by City, Subdistrict/Area & Radius
-      if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
-      if (cityId) {
+      // if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
+      if (cityId && radius) {
         const city = await models.City.findByPk(cityId);
         if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
 
@@ -700,8 +770,8 @@ router.get('/listingAllNew', async (req, res) => {
               rawDistances = calDistance;
               return calDistance;
             };
-            latitude = city.latitude;
-            longitude = city.longitude;
+            latitude = subdistrict.latitude;
+            longitude = subdistrict.longitude;
 
             distances = models.sequelize.literal(rawDistancesFunc('modelYears->cars'));
             rawDistancesFunc();
@@ -725,7 +795,7 @@ router.get('/listingAllNew', async (req, res) => {
             orderCar.push([Sequelize.literal(`"modelYears.cars.distance" ${sort}`)]);
           }
         }
-      } else {
+      } else if(!cityId) {
         return res.status(400).json({ success: false, errors: 'Please Select City!' });
       }
       break;
@@ -761,6 +831,50 @@ router.get('/listingAllNew', async (req, res) => {
     });
 
   const whereCar = { [Op.or]: [{ status: 0 }, { status: 1 }] };
+
+  switch(by) {
+    case 'area':
+      // Search by City, Subdistrict/Area without Radius
+      if(cityId && !radius) {
+        const city = await models.City.findByPk(cityId);
+        if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+        if (subdistrictId) {
+          const subdistrict = await models.SubDistrict.findOne({
+            where: { id: subdistrictId, cityId }
+          });
+          if (!subdistrict)
+            return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+          if (city && subdistrict) {
+            Object.assign(whereCar, {
+              cityId,
+              subdistrictId
+            });
+
+            whereQuery += ` AND "Car"."cityId" = ${cityId} AND "Car"."subdistrictId" = ${subdistrictId}`;
+            
+            latitude = subdistrict.latitude;
+            longitude = subdistrict.longitude;
+          }
+        } else {
+          if (city) {
+            Object.assign(whereCar, {
+              cityId
+            });
+
+            whereQuery += ` AND "Car"."cityId" = ${cityId}`;
+            
+            latitude = city.latitude;
+            longitude = city.longitude;
+          }
+        }
+      } else if(!cityId) {
+        return res.status(400).json({ success: false, errors: 'Please Select City!' });
+      }
+    break;
+  }
+
   if (condition) {
     Object.assign(whereCar, { condition });
     required = true;
@@ -928,7 +1042,7 @@ router.get('/listingAllNew', async (req, res) => {
     ]
   ];
 
-  if (latitude && longitude) {
+  if (latitude && longitude && radius) {
     // Object.assign(whereCar, {
     //   where: {
     //     [Op.and]: [
