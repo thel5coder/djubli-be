@@ -1115,15 +1115,6 @@ router.get('/listingAllNew', async (req, res) => {
       )}`;
     }
 
-    console.log()
-    console.log()
-    console.log()
-    console.log(latitude)
-    console.log(longitude)
-    console.log()
-    console.log()
-    console.log()
-
     attributeCar.push([
       models.sequelize.literal(
         `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
