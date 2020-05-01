@@ -713,7 +713,8 @@ router.get('/listingAllNew', async (req, res) => {
     'location',
     'like',
     'brand;',
-    'area'
+    'area',
+    'distance'
   ];
   if (array.indexOf(by) < 0) by = 'createdAt';
   // *highestBidder; price; km; listingDate; roleUser; condition; location; like; brand, area
@@ -742,6 +743,11 @@ router.get('/listingAllNew', async (req, res) => {
       break;
     case 'profile':
       order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    case 'distance':
+      separate = true;
+      orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
+      tableCarName = 'Car'
       break;
     case 'location':
       // Search By Location (Latitude, Longitude & Radius)
@@ -1571,7 +1577,7 @@ async function listingCar(req, res, auth = false) {
     maxYear,
     radius,
     cityId,
-    subDistrictId,
+    subdistrictId,
     typeId
   } = req.query;
   let { latitude, longitude } = req.query;
@@ -1606,8 +1612,8 @@ async function listingCar(req, res, auth = false) {
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area') {
     // if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
-    if (!cityId && !subDistrictId)
-      return res.status(422).json({ success: false, errors: 'invalid city or subDistrictId!' });
+    if (!cityId && !subdistrictId)
+      return res.status(422).json({ success: false, errors: 'invalid city or subdistrictId!' });
   }
 
   const where = { [Op.or]: [{ status: 0 }, { status: 1 }], modelYearId: id };
@@ -1711,7 +1717,7 @@ async function listingCar(req, res, auth = false) {
     });
   }
 
-  if (subDistrictId && (radius && radius[0] >= 0 && radius[1] > 0)) {
+  if (subdistrictId && (radius && radius[0] >= 0 && radius[1] > 0)) {
     // if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
@@ -1728,7 +1734,7 @@ async function listingCar(req, res, auth = false) {
     distances = models.sequelize.literal(rawDistances);
     latitude = subdistrict.latitude;
     longitude = subdistrict.longitude;
-  } else if (subDistrictId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
+  } else if (subdistrictId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
     const whereSubDistrict = { id: subdistrictId };
     if (cityId) Object.assign(whereSubDistrict, { cityId });
 
@@ -1801,18 +1807,21 @@ async function listingCar(req, res, auth = false) {
     Object.assign(carAttributes, { id: userId });
   }
 
-  if (latitude && longitude && (radius && radius[0] >= 0 && radius[1] > 0)) {
+  if ((latitude && longitude) || by == ' distance') {
     carAttributes.fields.push('distance');
     Object.assign(carAttributes, { latitude, longitude, whereQuery: `` });
 
-    Object.assign(where, {
-      where: {
-        [Op.and]: [
-          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
-          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
-        ]
-      }
-    });
+    if(radius && radius[0] >= 0 && radius[1] > 0) {
+      Object.assign(where, {
+        where: {
+          [Op.and]: [
+            Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+            Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+          ]
+        }
+      });
+    }
+    
     order = [[Sequelize.col(`distance`), sort]];
   }
   const carAttribute = await carHelper.customFields(carAttributes);
