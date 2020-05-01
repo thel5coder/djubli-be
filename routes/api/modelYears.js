@@ -1196,7 +1196,7 @@ router.get('/listingAllNew', async (req, res) => {
             as: 'cars',
             separate,
             attributes: attributeCar,
-            // include: includeCar,
+            include: includeCar,
             where: whereCar,
             order: orderCar
           }
