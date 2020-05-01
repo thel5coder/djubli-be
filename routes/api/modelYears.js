@@ -287,7 +287,7 @@ router.get('/listingAll', async (req, res) => {
             longitude: subdistrict.longitude
           });
 
-          distances = models.sequelize.literal(rawDistancesFunc('car'));
+          distances = models.sequelize.literal(rawDistancesFunc('Car'));
           rawDistancesFunc();
         }
       } else {
@@ -304,12 +304,12 @@ router.get('/listingAll', async (req, res) => {
             longitude: city.longitude
           });
 
-          distances = models.sequelize.literal(rawDistancesFunc('car'));
+          distances = models.sequelize.literal(rawDistancesFunc('Car'));
           rawDistancesFunc();
         }
       }
       carFields.push('distance');
-      upperCase = false;
+      upperCase = true;
       order = [
         [
           { model: models.Model, as: 'model' },
@@ -319,6 +319,9 @@ router.get('/listingAll', async (req, res) => {
           sort
         ]
       ];
+
+      separate = true;
+      orderCar = [[Sequelize.col(`distance`), sort]];
     } else {
       return res.status(400).json({
         success: false,
@@ -390,7 +393,7 @@ router.get('/listingAll', async (req, res) => {
         }
       }
       carFields.push('distance');
-      upperCase = false;
+      upperCase = true;
       order = [
         [
           { model: models.Model, as: 'model' },
@@ -400,6 +403,9 @@ router.get('/listingAll', async (req, res) => {
           sort
         ]
       ];
+
+      separate = true;
+      orderCar = [[Sequelize.col(`distance`), sort]];
     } else {
       return res.status(400).json({
         success: false,
