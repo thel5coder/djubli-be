@@ -229,8 +229,19 @@ router.get('/listingAll', async (req, res) => {
       return calDistance;
     };
 
-    distances = models.sequelize.literal(rawDistancesFunc('car'));
+    distances = models.sequelize.literal(rawDistancesFunc('Car'));
     rawDistancesFunc();
+
+    Object.assign(carCustomFields, {
+      latitude,
+      longitude
+    });
+
+    carFields.push('distance');
+    upperCase = true;
+
+    separate = true;
+    orderCar = [[Sequelize.col(`distance`), sort]];
   }
 
   // Search by City, Subdistrict/Area & Radius
@@ -378,6 +389,7 @@ router.get('/listingAll', async (req, res) => {
           });
         }
       }
+      carFields.push('distance');
       upperCase = false;
       order = [
         [
@@ -626,16 +638,9 @@ router.get('/listingAll', async (req, res) => {
           {
             model: models.Car,
             as: 'car',
-            where: whereInclude,
-            include: [
-              {
-                model: models.GroupModel,
-                as: 'groupModel',
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                }
-              }
-            ]
+            separate,
+            order: orderCar,
+            where: whereInclude
           }
         ],
         where
