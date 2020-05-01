@@ -6,7 +6,7 @@ module.exports = {
       await queryInterface.addColumn('Cars', 'cityId', {
         type: Sequelize.INTEGER
       });
-      await queryInterface.addColumn('Cars', 'subDistictId', {
+      await queryInterface.addColumn('Cars', 'subdistrictId', {
         type: Sequelize.INTEGER
       });
       return Promise.resolve();
@@ -18,7 +18,7 @@ module.exports = {
   down: async (queryInterface, Sequelize) => {
     try {
       await queryInterface.removeColumn('Cars', 'cityId');
-      await queryInterface.removeColumn('Cars', 'subDistictId');
+      await queryInterface.removeColumn('Cars', 'subdistrictId');
       return Promise.resolve();
     } catch (e) {
       return Promise.reject(e);

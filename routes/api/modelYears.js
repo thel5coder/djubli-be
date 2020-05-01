@@ -229,8 +229,19 @@ router.get('/listingAll', async (req, res) => {
       return calDistance;
     };
 
-    distances = models.sequelize.literal(rawDistancesFunc('car'));
+    distances = models.sequelize.literal(rawDistancesFunc('Car'));
     rawDistancesFunc();
+
+    Object.assign(carCustomFields, {
+      latitude,
+      longitude
+    });
+
+    carFields.push('distance');
+    upperCase = true;
+
+    separate = true;
+    orderCar = [[Sequelize.col(`distance`), sort]];
   }
 
   // Search by City, Subdistrict/Area & Radius
@@ -276,7 +287,7 @@ router.get('/listingAll', async (req, res) => {
             longitude: subdistrict.longitude
           });
 
-          distances = models.sequelize.literal(rawDistancesFunc('car'));
+          distances = models.sequelize.literal(rawDistancesFunc('Car'));
           rawDistancesFunc();
         }
       } else {
@@ -293,12 +304,12 @@ router.get('/listingAll', async (req, res) => {
             longitude: city.longitude
           });
 
-          distances = models.sequelize.literal(rawDistancesFunc('car'));
+          distances = models.sequelize.literal(rawDistancesFunc('Car'));
           rawDistancesFunc();
         }
       }
       carFields.push('distance');
-      upperCase = false;
+      upperCase = true;
       order = [
         [
           { model: models.Model, as: 'model' },
@@ -308,6 +319,9 @@ router.get('/listingAll', async (req, res) => {
           sort
         ]
       ];
+
+      separate = true;
+      orderCar = [[Sequelize.col(`distance`), sort]];
     } else {
       return res.status(400).json({
         success: false,
@@ -378,7 +392,8 @@ router.get('/listingAll', async (req, res) => {
           });
         }
       }
-      upperCase = false;
+      carFields.push('distance');
+      upperCase = true;
       order = [
         [
           { model: models.Model, as: 'model' },
@@ -388,6 +403,9 @@ router.get('/listingAll', async (req, res) => {
           sort
         ]
       ];
+
+      separate = true;
+      orderCar = [[Sequelize.col(`distance`), sort]];
     } else {
       return res.status(400).json({
         success: false,
@@ -626,16 +644,9 @@ router.get('/listingAll', async (req, res) => {
           {
             model: models.Car,
             as: 'car',
-            where: whereInclude,
-            include: [
-              {
-                model: models.GroupModel,
-                as: 'groupModel',
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                }
-              }
-            ]
+            separate,
+            order: orderCar,
+            where: whereInclude
           }
         ],
         where
