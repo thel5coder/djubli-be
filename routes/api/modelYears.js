@@ -1537,7 +1537,7 @@ async function listingCar(req, res, auth = false) {
 
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area') {
-    if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
+    // if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
     if (!cityId && !subDistrictId)
       return res.status(422).json({ success: false, errors: 'invalid city or subDistrictId!' });
   }
@@ -1616,8 +1616,8 @@ async function listingCar(req, res, auth = false) {
     });
   }
 
-  if (cityId) {
-    if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
+  if (cityId && radius) {
+    // if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
 
@@ -1629,10 +1629,20 @@ async function listingCar(req, res, auth = false) {
     distances = models.sequelize.literal(rawDistances);
     latitude = city.latitude;
     longitude = city.longitude;
+  } else if(cityId && !radius) {
+    const city = await models.City.findByPk(cityId);
+    if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+    latitude = city.latitude;
+    longitude = city.longitude;
+
+    Object.assign(where, {
+      cityId
+    });
   }
 
-  if (subDistrictId) {
-    if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
+  if (subDistrictId && radius) {
+    // if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
 
@@ -1648,6 +1658,21 @@ async function listingCar(req, res, auth = false) {
     distances = models.sequelize.literal(rawDistances);
     latitude = subdistrict.latitude;
     longitude = subdistrict.longitude;
+  } else if (subDistrictId && !radius) {
+    const whereSubDistrict = { id: subdistrictId };
+    if (cityId) Object.assign(whereSubDistrict, { cityId });
+
+    const subdistrict = await models.SubDistrict.findOne({ where: whereSubDistrict });
+    if (!subdistrict)
+      return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+    latitude = subdistrict.latitude;
+    longitude = subdistrict.longitude;
+
+    Object.assign(where, {
+      cityId,
+      subdistrictId
+    });
   }
 
   if (by === 'highestBidder') {
@@ -1668,8 +1693,8 @@ async function listingCar(req, res, auth = false) {
     });
   }
 
-  if (by === 'location' || by === 'area') {
-    if (!radius) return res.status(422).json({ success: false, errors: 'invalid radius' });
+  if ((by === 'location' || by === 'area') && radius) {
+    // if (!radius) return res.status(422).json({ success: false, errors: 'invalid radius' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
     if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
@@ -1706,7 +1731,7 @@ async function listingCar(req, res, auth = false) {
     Object.assign(carAttributes, { id: userId });
   }
 
-  if (latitude && longitude) {
+  if (latitude && longitude && radius) {
     carAttributes.fields.push('distance');
     Object.assign(carAttributes, { latitude, longitude, whereQuery: `` });
 
