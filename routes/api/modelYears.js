@@ -684,7 +684,9 @@ router.get('/listingAllNew', async (req, res) => {
     maxYear,
     typeId,
     cityId,
-    subdistrictId
+    subdistrictId,
+    exteriorColorId,
+    interiorColorId
   } = req.query;
   let { radius, latitude, longitude } = req.query;
   let offset = 0;
@@ -712,7 +714,7 @@ router.get('/listingAllNew', async (req, res) => {
     'condition',
     'location',
     'like',
-    'brand;',
+    'brand',
     'area',
     'distance'
   ];
@@ -733,6 +735,10 @@ router.get('/listingAllNew', async (req, res) => {
       orderCar.push([Sequelize.literal(`"modelYears.cars.price" ${sort}`)]);
     case 'condition':
       orderCar.push([Sequelize.literal(`"modelYears.cars.condition" ${sort}`)]);
+      break;
+    case 'brand':
+      order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
+      break;
     case 'km':
       order.push([
         { model: models.ModelYear, as: 'modelYears' },
@@ -855,6 +861,14 @@ router.get('/listingAllNew', async (req, res) => {
       break;
   }
 
+  console.log()
+  console.log()
+  console.log()
+  console.log(order)
+  console.log()
+  console.log()
+
+
   let required = false;
   const where = {};
   let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
@@ -971,6 +985,18 @@ router.get('/listingAllNew', async (req, res) => {
     required = true;
 
     whereQuery += ` AND ("Car"."price" >= ${minPrice} AND "Car"."price" <= ${maxPrice})`;
+  }
+
+  if (exteriorColorId) {
+    Object.assign(whereCar, { exteriorColorId });
+    required = true;
+    whereQuery += ` AND ("Car"."exteriorColorId" >= ${exteriorColorId})`;
+  }
+
+  if (interiorColorId) {
+    Object.assign(whereCar, { interiorColorId });
+    required = true;
+    whereQuery += ` AND ("Car"."interiorColorId" >= ${interiorColorId})`;
   }
 
   const whereGroupModel = {};
@@ -1601,7 +1627,9 @@ async function listingCar(req, res, auth = false) {
     radius,
     cityId,
     subdistrictId,
-    typeId
+    typeId,
+    exteriorColorId,
+    interiorColorId
   } = req.query;
   let { latitude, longitude } = req.query;
 
@@ -1622,7 +1650,16 @@ async function listingCar(req, res, auth = false) {
   if (by === 'price' || by === 'id' || by === 'km' || by === 'condition') order = [[by, sort]];
   else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
   else if (by === 'userType')
-    order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
+    order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];  
+  else if (by === 'brand')
+    order = [[
+      { model: models.ModelYear, as: 'modelYear' }, 
+      { model: models.Model, as: 'model' }, 
+      { model: models.GroupModel, as: 'groupModel' }, 
+      { model: models.Brand, as: 'brand' }, 
+      'name', 
+      sort
+    ]];
   else [['createdAt', 'desc']];
 
   // Search By Location (Latitude, Longitude & Radius)
@@ -1713,6 +1750,14 @@ async function listingCar(req, res, auth = false) {
         [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
       }
     });
+  }
+
+  if (exteriorColorId) {
+    Object.assign(where, { exteriorColorId });
+  }
+
+  if (interiorColorId) {
+    Object.assign(where, { interiorColorId });
   }
 
   if (cityId && (radius && radius[0] >= 0 && radius[1] > 0)) {
