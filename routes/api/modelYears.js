@@ -797,9 +797,11 @@ router.get('/listingAllNew', async (req, res) => {
         distances = models.sequelize.literal(rawDistancesFunc('Car'));
         rawDistancesFunc();
         
-        separate = true;
-        orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
-        tableCarName = 'Car'
+        // separate = true;
+        // orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
+        // tableCarName = 'Car'
+
+        order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
       }
       break;
     case 'area':
@@ -829,9 +831,11 @@ router.get('/listingAllNew', async (req, res) => {
             distances = models.sequelize.literal(rawDistancesFunc(tableCarName));
             rawDistancesFunc();
 
-            separate = true;
-            orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
-            tableCarName = 'Car'
+            // separate = true;
+            // orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
+            // tableCarName = 'Car'
+
+            order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
           }
         } else {
           if (city) {
@@ -847,9 +851,11 @@ router.get('/listingAllNew', async (req, res) => {
             distances = models.sequelize.literal(rawDistancesFunc(tableCarName));
             rawDistancesFunc();
 
-            separate = true;
-            orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
-            tableCarName = 'Car'
+            // separate = true;
+            // orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
+            // tableCarName = 'Car'
+
+            order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
           }
         }
       } else if(!cityId) {
@@ -929,9 +935,11 @@ router.get('/listingAllNew', async (req, res) => {
           }
         }
 
-        separate = true;
-        orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
-        tableCarName = 'Car'
+        // separate = true;
+        // orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
+        // tableCarName = 'Car'
+
+        order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
       } else if(!cityId) {
         return res.status(400).json({ success: false, errors: 'Please Select City!' });
       }
@@ -1867,7 +1875,7 @@ async function listingCar(req, res, auth = false) {
     Object.assign(carAttributes, { id: userId });
   }
 
-  if ((latitude && longitude) || by == ' distance') {
+  if ((latitude && longitude) || by == 'distance') {
     carAttributes.fields.push('distance');
     Object.assign(carAttributes, { latitude, longitude, whereQuery: `` });
 
@@ -1882,7 +1890,18 @@ async function listingCar(req, res, auth = false) {
       });
     }
     
-    order = [[Sequelize.col(`distance`), sort]];
+    if(by == 'distance') {
+      order = [[Sequelize.col(`distance`), sort]];
+    } else {
+      order = [[
+        { model: models.ModelYear, as: 'modelYear' }, 
+        { model: models.Model, as: 'model' }, 
+        { model: models.GroupModel, as: 'groupModel' }, 
+        { model: models.Brand, as: 'brand' }, 
+        'name', 
+        sort
+      ]];
+    }    
   }
   const carAttribute = await carHelper.customFields(carAttributes);
 
