@@ -861,14 +861,6 @@ router.get('/listingAllNew', async (req, res) => {
       break;
   }
 
-  console.log()
-  console.log()
-  console.log()
-  console.log(order)
-  console.log()
-  console.log()
-
-
   let required = false;
   const where = {};
   let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
