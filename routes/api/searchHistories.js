@@ -4,6 +4,7 @@ const express = require('express');
 const validator = require('validator');
 const passport = require('passport');
 const Sequelize = require('sequelize');
+const supertest = require('supertest');
 const models = require('../../db/models');
 const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
@@ -39,7 +40,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       }
     ],
     where,
@@ -50,6 +51,30 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     .then(async data => {
       const count = await models.SearchHistory.count({ where });
       const pagination = paginator.paging(page, count, limit);
+
+      await Promise.all(
+        data.map(async item => {
+          const url = `${new URL(item.apiURL).pathname}${new URL(item.apiURL).search}`;
+          const client = supertest(req.app);
+          const resultAPI = await client.get(url);
+
+          if (resultAPI.body && resultAPI.body.pagination) {
+            item.countResult = resultAPI.body.pagination.count;
+            await models.SearchHistory.update(
+          {
+            countResult: resultAPI.body.pagination.count
+          },
+          { where: { id: item.id } }
+        )
+          .catch(err =>
+            res.status(422).json({
+              success: false,
+              errors: err.message
+            })
+          );
+          }
+        })
+      );
 
       res.json({
         success: true,
@@ -77,11 +102,31 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       }
     ]
   })
     .then(async data => {
+      const url = `${new URL(data.apiURL).pathname}${new URL(data.apiURL).search}`;
+      const client = supertest(req.app);
+      const resultAPI = await client.get(url);
+
+      if (resultAPI.body && resultAPI.body.pagination) {
+        data.countResult = resultAPI.body.pagination.count;
+        await models.SearchHistory.update(
+          {
+            countResult: resultAPI.body.pagination.count
+          },
+          { where: { id: data.id } }
+        )
+          .catch(err =>
+            res.status(422).json({
+              success: false,
+              errors: err.message
+            })
+          );
+      }
+
       res.json({
         success: true,
         data
@@ -279,16 +324,18 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     customTitle = customTitle.join(' - ');
     const checkTitle = await models.SearchHistory.findOne({
       where: {
-      	id: {
-      		[Op.ne]: id
-      	},
+        id: {
+          [Op.ne]: id
+        },
         title: `${customTitle} 1`
       }
     });
 
     if (checkTitle) {
       const getLastTitle = await models.SearchHistory.findOne({
-        where: Sequelize.literal(`"SearchHistory"."id" != ${id} AND "SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`),
+        where: Sequelize.literal(
+          `"SearchHistory"."id" != ${id} AND "SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`
+        ),
         order: [['title', 'desc']]
       });
 

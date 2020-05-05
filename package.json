@@ -53,6 +53,7 @@
     "sequelize-cli": "^5.4.0",
     "socket.io": "^2.2.0",
     "stripe": "^6.26.0",
+    "supertest": "^4.0.2",
     "twilio": "^3.37.1",
     "validator": "^10.11.0"
   },
