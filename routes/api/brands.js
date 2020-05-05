@@ -210,7 +210,7 @@ router.get('/listingCar/:id', async (req, res) => {
       {
         model: models.User,
         as: 'user',
-        attributes: ['name']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       },
       {
         model: models.Color,

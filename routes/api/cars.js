@@ -476,7 +476,7 @@ router.get('/user/:userId', passport.authenticate('user', { session: false }), a
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       },
       {
         model: models.Brand,
@@ -704,7 +704,7 @@ router.get('/status/:status', async (req, res) => {
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone']
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       },
       {
         model: models.Brand,

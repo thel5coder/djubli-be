@@ -1938,7 +1938,7 @@ async function listingCar(req, res, auth = false) {
       {
         model: models.User,
         as: 'user',
-        attributes: ['name', 'type', 'companyType'],
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
         include: [
           {
             model: models.Purchase,
