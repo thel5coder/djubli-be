@@ -31,7 +31,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
   if (by === 'id' || by === 'userId' || by === 'createdAt') order = [[by, sort]];
 
   const where = {
-  	userId: req.user.id
+    userId: req.user.id
   };
 
   return models.SearchHistory.findAll({
@@ -69,10 +69,10 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
   const { id } = req.params;
 
   return models.SearchHistory.findOne({
-  	where: {
-  		userId: req.user.id,
-  		id
-  	},
+    where: {
+      userId: req.user.id,
+      id
+    },
     include: [
       {
         model: models.User,
@@ -96,11 +96,83 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
 });
 
 router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { title, apiURL, countResult } = req.body;
+  const { apiURL, countResult } = req.body;
+  let { title } = req.body;
 
   if (!apiURL) return res.status(400).json({ success: false, errors: 'apiURL is mandatory' });
   if (!countResult)
     return res.status(400).json({ success: false, errors: 'count result is mandatory' });
+
+  if (!title) {
+    let customTitle = [];
+    const strToUrl = new URLSearchParams(apiURL);
+
+    if (strToUrl.get('brandId')) {
+      const brand = await models.Brand.findByPk(strToUrl.get('brandId'));
+      if (!brand) {
+        return res.status(400).json({
+          success: false,
+          errors: 'data Brand from apiURL not found'
+        });
+      }
+
+      customTitle.push(brand.name);
+    }
+
+    if (strToUrl.get('groupModelId')) {
+      const groupModel = await models.GroupModel.findByPk(strToUrl.get('groupModelId'));
+      if (!groupModel) {
+        return res.status(400).json({
+          success: false,
+          errors: 'data Group Model from apiURL not found'
+        });
+      }
+
+      customTitle.push(groupModel.name);
+    }
+
+    if (strToUrl.get('modelId')) {
+      const model = await models.Model.findByPk(strToUrl.get('modelId'));
+      if (!model) {
+        return res.status(400).json({
+          success: false,
+          errors: 'data Group Model from apiURL not found'
+        });
+      }
+
+      customTitle.push(model.name);
+    }
+
+    if (strToUrl.get('modelYearId')) {
+      const modelYear = await models.ModelYear.findByPk(strToUrl.get('modelYearId'));
+      if (!modelYear) {
+        return res.status(400).json({
+          success: false,
+          errors: 'data Model Year from apiURL not found'
+        });
+      }
+
+      customTitle.push(modelYear.year);
+    }
+
+    customTitle = customTitle.join(' - ');
+    const checkTitle = await models.SearchHistory.findOne({
+      where: {
+        title: `${customTitle} 1`
+      }
+    });
+
+    if (checkTitle) {
+      const getLastTitle = await models.SearchHistory.findOne({
+        where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`),
+        order: [['title', 'desc']]
+      });
+
+      if (parseInt(getLastTitle.title.slice(-1)) > 0) {
+        title = `${customTitle} ${parseInt(getLastTitle.title.slice(-1)) + 1}`;
+      }
+    }
+  }
 
   return await models.SearchHistory.create({
     userId: req.user.id,
