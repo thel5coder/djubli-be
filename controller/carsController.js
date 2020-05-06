@@ -22,9 +22,10 @@ async function carsGet(req, res, auth = false) {
     minYear,
     maxYear,
     radius,
-    latitude,
-    longitude
+    cityId,
+    subdistrictId
   } = req.query;
+  let { latitude, longitude } = req.query;
   let { page, limit, by, sort } = req.query;
   let offset = 0;
 
@@ -205,29 +206,70 @@ async function carsGet(req, res, auth = false) {
     Object.assign(where, {
       [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });
-  }
-
-  if (by === 'area') {
-    if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
-    if (!longitude) return res.status(400).json({ success: false, errors: 'Longitude not found!' });
-    if (!radius) return res.status(422).json({ success: false, errors: 'invalid radius' });
-
-    await calculateDistance.CreateOrReplaceCalculateDistance();
-    const distances = Sequelize.literal(
-      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
-    );
-
-    Object.assign(where, {
-      where: {
-        [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
-      }
-    });
 
     addAttributes.fields.push('distance');
     Object.assign(addAttributes, {
       latitude,
       longitude
     });
+  }
+
+  if (by === 'area') {
+    if(cityId) {
+      const city = await models.City.findByPk(cityId);
+      if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+      if (subdistrictId) {
+        const subdistrict = await models.SubDistrict.findOne({
+          where: { id: subdistrictId, cityId }
+        });
+
+        if (!subdistrict)
+          return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+      
+        if (city && subdistrict) {
+            latitude = subdistrict.latitude;
+            longitude = subdistrict.longitude;
+          }
+      } else {
+        if(city) {
+          latitude = city.latitude;
+          longitude = city.longitude;
+        }
+      }
+
+      await calculateDistance.CreateOrReplaceCalculateDistance();
+      const distances = Sequelize.literal(
+        `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+      );
+
+      if(radius) {
+        Object.assign(where, {
+          where: {
+            [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
+          }
+        });
+      } else {
+        if(cityId && subdistrictId) {
+          Object.assign(where, {
+            cityId,
+            subdistrictId
+          });
+        } else if(cityId) {
+          Object.assign(where, {
+            cityId
+          });
+        }
+      }
+
+      addAttributes.fields.push('distance');
+      Object.assign(addAttributes, {
+        latitude,
+        longitude
+      });
+    } else {
+      return res.status(400).json({ success: false, errors: 'Please Select City!' });
+    }
   }
 
   if(latitude && longitude && radius && (by != 'area' && by != 'location')) {
@@ -358,11 +400,12 @@ async function carsGet(req, res, auth = false) {
 
       res.json({
         success: true,
-        pagination,
+        // pagination,
         data
       });
     })
     .catch(err => {
+      console.log(err)
       res.status(422).json({
         success: false,
         errors: err.message
