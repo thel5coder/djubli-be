@@ -400,7 +400,7 @@ async function carsGet(req, res, auth = false) {
 
       res.json({
         success: true,
-        // pagination,
+        pagination,
         data
       });
     })
