@@ -229,6 +229,26 @@ async function carsGet(req, res, auth = false) {
       longitude
     });
   }
+
+  if(latitude && longitude && radius && (by != 'area' && by != 'location')) {
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+
+    Object.assign(where, {
+      where: {
+        [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
+      }
+    });
+
+    addAttributes.fields.push('distance');
+    Object.assign(addAttributes, {
+      latitude,
+      longitude
+    });
+  }
+
   const addAttribute = await carHelper.customFields(addAttributes);
 
   return models.Car.findAll({
