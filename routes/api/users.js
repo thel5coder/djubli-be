@@ -191,6 +191,13 @@ router.get('/token', passport.authenticate('user', { session: false }), async (r
   return models.User.findOne({
     include: [
       {
+        model: models.File,
+        as: 'file',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
         model: models.Dealer,
         as: 'dealer',
         attributes: {
