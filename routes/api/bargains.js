@@ -93,7 +93,7 @@ router.get('/', async (req, res) => {
       {
         model: models.User,
         as: 'user',
-        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType', 'address'],
         include: [
           {
             model: models.File,
@@ -127,7 +127,7 @@ router.get('/', async (req, res) => {
           {
             model: models.User,
             as: 'user',
-            attributes: ['name', 'type', 'companyType'],
+            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType', 'address'],
             include: [
               {
                 model: models.File,
