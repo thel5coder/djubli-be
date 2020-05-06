@@ -1643,9 +1643,9 @@ async function listingCar(req, res, auth = false) {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  let order = [];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+  let order = [['createdAt', sort]];
 
   if (by === 'price' || by === 'id' || by === 'km' || by === 'condition') order = [[by, sort]];
   else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
@@ -1660,7 +1660,8 @@ async function listingCar(req, res, auth = false) {
       'name', 
       sort
     ]];
-  else [['createdAt', 'desc']];
+  else if (by === 'createdAt')
+    order = [['createdAt', sort]];
 
   // Search By Location (Latitude, Longitude & Radius)
   if (by === 'location') {
