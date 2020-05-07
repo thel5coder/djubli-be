@@ -17,7 +17,7 @@ const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
   let { page, limit, sort, by } = req.query;
-  const { userId, carId, bidType, negotiationType, expiredAt } = req.query;
+  const { userId, carId, bidType, negotiationType, expiredAt, paymentMethod, haveSeenCar, profileUser } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -47,28 +47,23 @@ router.get('/', async (req, res) => {
 
   const order = [[by, sort]];
   const where = {};
+  const whereUser = {};
 
   if (carId) {
     Object.assign(where, {
-      carId: {
-        [Op.eq]: carId
-      }
+      carId
     });
   }
 
   if (userId) {
     Object.assign(where, {
-      userId: {
-        [Op.eq]: userId
-      }
+      userId
     });
   }
 
   if (bidType) {
     Object.assign(where, {
-      bidType: {
-        [Op.eq]: bidType
-      }
+      bidType
     });
   }
 
@@ -82,9 +77,37 @@ router.get('/', async (req, res) => {
 
   if (negotiationType) {
     Object.assign(where, {
-      negotiationType: {
-        [Op.eq]: negotiationType
-      }
+      negotiationType
+    });
+  }
+
+  if (paymentMethod) {
+    Object.assign(where, {
+      paymentMethod
+    });
+  }
+
+  if (haveSeenCar) {
+    Object.assign(where, {
+      haveSeenCar
+    });
+  }
+
+  if (profileUser == 'End User') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 0, companyType: 0 },
+        { type: 0, companyType: 1 }
+      ]
+    });
+  }
+
+  if (profileUser == 'Dealer') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 1, companyType: 0 },
+        { type: 1, companyType: 1 }
+      ]
     });
   }
 
@@ -94,6 +117,7 @@ router.get('/', async (req, res) => {
         model: models.User,
         as: 'user',
         attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType', 'address'],
+        where: whereUser,
         include: [
           {
             model: models.File,
@@ -175,6 +199,7 @@ router.get('/', async (req, res) => {
         ]
       }
     ],
+    subQuery: false,
     where,
     order,
     offset,
