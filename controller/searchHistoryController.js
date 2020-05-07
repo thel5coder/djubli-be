@@ -4,20 +4,13 @@ const supertest = require('supertest');
 const models = require('../db/models');
 const paginator = require('../helpers/paginator');
 
-const {
-  Op
-} = Sequelize;
+const { Op } = Sequelize;
 
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 async function get(req, res) {
-  let {
-    page,
-    limit,
-    by,
-    sort
-  } = req.query;
+  let { page, limit, by, sort } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -25,37 +18,34 @@ async function get(req, res) {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  let order = [
-    ['createdAt', 'desc']
-  ];
+  let order = [['createdAt', 'desc']];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  if (by === 'id' || by === 'userId' || by === 'createdAt') order = [
-    [by, sort]
-  ];
+  if (by === 'id' || by === 'userId' || by === 'createdAt') order = [[by, sort]];
 
   const where = {
     userId: req.user.id
   };
 
   return models.SearchHistory.findAll({
-      include: [{
-          model: models.User,
-          as: 'user',
-          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
-        },
-        {
-          model: models.SearchHistoryParam,
-          as: 'params',
-          attributes: ['id', 'key', 'value']
-        }
-      ],
-      where,
-      order,
-      offset,
-      limit
-    })
+    include: [
+      {
+        model: models.User,
+        as: 'user',
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+      },
+      {
+        model: models.SearchHistoryParam,
+        as: 'params',
+        attributes: ['id', 'key', 'value']
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
     .then(async data => {
       const count = await models.SearchHistory.count({
         where
@@ -89,13 +79,16 @@ async function get(req, res) {
 
           if (resultAPI.body && resultAPI.body.pagination) {
             item.countResult = resultAPI.body.pagination.count;
-            await models.SearchHistory.update({
-              countResult: resultAPI.body.pagination.count
-            }, {
-              where: {
-                id: item.id
+            await models.SearchHistory.update(
+              {
+                countResult: resultAPI.body.pagination.count
+              },
+              {
+                where: {
+                  id: item.id
+                }
               }
-            }).catch(err =>
+            ).catch(err =>
               res.status(422).json({
                 success: false,
                 errors: err.message
@@ -120,27 +113,26 @@ async function get(req, res) {
 }
 
 async function getById(req, res) {
-  const {
-    id
-  } = req.params;
+  const { id } = req.params;
 
   return models.SearchHistory.findOne({
-      where: {
-        userId: req.user.id,
-        id
+    where: {
+      userId: req.user.id,
+      id
+    },
+    include: [
+      {
+        model: models.User,
+        as: 'user',
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
       },
-      include: [{
-          model: models.User,
-          as: 'user',
-          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
-        },
-        {
-          model: models.SearchHistoryParam,
-          as: 'params',
-          attributes: ['id', 'key', 'value']
-        }
-      ]
-    })
+      {
+        model: models.SearchHistoryParam,
+        as: 'params',
+        attributes: ['id', 'key', 'value']
+      }
+    ]
+  })
     .then(async data => {
       const newParams = {};
       data.params.map(param => {
@@ -167,13 +159,16 @@ async function getById(req, res) {
 
       if (resultAPI.body && resultAPI.body.pagination) {
         data.countResult = resultAPI.body.pagination.count;
-        await models.SearchHistory.update({
-          countResult: resultAPI.body.pagination.count
-        }, {
-          where: {
-            id: data.id
+        await models.SearchHistory.update(
+          {
+            countResult: resultAPI.body.pagination.count
+          },
+          {
+            where: {
+              id: data.id
+            }
           }
-        }).catch(err =>
+        ).catch(err =>
           res.status(422).json({
             success: false,
             errors: err.message
@@ -195,12 +190,8 @@ async function getById(req, res) {
 }
 
 async function create(req, res) {
-  const {
-    countResult
-  } = req.body;
-  let {
-    title
-  } = req.body;
+  const { countResult } = req.body;
+  let { title } = req.body;
 
   const {
     limit,
@@ -297,9 +288,7 @@ async function create(req, res) {
     if (checkTitle) {
       const getLastTitle = await models.SearchHistory.findOne({
         where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`),
-        order: [
-          ['title', 'desc']
-        ]
+        order: [['title', 'desc']]
       });
 
       if (parseInt(getLastTitle.title.slice(-1)) > 0) {
@@ -310,7 +299,8 @@ async function create(req, res) {
     }
   }
 
-  const params = [{
+  const params = [
+    {
       key: 'limit',
       value: limit || ''
     },
@@ -413,13 +403,16 @@ async function create(req, res) {
   ];
 
   const trans = await models.sequelize.transaction();
-  const searchHistory = await models.SearchHistory.create({
-    userId: req.user.id,
-    title,
-    countResult
-  }, {
-    transaction: trans
-  }).catch(err => {
+  const searchHistory = await models.SearchHistory.create(
+    {
+      userId: req.user.id,
+      title,
+      countResult
+    },
+    {
+      transaction: trans
+    }
+  ).catch(err => {
     trans.rollback();
     res.status(422).json({
       success: false,
@@ -449,17 +442,11 @@ async function create(req, res) {
 }
 
 async function edit(req, res) {
-  const {
-    countResult
-  } = req.body;
-  
-  let {
-    title
-  } = req.body;
+  const { countResult } = req.body;
 
-  const {
-    id
-  } = req.params;
+  let { title } = req.body;
+
+  const { id: idHistory } = req.params;
 
   const {
     limit,
@@ -488,8 +475,7 @@ async function edit(req, res) {
     interiorColorId
   } = req.body;
 
-
-  if (validator.isInt(id ? id.toString() : '') === false) {
+  if (validator.isInt(idHistory ? idHistory.toString() : '') === false) {
     return res.status(400).json({
       success: false,
       errors: 'Invalid Parameter'
@@ -506,7 +492,13 @@ async function edit(req, res) {
   const data = await models.SearchHistory.findOne({
     where: {
       userId: req.user.id,
-      id
+      id: idHistory
+    }
+  });
+
+  const dataParams = await models.SearchHistoryParam.findAll({
+    where: {
+      searchHistoryId: idHistory
     }
   });
 
@@ -517,104 +509,165 @@ async function edit(req, res) {
     });
   }
 
-  if (!title) {
-    let customTitle = [];
-
-    if (brandId) {
-      const brand = await models.Brand.findByPk(brandId);
-      if (!brand) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Brand from apiURL not found'
-        });
-      }
-
-      customTitle.push(brand.name);
-    }
-
-    if (groupModelId) {
-      const groupModel = await models.GroupModel.findByPk(groupModelId);
-      if (!groupModel) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Group Model from apiURL not found'
-        });
-      }
-
-      customTitle.push(groupModel.name);
-    }
-
-    if (modelId) {
-      const model = await models.Model.findByPk(modelId);
-      if (!model) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Group Model from apiURL not found'
-        });
-      }
-
-      customTitle.push(model.name);
-    }
-
-    if (modelYearId) {
-      const modelYear = await models.ModelYear.findByPk(modelYearId);
-      if (!modelYear) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Model Year from apiURL not found'
-        });
-      }
-
-      customTitle.push(modelYear.year);
-    }
-
-    customTitle = customTitle.join(' - ');
-    const checkTitle = await models.SearchHistory.findOne({
-      where: {
-        title: `${customTitle} 1`
-      }
+  if (!dataParams) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Search History Params not found'
     });
-
-    if (checkTitle) {
-      const getLastTitle = await models.SearchHistory.findOne({
-        where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`),
-        order: [
-          ['title', 'desc']
-        ]
-      });
-
-      if (parseInt(getLastTitle.title.slice(-1)) > 0) {
-        title = `${customTitle} ${parseInt(getLastTitle.title.slice(-1)) + 1}`;
-      }
-    } else {
-      title = `${customTitle} 1`;
-    }
   }
 
-  return data
-    .update({
-      title,
-      apiURL,
-      countResult
-    })
-    .then(data =>
-      res.json({
-        success: true,
-        data
-      })
+  if (!title) {
+    title = data.title;
+  }
+
+  dataParams.map(item => {
+    if (item.key == 'limit') {
+      item.value = limit || item.value;
+    }
+
+    if (item.key == 'page') {
+      item.value = page || item.value;
+    }
+
+    if (item.key == 'by') {
+      item.value = by || item.value;
+    }
+
+    if (item.key == 'sort') {
+      item.value = sort || item.value;
+    }
+
+    if (item.key == 'modelYearId') {
+      item.value = modelYearId || item.value;
+    }
+
+    if (item.key == 'condition') {
+      item.value = condition || item.value;
+    }
+
+    if (item.key == 'brandId') {
+      item.value = brandId || item.value;
+    }
+
+    if (item.key == 'groupModelId') {
+      item.value = groupModelId || item.value;
+    }
+
+    if (item.key == 'modelId') {
+      item.value = modelId || item.value;
+    }
+
+    if (item.key == 'minPrice') {
+      item.value = minPrice || item.value;
+    }
+
+    if (item.key == 'maxPrice') {
+      item.value = maxPrice || item.value;
+    }
+
+    if (item.key == 'minYear') {
+      item.value = minYear || item.value;
+    }
+
+    if (item.key == 'maxYear') {
+      item.value = maxYear || item.value;
+    }
+
+    if (item.key == 'radius') {
+      item.value = radius ? radius[0] : item.value;
+    }
+
+    if (item.key == 'radius') {
+      item.value = radius ? radius[1] : item.value;
+    }
+
+    if (item.key == 'latitude') {
+      item.value = latitude || item.value;
+    }
+
+    if (item.key == 'longitude') {
+      item.value = longitude || item.value;
+    }
+
+    if (item.key == 'minKm') {
+      item.value = minKm || item.value;
+    }
+
+    if (item.key == 'maxKm') {
+      item.value = maxKm || item.value;
+    }
+
+    if (item.key == 'subdistrictId') {
+      item.value = subdistrictId || item.value;
+    }
+
+    if (item.key == 'cityId') {
+      item.value = cityId || item.value;
+    }
+
+    if (item.key == 'typeId') {
+      item.value = typeId || item.value;
+    }
+
+    if (item.key == 'id') {
+      item.value = id || item.value;
+    }
+
+    if (item.key == 'exteriorColorId') {
+      item.value = exteriorColorId || item.value;
+    }
+
+    if (item.key == 'interiorColorId') {
+      item.value = interiorColorId || item.value;
+    }
+  });
+
+  const trans = await models.sequelize.transaction();
+  data
+    .update(
+      {
+        title,
+        countResult
+      },
+      { transaction: trans }
     )
-    .catch(err =>
+    .catch(err => {
+      trans.rollback();
       res.status(422).json({
         success: false,
         errors: err.message
-      })
-    );
+      });
+    });
+
+  await Promise.all(
+    dataParams.map(async item => {
+      await item
+        .update(
+          {
+            key: item.key,
+            value: item.value
+          },
+          { transaction: trans }
+        )
+        .catch(err => {
+          trans.rollback();
+          res.status(422).json({
+            success: false,
+            errors: err.message
+          });
+        });
+    })
+  );
+
+  trans.commit();
+  return res.json({
+    success: true,
+    data
+  });
 }
 
 async function destroy(req, res) {
-  const {
-    id
-  } = req.params;
+  const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
       success: false,
