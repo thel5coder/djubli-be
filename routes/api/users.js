@@ -1339,10 +1339,10 @@ router.put('/update', passport.authenticate('user', { session: false }), async (
   await data
     .update(
       {
-        phone,
-        email,
+        phone: phone ? phone : data.phone,
+        email: email ? email : data.email,
         emailValidAt: moment.now(),
-        name,
+        name: name ? name : data.name,
         password: hashedPassword,
         type,
         companyType,
