@@ -1208,297 +1208,304 @@ router.post('/unhandledRegister', async (req, res) => {
   });
 });
 
-router.put('/update', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { id } = req.user;
+router.put(
+  '/update',
+  passport.authenticate('user', {
+    session: false
+  }),
+  async (req, res) => {
+    const { id } = req.user;
 
-  const data = await models.User.findOne({
-    where: {
-      id
-    }
-  });
-  if (!data) {
-    return res.status(400).json({
-      success: false,
-      errors: 'User not found'
-    });
-  }
-
-  const {
-    name,
-    password,
-    confirmPassword,
-    phone,
-    email,
-    type,
-    companyType,
-    profileImageId,
-    address,
-    status
-  } = req.body;
-  // User Member Attribute
-  const { modelYearId } = req.body;
-  const { brand, bank, ccType, ccUsedFrom } = req.body;
-  const { hStatus, surfaceArea, hUsedFrom } = req.body;
-  let { isCar, isHome, isCard } = false;
-  // Dealer Attribute
-  const { productType, website, fax, authorizedBrandId } = req.body;
-  const { authorizedWorkshop, otherWorkshop, sellAndBuy } = req.body;
-  // Company Attribute , fileId (dealer & company)
-  const { businessType, fileId } = req.body;
-
-  if (email) {
-    if (validator.isEmail(email ? email.toString() : '') === false) {
-      return res.status(400).json({
-        success: false,
-        errors: 'invalid email'
-      });
-    }
-  }
-
-  if (phone) {
-    if (validator.isMobilePhone(phone ? phone.toString() : '') === false) {
-      return res.status(400).json({
-        success: false,
-        errors: 'invalid phone'
-      });
-    }
-  }
-
-  if (status) {
-    if (validator.isBoolean(status ? status.toString() : '') === false) {
-      return res.status(400).json({
-        success: false,
-        errors: 'status must be boolean'
-      });
-    }
-  }
-
-  // let hashedPassword = await bcrypt.hashSync(data.password, 10);
-  let hashedPassword = data.password;
-  if (password && confirmPassword) {
-    if (password !== confirmPassword) {
-      return res.status(400).json({
-        success: true,
-        errors: 'password mismatch'
-      });
-    }
-    hashedPassword = await bcrypt.hashSync(password, 10);
-  }
-
-  // member attribute
-  let carModel = [];
-  let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
-  let { homeStatus, homeArea, homeUsedFrom } = [];
-
-  if (type === '0' && companyType === '0') {
-    // mapping car detail
-    if (modelYearId) {
-      carModel = general.mapping(modelYearId);
-      isCar = true;
-    }
-
-    // mapping credit card detail
-    if (brand && bank && ccType && ccUsedFrom) {
-      cardBrand = general.mapping(brand);
-      cardBank = general.mapping(bank);
-      cardType = general.mapping(ccType);
-      cardUsedFrom = general.mapping(ccUsedFrom);
-      isCard = true;
-    }
-
-    // mapping home detail
-    if (hStatus && surfaceArea && hUsedFrom) {
-      homeStatus = general.mapping(hStatus);
-      homeArea = general.mapping(surfaceArea);
-      homeUsedFrom = general.mapping(hUsedFrom);
-      isHome = true;
-    }
-  }
-
-  // Get Company
-  async function getCompanyById() {
-    return await models.Company.findOne({
+    const data = await models.User.findOne({
       where: {
-        userId: id
+        id
       }
     });
-  }
-
-  // Get Dealer
-  async function getDealerById() {
-    return await models.Dealer.findOne({
-      where: {
-        userId: id
-      }
-    });
-  }
-
-  const trans = await models.sequelize.transaction();
-  const errors = [];
-
-  await data
-    .update(
-      {
-        phone: phone ? phone : data.phone,
-        email: email ? email : data.email,
-        emailValidAt: moment.now(),
-        name: name ? name : data.name,
-        password: hashedPassword,
-        type,
-        companyType,
-        profileImageId,
-        address,
-        status
-      },
-      { transaction: trans }
-    )
-    .catch(err => {
-      trans.rollback();
-      return res.status(422).json({
+    if (!data) {
+      return res.status(400).json({
         success: false,
-        errors: err.message
-      });
-    });
-
-  if (type === '0' && companyType === '0') {
-    if (isCar) {
-      const car = [];
-      for (let i = 0; i < carModel.length; i += 1) {
-        car.push({ userId: data.id, modelYearId: carModel[i] });
-      }
-
-      await models.UserEndUserCarDetail.bulkCreate(car, { transaction: trans }).catch(err => {
-        errors.push(err);
+        errors: 'User not found'
       });
     }
 
-    if (isCard) {
-      const card = [];
-      for (let j = 0; j < cardBank.length; j += 1) {
-        card.push({
-          userId: data.id,
-          brand: cardBrand[j],
-          bank: cardBank[j],
-          type: cardType[j],
-          usedFrom: cardUsedFrom[j]
+    const {
+      name,
+      password,
+      confirmPassword,
+      phone,
+      email,
+      type,
+      companyType,
+      profileImageId,
+      address,
+      status
+    } = req.body;
+    // User Member Attribute
+    const { carId, modelYearId } = req.body;
+    const { cardId, brand, bank, ccType, ccUsedFrom } = req.body;
+    const { houseId, hStatus, surfaceArea, hUsedFrom } = req.body;
+    let { isCar, isHome, isCard } = false;
+    // Dealer Attribute
+    const { productType, website, fax, authorizedBrandId } = req.body;
+    const { authorizedWorkshop, otherWorkshop, sellAndBuy } = req.body;
+    // Company Attribute , fileId (dealer & company)
+    const { businessType, fileId } = req.body;
+
+    if (email) {
+      if (validator.isEmail(email ? email.toString() : '') === false) {
+        return res.status(400).json({
+          success: false,
+          errors: 'invalid email'
         });
       }
+    }
 
-      await models.UserEndUserCreditCardDetail.bulkCreate(card, { transaction: trans }).catch(
-        err => {
-          errors.push(err);
+    if (phone) {
+      if (validator.isMobilePhone(phone ? phone.toString() : '') === false) {
+        return res.status(400).json({
+          success: false,
+          errors: 'invalid phone'
+        });
+      }
+    }
+
+    if (status) {
+      if (validator.isBoolean(status ? status.toString() : '') === false) {
+        return res.status(400).json({
+          success: false,
+          errors: 'status must be boolean'
+        });
+      }
+    }
+
+    // let hashedPassword = await bcrypt.hashSync(data.password, 10);
+    let hashedPassword = data.password;
+    if (password && confirmPassword) {
+      if (password !== confirmPassword) {
+        return res.status(400).json({
+          success: true,
+          errors: 'password mismatch'
+        });
+      }
+      hashedPassword = await bcrypt.hashSync(password, 10);
+    }
+
+    // member attribute
+    let { userEndUserCarId, carModel } = [];
+    let { userEndUserCardId, cardBrand, cardType, cardBank, cardUsedFrom } = [];
+    let { userEndUserHouseId, homeStatus, homeArea, homeUsedFrom } = [];
+
+    if (type == 0 && companyType == 0) {
+      // mapping car detail
+      if (carId && modelYearId) {
+        userEndUserCarId = general.mapping(carId);
+        carModel = general.mapping(modelYearId);
+        isCar = true;
+      }
+
+      // mapping credit card detail
+      if (cardId && brand && bank && ccType && ccUsedFrom) {
+        userEndUserCardId = general.mapping(cardId);
+        cardBrand = general.mapping(brand);
+        cardBank = general.mapping(bank);
+        cardType = general.mapping(ccType);
+        cardUsedFrom = general.mapping(ccUsedFrom);
+        isCard = true;
+      }
+
+      // mapping home detail
+      if (houseId && hStatus && surfaceArea && hUsedFrom) {
+        userEndUserHouseId = general.mapping(houseId);
+        homeStatus = general.mapping(hStatus);
+        homeArea = general.mapping(surfaceArea);
+        homeUsedFrom = general.mapping(hUsedFrom);
+        isHome = true;
+      }
+    }
+
+    // Get Company
+    async function getCompanyById() {
+      return await models.Company.findOne({
+        where: {
+          userId: id
         }
-      );
-    }
-
-    if (isHome) {
-      const home = [];
-      for (let k = 0; k < homeArea.length; k += 1) {
-        home.push({
-          userId: data.id,
-          status: homeStatus[k],
-          surfaceArea: homeArea[k],
-          usedFrom: homeUsedFrom[k]
-        });
-      }
-
-      await models.UserEndUserHouseDetail.bulkCreate(home, { transaction: trans }).catch(err => {
-        errors.push(err);
       });
     }
-  }
 
-  if (type === '0' && companyType === '1') {
-    getCompanyById()
-      .then(company => {
-        (async trans => {
-          await models.Company.create(
-            {
-              userId: id,
-              website,
-              fax,
-              businessType
-            },
-            {
-              transaction: trans
-            }
-          ).catch(err => {
-            errors.push(err);
-          });
-        })().then(result => {
-          (async trans => {
-            await Promise.all(
-              fileId.map(async file => {
-                await models.CompanyGallery.create(
-                  {
-                    companyId: company.id,
-                    fileId: file
-                  },
-                  {
-                    transaction: trans
-                  }
-                ).catch(err => {
-                  errors.push(err);
-                });
-              })
-            );
-          })();
-        });
-      })
+    // Get Dealer
+    async function getDealerById() {
+      return await models.Dealer.findOne({
+        where: {
+          userId: id
+        }
+      });
+    }
+
+    const trans = await models.sequelize.transaction();
+    const errors = [];
+
+    await data
+      .update(
+        {
+          phone: phone || data.phone,
+          email: email || data.email,
+          emailValidAt: moment.now(),
+          name: name || data.name,
+          password: hashedPassword,
+          type,
+          companyType,
+          profileImageId,
+          address,
+          status
+        },
+        {
+          transaction: trans
+        }
+      )
       .catch(err => {
         trans.rollback();
-        errors.push(err);
-      });
-  }
-
-  if (type === '1') {
-    getDealerById()
-      .then(dealer => {
-        (async trans => {
-          await models.Dealer.update(
-            {
-              productType,
-              website,
-              fax,
-              authorizedBrandId
-            },
-            {
-              where: {
-                id: dealer.id
-              }
-            },
-            { transaction: trans }
-          ).catch(err => {
-            console.log(err);
-            errors.push(err);
-          });
-        })().then(result => {
-          (async trans => {
-            await Promise.all(
-              fileId.map(async file => {
-                await models.DealerGallery.create(
-                  {
-                    dealerId: dealer.id,
-                    fileId: file
-                  },
-                  {
-                    transaction: trans
-                  }
-                ).catch(err => {
-                  errors.push(err);
-                });
-              })
-            );
-          })();
+        return res.status(422).json({
+          success: false,
+          errors: err.message
         });
+      });
 
-        if (authorizedWorkshop) {
-          (async trans => {
-            await models.DealerWorkshopAuthorizedBrand.destroy(
-              {
+    if (type == 0 && companyType == 0) {
+      if (isCar) {
+        const car = [];
+        for (let i = 0; i < carModel.length; i += 1) {
+          car.push({
+            id: userEndUserCarId[i],
+            userId: data.id,
+            modelYearId: carModel[i]
+          });
+        }
+
+        await Promise.all(
+          car.map(async item => {
+            if (item.id) {
+              await models.UserEndUserCarDetail.update(item, {
                 where: {
-                  dealerId: dealer.id
-                }
+                  id: item.id
+                },
+                transaction: trans
+              }).catch(err => {
+                errors.push(err);
+              });
+            } else {
+              const checkModelyearExist = await models.UserEndUserCarDetail.findOne({
+                where: {
+                  userId: item.userId,
+                  modelYearId: item.modelYearId
+                },
+                transaction: trans
+              })
+
+              if(checkModelyearExist) {
+                trans.rollback();
+                return res.status(400).json({
+                  success: false,
+                  errors: 'Modelyear already exists'
+                });
+              }
+
+              await models.UserEndUserCarDetail.create(item, {
+                transaction: trans
+              }).catch(err => {
+                errors.push(err);
+              });
+            }
+          })
+        );
+
+        // await models.UserEndUserCarDetail.bulkCreate(car, {
+        //   transaction: trans
+        // }).catch(err => {
+        //   errors.push(err);
+        // });
+      }
+
+      if (isCard) {
+        const card = [];
+
+        for (let j = 0; j < cardBank.length; j += 1) {
+          card.push({
+            id: userEndUserCardId[j],
+            userId: data.id,
+            brand: cardBrand[j],
+            bank: cardBank[j],
+            type: cardType[j],
+            usedFrom: cardUsedFrom[j]
+          });
+        }
+
+        await Promise.all(
+          card.map(async item => {
+            if (item.id) {
+              await models.UserEndUserCreditCardDetail.update(item, {
+                where: {
+                  id: item.id
+                },
+                transaction: trans
+              }).catch(err => {
+                errors.push(err);
+              });
+            } else {
+              await models.UserEndUserCreditCardDetail.create(item, {
+                transaction: trans
+              }).catch(err => {
+                errors.push(err);
+              });
+            }
+          })
+        );
+      }
+
+      if (isHome) {
+        const home = [];
+        for (let k = 0; k < homeArea.length; k += 1) {
+          home.push({
+            id: userEndUserHouseId[k],
+            userId: data.id,
+            status: homeStatus[k],
+            surfaceArea: homeArea[k],
+            usedFrom: homeUsedFrom[k]
+          });
+        }
+
+        await Promise.all(
+          home.map(async item => {
+            if (item.id) {
+              await models.UserEndUserHouseDetail.update(item, {
+                where: {
+                  id: item.id
+                },
+                transaction: trans
+              }).catch(err => {
+                errors.push(err);
+              });
+            } else {
+              await models.UserEndUserHouseDetail.create(item, {
+                transaction: trans
+              }).catch(err => {
+                errors.push(err);
+              });
+            }
+          })
+        );
+      }
+    }
+
+    if (type == 0 && companyType == 1) {
+      getCompanyById()
+        .then(company => {
+          (async trans => {
+            await models.Company.create(
+              {
+                userId: id,
+                website,
+                fax,
+                businessType
               },
               {
                 transaction: trans
@@ -1506,112 +1513,200 @@ router.put('/update', passport.authenticate('user', { session: false }), async (
             ).catch(err => {
               errors.push(err);
             });
+          })().then(result => {
+            (async trans => {
+              await Promise.all(
+                fileId.map(async file => {
+                  await models.CompanyGallery.create(
+                    {
+                      companyId: company.id,
+                      fileId: file
+                    },
+                    {
+                      transaction: trans
+                    }
+                  ).catch(err => {
+                    errors.push(err);
+                  });
+                })
+              );
+            })();
+          });
+        })
+        .catch(err => {
+          trans.rollback();
+          errors.push(err);
+        });
+    }
 
-            await Promise.all(
-              authorizedWorkshop.map(async brandData => {
-                await models.DealerWorkshopAuthorizedBrand.create(
-                  {
-                    dealerId: dealer.id,
-                    brandId: brandData
-                  },
-                  {
-                    transaction: trans
-                  }
-                ).catch(err => {
-                  errors.push(err);
-                });
-              })
-            );
-          })();
-        }
-        if (otherWorkshop) {
+    if (type == 1) {
+      getDealerById()
+        .then(dealer => {
           (async trans => {
-            await models.DealerWorkshopOtherBrand.destroy(
+            await models.Dealer.update(
+              {
+                productType,
+                website,
+                fax,
+                authorizedBrandId
+              },
               {
                 where: {
-                  dealerId: dealer.id
+                  id: dealer.id
                 }
               },
-              { transaction: trans }
-            ).catch(err => {
-              errors.push(err);
-            });
-
-            await Promise.all(
-              otherWorkshop.map(async brandData => {
-                await models.DealerWorkshopOtherBrand.create(
-                  {
-                    dealerId: dealer.id,
-                    brandId: brandData
-                  },
-                  {
-                    transaction: trans
-                  }
-                ).catch(err => {
-                  errors.push(err);
-                });
-              })
-            );
-          })();
-        }
-        if (sellAndBuy) {
-          (async trans => {
-            await models.DealerSellAndBuyBrand.destroy(
               {
-                where: {
-                  dealerId: dealer.id
-                }
-              },
-              { transaction: trans }
+                transaction: trans
+              }
             ).catch(err => {
+              console.log(err);
               errors.push(err);
             });
+          })().then(result => {
+            (async trans => {
+              await Promise.all(
+                fileId.map(async file => {
+                  await models.DealerGallery.create(
+                    {
+                      dealerId: dealer.id,
+                      fileId: file
+                    },
+                    {
+                      transaction: trans
+                    }
+                  ).catch(err => {
+                    errors.push(err);
+                  });
+                })
+              );
+            })();
+          });
 
-            await Promise.all(
-              sellAndBuy.map(async brandData => {
-                await models.DealerSellAndBuyBrand.create(
-                  {
-                    dealerId: dealer.id,
-                    brandId: brandData
-                  },
-                  {
-                    transaction: trans
+          if (authorizedWorkshop) {
+            (async trans => {
+              await models.DealerWorkshopAuthorizedBrand.destroy(
+                {
+                  where: {
+                    dealerId: dealer.id
                   }
-                ).catch(err => {
-                  errors.push(err);
-                });
-              })
-            );
-          })();
-        }
-      })
-      .catch(err => {
-        trans.rollback();
-        errors.push(err);
+                },
+                {
+                  transaction: trans
+                }
+              ).catch(err => {
+                errors.push(err);
+              });
+
+              await Promise.all(
+                authorizedWorkshop.map(async brandData => {
+                  await models.DealerWorkshopAuthorizedBrand.create(
+                    {
+                      dealerId: dealer.id,
+                      brandId: brandData
+                    },
+                    {
+                      transaction: trans
+                    }
+                  ).catch(err => {
+                    errors.push(err);
+                  });
+                })
+              );
+            })();
+          }
+          if (otherWorkshop) {
+            (async trans => {
+              await models.DealerWorkshopOtherBrand.destroy(
+                {
+                  where: {
+                    dealerId: dealer.id
+                  }
+                },
+                {
+                  transaction: trans
+                }
+              ).catch(err => {
+                errors.push(err);
+              });
+
+              await Promise.all(
+                otherWorkshop.map(async brandData => {
+                  await models.DealerWorkshopOtherBrand.create(
+                    {
+                      dealerId: dealer.id,
+                      brandId: brandData
+                    },
+                    {
+                      transaction: trans
+                    }
+                  ).catch(err => {
+                    errors.push(err);
+                  });
+                })
+              );
+            })();
+          }
+          if (sellAndBuy) {
+            (async trans => {
+              await models.DealerSellAndBuyBrand.destroy(
+                {
+                  where: {
+                    dealerId: dealer.id
+                  }
+                },
+                {
+                  transaction: trans
+                }
+              ).catch(err => {
+                errors.push(err);
+              });
+
+              await Promise.all(
+                sellAndBuy.map(async brandData => {
+                  await models.DealerSellAndBuyBrand.create(
+                    {
+                      dealerId: dealer.id,
+                      brandId: brandData
+                    },
+                    {
+                      transaction: trans
+                    }
+                  ).catch(err => {
+                    errors.push(err);
+                  });
+                })
+              );
+            })();
+          }
+        })
+        .catch(err => {
+          trans.rollback();
+          errors.push(err);
+        });
+    }
+
+    if (errors.length > 0) {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors
       });
-  }
+    }
+    trans.commit();
 
-  if (errors.length > 0) {
-    trans.rollback();
-    return res.status(422).json({
-      success: false,
-      errors
+    return res.json({
+      success: true,
+      data
     });
   }
-  trans.commit();
-
-  return res.json({
-    success: true,
-    data
-  });
-});
+);
 
 router.delete('/firebase', passport.authenticate('user', { session: false }), async (req, res) => {
   const userId = req.user.id;
   const tokenExists = await models.UserToken.findAll({
     where: { userId }
   });
-  
+
   if (tokenExists.length <= 0)
     return res.status(400).json({ success: false, errors: 'token not found' });
 
@@ -1740,7 +1835,7 @@ router.post('/firebase', passport.authenticate('user', { session: false }), asyn
     userId,
     token,
     type,
-    version: version ? version : null
+    version: version || null
   })
     .then(async data => {
       res.json({ success: true, data });
