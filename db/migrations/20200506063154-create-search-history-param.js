@@ -1,23 +1,23 @@
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('SearchHistories', {
+    return queryInterface.createTable('SearchHistoryParams', {
       id: {
         allowNull: false,
         autoIncrement: true,
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      userId: {
+      searchHistoryId: {
         allowNull: false,
         type: Sequelize.INTEGER,
-        references: { model: 'Users', key: 'id' }
+        references: { model: 'SearchHistories', key: 'id' }
       },
-      title: {
+      key: {
         type: Sequelize.STRING
       },
-      countResult: {
-        type: Sequelize.INTEGER
+      value: {
+        type: Sequelize.STRING
       },
       createdAt: {
         allowNull: false,
@@ -31,6 +31,6 @@ module.exports = {
     });
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('SearchHistories');
+    return queryInterface.dropTable('SearchHistoryParams');
   }
 };
