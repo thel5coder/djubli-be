@@ -442,10 +442,7 @@ async function create(req, res) {
 }
 
 async function edit(req, res) {
-  const { countResult } = req.body;
-
-  let { title } = req.body;
-
+  let { title, countResult } = req.body;
   const { id: idHistory } = req.params;
 
   const {
@@ -482,13 +479,6 @@ async function edit(req, res) {
     });
   }
 
-  if (!countResult) {
-    return res.status(400).json({
-      success: false,
-      errors: 'count result is mandatory'
-    });
-  }
-
   const data = await models.SearchHistory.findOne({
     where: {
       userId: req.user.id,
@@ -518,6 +508,10 @@ async function edit(req, res) {
 
   if (!title) {
     title = data.title;
+  }
+
+  if (!countResult) {
+    countResult = data.countResult;
   }
 
   dataParams.map(item => {
