@@ -200,7 +200,7 @@ async function carsGet(req, res, auth = false) {
     }
 
     await calculateDistance.CreateOrReplaceCalculateDistance();
-    let distances = models.sequelize.literal(
+    const distances = models.sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
     );
     Object.assign(where, {
@@ -215,7 +215,7 @@ async function carsGet(req, res, auth = false) {
   }
 
   if (by === 'area') {
-    if(cityId) {
+    if (cityId) {
       const city = await models.City.findByPk(cityId);
       if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
 
@@ -226,16 +226,14 @@ async function carsGet(req, res, auth = false) {
 
         if (!subdistrict)
           return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
-      
+
         if (city && subdistrict) {
-            latitude = subdistrict.latitude;
-            longitude = subdistrict.longitude;
-          }
-      } else {
-        if(city) {
-          latitude = city.latitude;
-          longitude = city.longitude;
+          latitude = subdistrict.latitude;
+          longitude = subdistrict.longitude;
         }
+      } else if (city) {
+        latitude = city.latitude;
+        longitude = city.longitude;
       }
 
       await calculateDistance.CreateOrReplaceCalculateDistance();
@@ -243,23 +241,21 @@ async function carsGet(req, res, auth = false) {
         `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
       );
 
-      if(radius) {
+      if (radius) {
         Object.assign(where, {
           where: {
             [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
           }
         });
-      } else {
-        if(cityId && subdistrictId) {
-          Object.assign(where, {
-            cityId,
-            subdistrictId
-          });
-        } else if(cityId) {
-          Object.assign(where, {
-            cityId
-          });
-        }
+      } else if (cityId && subdistrictId) {
+        Object.assign(where, {
+          cityId,
+          subdistrictId
+        });
+      } else if (cityId) {
+        Object.assign(where, {
+          cityId
+        });
       }
 
       addAttributes.fields.push('distance');
@@ -272,7 +268,7 @@ async function carsGet(req, res, auth = false) {
     }
   }
 
-  if(latitude && longitude && radius && (by != 'area' && by != 'location')) {
+  if (latitude && longitude && radius && by != 'area' && by != 'location') {
     await calculateDistance.CreateOrReplaceCalculateDistance();
     const distances = Sequelize.literal(
       `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
@@ -283,6 +279,52 @@ async function carsGet(req, res, auth = false) {
         [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
       }
     });
+
+    addAttributes.fields.push('distance');
+    Object.assign(addAttributes, {
+      latitude,
+      longitude
+    });
+  }
+
+  if (
+    cityId &&
+    subdistrictId &&
+    radius == '' &&
+    (latitude == '') & (longitude == '') &&
+    by != 'area' &&
+    by != 'location'
+  ) {
+    const city = await models.City.findByPk(cityId);
+    if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+    if (subdistrictId) {
+      const subdistrict = await models.SubDistrict.findOne({
+        where: { id: subdistrictId, cityId }
+      });
+
+      if (!subdistrict)
+        return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+      if (city && subdistrict) {
+        latitude = subdistrict.latitude;
+        longitude = subdistrict.longitude;
+      }
+    } else if (city) {
+      latitude = city.latitude;
+      longitude = city.longitude;
+    }
+
+    if (cityId && subdistrictId) {
+      Object.assign(where, {
+        cityId,
+        subdistrictId
+      });
+    } else if (cityId) {
+      Object.assign(where, {
+        cityId
+      });
+    }
 
     addAttributes.fields.push('distance');
     Object.assign(addAttributes, {
@@ -405,7 +447,7 @@ async function carsGet(req, res, auth = false) {
       });
     })
     .catch(err => {
-      console.log(err)
+      console.log(err);
       res.status(422).json({
         success: false,
         errors: err.message

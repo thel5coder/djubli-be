@@ -1417,12 +1417,6 @@ router.put(
             }
           })
         );
-
-        // await models.UserEndUserCarDetail.bulkCreate(car, {
-        //   transaction: trans
-        // }).catch(err => {
-        //   errors.push(err);
-        // });
       }
 
       if (isCard) {
