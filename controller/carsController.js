@@ -23,7 +23,12 @@ async function carsGet(req, res, auth = false) {
     maxYear,
     radius,
     cityId,
-    subdistrictId
+    subdistrictId,
+    exteriorColorId,
+    interiorColorId,
+    minKm,
+    maxKm,
+    profileUser
   } = req.query;
   let { latitude, longitude } = req.query;
   let { page, limit, by, sort } = req.query;
@@ -94,43 +99,86 @@ async function carsGet(req, res, auth = false) {
     upperCase: true,
     id: userId
   };
+  
   const where = {};
+  const whereUser = {};
+
   if (modelYearId) {
     Object.assign(where, {
-      modelYearId: {
-        [Op.eq]: modelYearId
-      }
+      modelYearId
     });
   }
 
   if (groupModelId) {
     Object.assign(where, {
-      groupModelId: {
-        [Op.eq]: groupModelId
-      }
+      groupModelId
     });
   }
 
   if (condition) {
     Object.assign(where, {
-      condition: {
-        [Op.eq]: condition
-      }
+      condition
     });
   }
 
   if (modelId) {
     Object.assign(where, {
-      modelId: {
-        [Op.eq]: modelId
-      }
+      modelId
     });
   }
 
   if (brandId) {
     Object.assign(where, {
-      brandId: {
-        [Op.eq]: brandId
+      brandId
+    });
+  }
+
+  if (exteriorColorId) {
+    Object.assign(where, {
+      exteriorColorId
+    });
+  }
+
+  if (interiorColorId) {
+    Object.assign(where, {
+      interiorColorId
+    });
+  }
+
+  if (profileUser == 'End User') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 0, companyType: 0 },
+        { type: 0, companyType: 1 }
+      ]
+    });
+  }
+
+  if (profileUser == 'Dealer') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 1, companyType: 0 },
+        { type: 1, companyType: 1 }
+      ]
+    });
+  }
+
+  if (minKm && maxKm) {
+    Object.assign(where, {
+      km: {
+        [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
+      }
+    });
+  } else if (minKm) {
+    Object.assign(where, {
+      km: {
+        [Op.gte]: minKm
+      }
+    });
+  } else if (maxKm) {
+    Object.assign(where, {
+      km: {
+        [Op.lte]: maxKm
       }
     });
   }
@@ -348,6 +396,7 @@ async function carsGet(req, res, auth = false) {
         model: models.User,
         as: 'user',
         attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+        where: whereUser,
         include: [
           {
             model: models.Purchase,
