@@ -848,6 +848,18 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
   })
     .then(async data => {
       const count = await models.Car.count({
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            where: whereYear
+          },
+          {
+            model: models.Bargain,
+            as: 'bargain',
+            where: whereBargain,
+          }
+        ],
         where
       });
       const pagination = paginator.paging(page, count, limit);
@@ -900,9 +912,9 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const whereBargain = {
-    // userId: {
-    //   [Op.eq]: id
-    // }
+    userId: {
+      [Op.eq]: id
+    }
   };
 
   if (negotiationType == 0) {
@@ -1147,6 +1159,18 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   })
     .then(async data => {
       const count = await models.Car.count({
+        include: [
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            where: whereYear
+          },
+          {
+            model: models.Bargain,
+            as: 'bargain',
+            where: whereBargain
+          }
+        ],
         where
       });
       const pagination = paginator.paging(page, count, limit);
