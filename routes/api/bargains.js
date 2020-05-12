@@ -863,6 +863,7 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
   })
     .then(async data => {
       const count = await models.Car.count({
+        distinct: true,
         include: [
           {
             model: models.ModelYear,
@@ -878,6 +879,18 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
         where
       });
       const pagination = paginator.paging(page, count, limit);
+
+      data.map(item => {
+        if(negotiationType == 0) {
+          item.dataValues.statusNego = 'Ajak Nego'
+        } else if(negotiationType == 1) {
+          if(item.dataValues.bargain.length == 0 || (item.dataValues.bargain.length && item.dataValues.bargain.slice(-1).pop().userId == id)) {
+            item.dataValues.statusNego = 'Tunggu Jawaban'
+          } else if(item.dataValues.bargain.length && item.dataValues.bargain.slice(-1).pop().userId != id) {
+            item.dataValues.statusNego = 'Jawaban Anda Ditunggu'
+          }
+        }
+      })
 
       res.json({
         success: true,
@@ -1174,6 +1187,7 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   })
     .then(async data => {
       const count = await models.Car.count({
+        distinct: true,
         include: [
           {
             model: models.ModelYear,
@@ -1189,6 +1203,18 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
         where
       });
       const pagination = paginator.paging(page, count, limit);
+
+      data.map(item => {
+        if(negotiationType == 0) {
+          item.dataValues.statusNego = 'Diajak Nego'
+        } else if(negotiationType == 1) {
+          if(item.dataValues.bargain.length == 0 || (item.dataValues.bargain.length && item.dataValues.bargain.slice(-1).pop().userId == id)) {
+            item.dataValues.statusNego = 'Tunggu Jawaban'
+          } else if(item.dataValues.bargain.length && item.dataValues.bargain.slice(-1).pop().userId != id) {
+            item.dataValues.statusNego = 'Jawaban Anda Ditunggu'
+          }
+        }
+      })
 
       res.json({
         success: true,
