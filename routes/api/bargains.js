@@ -252,7 +252,7 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
   if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid())
     return res.status(400).json({ success: false, errors: 'Invalid expired date' });
 
-  const checkIsBid = await models.Bargain.findAll({
+  const checkIfUserHasBid = await models.Bargain.findAll({
     where: {
       carId,
       userId,
@@ -261,12 +261,27 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
       }
     }
   });
-  if (checkIsBid.length)
+
+  if (checkIfUserHasBid.length)
     return res.status(400).json({ success: false, errors: 'You have bid this car' });
 
   const carExists = await models.Car.findByPk(carId);
   if (!carExists) return res.status(404).json({ success: false, errors: 'car not found' });
-  if (carExists.roomId) return res.status(422).json({ success: false, errors: `car can't bid` });
+  if (carExists.roomId) {
+    const checkIfCarUnderNegotiate = await models.Bargain.findOne({
+      where: {
+        carId,
+        roomId: carExists.roomId,
+        expiredAt: {
+          [Op.gte]: models.sequelize.literal('(SELECT NOW())')
+        }
+      }
+    });
+
+    if(checkIfCarUnderNegotiate) {
+      return res.status(422).json({ success: false, errors: `you can't bid this car, because someone under negotiation` });
+    }
+  }
 
   // return res.status(200).json({ success: true, userId, data: carExists });
   return models.Bargain.create({
