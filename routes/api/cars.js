@@ -2417,7 +2417,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     km,
     address,
     cityId,
-    subsistrictId
+    subdistrictId
   } = req.body;
   const { images } = req.files;
 
@@ -2482,16 +2482,16 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
     Object.assign(insert, { cityId });
   }
-  if (subsistrictId) {
+  if (subdistrictId) {
     const subDistrictExist = await models.SubDistrict.findOne({
       where: {
-        id: subsistrictId,
+        id: subdistrictId,
         cityId
       }
     });
     if (!subDistrictExist)
       return res.status(404).json({ success: false, errors: 'sub district not found' });
-    Object.assign(insert, { subsistrictId });
+    Object.assign(insert, { subdistrictId });
   }
 
   const userNotifs = [];
