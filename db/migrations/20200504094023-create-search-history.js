@@ -19,6 +19,9 @@ module.exports = {
       countResult: {
         type: Sequelize.INTEGER
       },
+      apiURL: {
+        type: Sequelize.TEXT
+      },
       createdAt: {
         allowNull: false,
         type: Sequelize.DATE

@@ -13,6 +13,10 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
   return await searchHistoryController.getById(req, res);
 });
 
+router.get('/generateTitle', passport.authenticate('user', { session: false }), async (req, res) => {
+  return await searchHistoryController.generateTitle(req, res);
+});
+
 router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
   return await searchHistoryController.create(req, res);
 });

@@ -4,7 +4,8 @@ module.exports = (sequelize, DataTypes) => {
     {
       userId: DataTypes.INTEGER,
       title: DataTypes.STRING,
-      countResult: DataTypes.INTEGER
+      countResult: DataTypes.INTEGER,
+      apiURL: DataTypes.TEXT
     },
     { timestamps: true, paranoid: true }
   );
