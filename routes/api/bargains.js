@@ -574,7 +574,9 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
 
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
-  const whereBargain = {};
+  const whereBargain = {
+    bidType: 1
+  };
 
   if (negotiationType == 0) {
     Object.assign(whereBargain, {
@@ -942,7 +944,8 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   const whereBargain = {
     userId: {
       [Op.eq]: id
-    }
+    },
+    bidType: 1
   };
 
   if (negotiationType == 0) {
