@@ -54,28 +54,11 @@ async function get(req, res) {
 
       await Promise.all(
         data.map(async item => {
-          const newParams = {};
-          item.params.map(param => {
-            Object.assign(newParams, {
-              [param.key]: param.value
-            });
-          });
 
+          const newParams = generateParams(item.params);
           item.dataValues.params = newParams;
-          const serialize = obj => {
-            const str = [];
-            for (const p in obj) {
-              if (obj.hasOwnProperty(p)) {
-                str.push(`${encodeURIComponent(p)}=${encodeURIComponent(obj[p])}`);
-              }
-            }
-
-            return str.join('&');
-          };
-
-          const url = `/api/modelYears/listingAllNew?${serialize(newParams)}`;
           const client = supertest(req.app);
-          const resultAPI = await client.get(url);
+          const resultAPI = await client.get(item.apiURL);
 
           if (resultAPI.body && resultAPI.body.pagination) {
             item.countResult = resultAPI.body.pagination.count;
@@ -134,28 +117,11 @@ async function getById(req, res) {
     ]
   })
     .then(async data => {
-      const newParams = {};
-      data.params.map(param => {
-        Object.assign(newParams, {
-          [param.key]: param.value
-        });
-      });
 
+      const newParams = generateParams(data.params);
       data.dataValues.params = newParams;
-      const serialize = obj => {
-        const str = [];
-        for (const p in obj) {
-          if (obj.hasOwnProperty(p)) {
-            str.push(`${encodeURIComponent(p)}=${encodeURIComponent(obj[p])}`);
-          }
-        }
-
-        return str.join('&');
-      };
-
-      const url = `/api/modelYears/listingAllNew?${serialize(newParams)}`;
       const client = supertest(req.app);
-      const resultAPI = await client.get(url);
+      const resultAPI = await client.get(data.apiURL);
 
       if (resultAPI.body && resultAPI.body.pagination) {
         data.countResult = resultAPI.body.pagination.count;
@@ -187,6 +153,18 @@ async function getById(req, res) {
         errors: err.message
       });
     });
+}
+
+async function generateTitle(req, res) {
+  const params = req.query;
+  const title = await generateNextTitle(params, res);
+  
+  return res.json({
+    success: true,
+    data: {
+      title 
+    }
+  });
 }
 
 async function create(req, res) {
@@ -228,74 +206,20 @@ async function create(req, res) {
   }
 
   if (!title) {
-    let customTitle = [];
-
-    if (brandId) {
-      const brand = await models.Brand.findByPk(brandId);
-      if (!brand) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Brand from apiURL not found'
-        });
-      }
-
-      customTitle.push(brand.name);
-    }
-
-    if (groupModelId) {
-      const groupModel = await models.GroupModel.findByPk(groupModelId);
-      if (!groupModel) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Group Model from apiURL not found'
-        });
-      }
-
-      customTitle.push(groupModel.name);
-    }
-
-    if (modelId) {
-      const model = await models.Model.findByPk(modelId);
-      if (!model) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Group Model from apiURL not found'
-        });
-      }
-
-      customTitle.push(model.name);
-    }
-
-    if (modelYearId) {
-      const modelYear = await models.ModelYear.findByPk(modelYearId);
-      if (!modelYear) {
-        return res.status(400).json({
-          success: false,
-          errors: 'data Model Year from apiURL not found'
-        });
-      }
-
-      customTitle.push(modelYear.year);
-    }
-
-    customTitle = customTitle.join(' - ');
+    const params = req.body;
+    title = await generateNextTitle(params, res);
+  } else {
     const checkTitle = await models.SearchHistory.findOne({
       where: {
-        title: `${customTitle} 1`
+        title
       }
     });
 
-    if (checkTitle) {
-      const getLastTitle = await models.SearchHistory.findOne({
-        where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`),
-        order: [['title', 'desc']]
+    if(checkTitle) {
+      return res.status(400).json({
+        success: false,
+        errors: 'title must be unique'
       });
-
-      if (parseInt(getLastTitle.title.slice(-1)) > 0) {
-        title = `${customTitle} ${parseInt(getLastTitle.title.slice(-1)) + 1}`;
-      }
-    } else {
-      title = `${customTitle} 1`;
     }
   }
 
@@ -402,12 +326,36 @@ async function create(req, res) {
     }
   ];
 
+  const newParams = generateParams(params);
+  const apiURL = generateUrl(newParams);
+
+  if(!apiURL) {
+    return res.status(400).json({
+      success: false,
+      errors: "something went wrong, backend can't generate apiURL, please try again later"
+    });
+  } else {
+    const checkApiURL = await models.SearchHistory.findOne({
+      where: {
+        apiURL
+      }
+    });
+
+    if(checkApiURL) {
+      return res.status(400).json({
+        success: false,
+        errors: 'search history already exists'
+      });
+    } 
+  }
+
   const trans = await models.sequelize.transaction();
   const searchHistory = await models.SearchHistory.create(
     {
       userId: req.user.id,
       title,
-      countResult
+      countResult,
+      apiURL
     },
     {
       transaction: trans
@@ -508,6 +456,22 @@ async function edit(req, res) {
 
   if (!title) {
     title = data.title;
+  } else {
+    const checkTitle = await models.SearchHistory.findOne({
+      where: {
+        title,
+        id: {
+          [Op.ne]: idHistory
+        }
+      }
+    });
+
+    if(checkTitle) {
+      return res.status(400).json({
+        success: false,
+        errors: 'title must be unique'
+      });
+    }
   }
 
   if (!countResult) {
@@ -516,112 +480,139 @@ async function edit(req, res) {
 
   dataParams.map(item => {
     if (item.key == 'limit') {
-      item.value = limit || item.value;
+      item.value = (typeof limit !== 'undefined') ? limit : item.value;
     }
 
     if (item.key == 'page') {
-      item.value = page || item.value;
+      item.value = (typeof page !== 'undefined') ? page : item.value;
     }
 
     if (item.key == 'by') {
-      item.value = by || item.value;
+      item.value = (typeof by !== 'undefined') ? by : item.value;
     }
 
     if (item.key == 'sort') {
-      item.value = sort || item.value;
+      item.value = (typeof sort !== 'undefined') ? sort : item.value;
     }
 
     if (item.key == 'modelYearId') {
-      item.value = modelYearId || item.value;
+      item.value = (typeof modelYearId !== 'undefined') ? modelYearId : item.value;
     }
 
     if (item.key == 'condition') {
-      item.value = condition || item.value;
+      item.value = (typeof condition !== 'undefined') ? condition : item.value;
     }
 
     if (item.key == 'brandId') {
-      item.value = brandId || item.value;
+      item.value = (typeof brandId !== 'undefined') ? brandId : item.value;
     }
 
     if (item.key == 'groupModelId') {
-      item.value = groupModelId || item.value;
+      item.value = (typeof groupModelId !== 'undefined') ? groupModelId : item.value;
     }
 
     if (item.key == 'modelId') {
-      item.value = modelId || item.value;
+      item.value = (typeof modelId !== 'undefined') ? modelId : item.value;
     }
 
     if (item.key == 'minPrice') {
-      item.value = minPrice || item.value;
+      item.value = (typeof minPrice !== 'undefined') ? minPrice : item.value;
     }
 
     if (item.key == 'maxPrice') {
-      item.value = maxPrice || item.value;
+      item.value = (typeof maxPrice !== 'undefined') ? maxPrice : item.value;
     }
 
     if (item.key == 'minYear') {
-      item.value = minYear || item.value;
+      item.value = (typeof minYear !== 'undefined') ? minYear : item.value;
     }
 
     if (item.key == 'maxYear') {
-      item.value = maxYear || item.value;
+      item.value = (typeof maxYear !== 'undefined') ? maxYear : item.value;
     }
 
     if (item.key == 'radius') {
-      item.value = radius ? radius[0] : item.value;
+      item.value = (radius && typeof radius[0] !== 'undefined') ? radius[0] : item.value;
     }
 
     if (item.key == 'radius') {
-      item.value = radius ? radius[1] : item.value;
+      item.value = (radius && typeof radius[1] !== 'undefined') ? radius[1] : item.value;
     }
 
     if (item.key == 'latitude') {
-      item.value = latitude || item.value;
+      item.value = (typeof latitude !== 'undefined') ? latitude : item.value;
     }
 
     if (item.key == 'longitude') {
-      item.value = longitude || item.value;
+      item.value = (typeof longitude !== 'undefined') ? longitude : item.value;
     }
 
     if (item.key == 'minKm') {
-      item.value = minKm || item.value;
+      item.value = (typeof minKm !== 'undefined') ? minKm : item.value;
     }
 
     if (item.key == 'maxKm') {
-      item.value = maxKm || item.value;
+      item.value = (typeof maxKm !== 'undefined') ? maxKm : item.value;
     }
 
     if (item.key == 'subdistrictId') {
-      item.value = subdistrictId || item.value;
+      item.value = (typeof subdistrictId !== 'undefined') ? subdistrictId : item.value;
     }
 
     if (item.key == 'cityId') {
-      item.value = cityId || item.value;
+      item.value = (typeof cityId !== 'undefined') ? cityId : item.value;
     }
 
     if (item.key == 'typeId') {
-      item.value = typeId || item.value;
+      item.value = (typeof typeId !== 'undefined') ? typeId : item.value;
     }
 
     if (item.key == 'id') {
-      item.value = id || item.value;
+      item.value = (typeof id !== 'undefined') ? id : item.value;
     }
 
     if (item.key == 'exteriorColorId') {
-      item.value = exteriorColorId || item.value;
+      item.value = (typeof exteriorColorId !== 'undefined') ? exteriorColorId : item.value;
     }
 
     if (item.key == 'interiorColorId') {
-      item.value = interiorColorId || item.value;
+      item.value = (typeof interiorColorId !== 'undefined') ? interiorColorId : item.value;
     }
   });
+
+  const newParams = generateParams(dataParams);
+  const apiURL = generateUrl(newParams);
+
+  if(!apiURL) {
+    return res.status(400).json({
+      success: false,
+      errors: "something went wrong, backend can't generate apiURL, please try again later"
+    });
+  } else {
+    const checkApiURL = await models.SearchHistory.findOne({
+      where: {
+        apiURL,
+        id: {
+          [Op.ne]: idHistory
+        }
+      }
+    });
+
+    if(checkApiURL) {
+      return res.status(400).json({
+        success: false,
+        errors: 'search history already exists'
+      });
+    } 
+  }
 
   const trans = await models.sequelize.transaction();
   data
     .update(
       {
         title,
-        countResult
+        countResult,
+        apiURL
       },
       { transaction: trans }
     )
@@ -716,9 +707,115 @@ async function destroy(req, res) {
   });
 }
 
+
+
+// Helper Functions
+async function generateNextTitle(params, res) {
+  let customTitle = [];
+  let title = '';
+
+  if (params.brandId) {
+    const brand = await models.Brand.findByPk(params.brandId);
+    if (!brand) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Brand Body/Query not found'
+      });
+    }
+
+    customTitle.push(brand.name);
+  }
+
+  if (params.groupModelId) {
+    const groupModel = await models.GroupModel.findByPk(params.groupModelId);
+    if (!groupModel) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Group Model Body/Query not found'
+      });
+    }
+
+    customTitle.push(groupModel.name);
+  }
+
+  if (params.modelId) {
+    const model = await models.Model.findByPk(params.modelId);
+    if (!model) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Group Model Body/Query not found'
+      });
+    }
+
+    customTitle.push(model.name);
+  }
+
+  if (params.modelYearId) {
+    const modelYear = await models.ModelYear.findByPk(params.modelYearId);
+    if (!modelYear) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Model Year Body/Query not found'
+      });
+    }
+
+    customTitle.push(modelYear.year);
+  }
+
+  customTitle = customTitle.join(' - ');
+  const checkTitle = await models.SearchHistory.findOne({
+    where: {
+      title: `${customTitle} 1`
+    }
+  });
+
+  if (checkTitle) {
+    const getLastTitle = await models.SearchHistory.findOne({
+      where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`),
+      order: [['title', 'desc']]
+    });
+
+    if (parseInt(getLastTitle.title.slice(-1)) > 0) {
+      title = `${customTitle} ${parseInt(getLastTitle.title.slice(-1)) + 1}`;
+    }
+  } else {
+    title = `${customTitle} 1`;
+  }
+
+  return title;
+}
+
+function generateUrl(params) {
+  const serialize = obj => {
+    const str = [];
+    for (const p in obj) {
+      if (obj.hasOwnProperty(p)) {
+        str.push(`${encodeURIComponent(p)}=${encodeURIComponent(obj[p])}`);
+      }
+    }
+
+    return str.join('&');
+  };
+
+  return `/api/modelYears/listingAllNew?${serialize(params)}`;
+}
+
+function generateParams(params) {
+  const newParams = {};
+  params.map(param => {
+    Object.assign(newParams, {
+      [param.key]: param.value
+    });
+  });
+
+  const sortObject = obj => Object.keys(obj).sort().reduce((r, k) => (r[k] = obj[k], r), {});
+  return sortObject(newParams);
+}
+
 module.exports = {
   get,
   getById,
+  generateTitle,
   create,
   edit,
   destroy
