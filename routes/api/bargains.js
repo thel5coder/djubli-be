@@ -942,9 +942,9 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
   const whereBargain = {
-    userId: {
-      [Op.eq]: id
-    },
+    // userId: {
+    //   [Op.eq]: id
+    // },
     bidType: 1
   };
 
