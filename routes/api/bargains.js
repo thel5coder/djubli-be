@@ -966,7 +966,11 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
     });
   }
 
-  const where = {};
+  const where = {
+    userId: {
+      [Op.ne]: id
+    }
+  };
   if (modelYearId) {
     Object.assign(where, {
       modelYearId: {
