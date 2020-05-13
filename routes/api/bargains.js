@@ -823,7 +823,7 @@ router.get('/sell/nego', passport.authenticate('user', { session: false }), asyn
         as: 'room',
         include: [
           {
-            required: false,
+            required: true,
             model: models.RoomMember,
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
