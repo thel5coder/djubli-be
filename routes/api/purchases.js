@@ -59,11 +59,17 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
   const order = [];
   switch (by) {
     case 'km':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
     case 'price':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
     case 'condition':
-      order.push([{ model: models.Car, as: 'car' }, by, sort]);
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
       break;
     case 'view':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
     case 'like':
       order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
       break;
