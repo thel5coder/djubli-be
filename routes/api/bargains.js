@@ -1162,6 +1162,7 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
       {
         model: models.Bargain,
         as: 'bargain',
+        required: false,
         where: whereBargain,
         attributes: {
           exclude: ['updatedAt', 'deletedAt']
@@ -1181,6 +1182,44 @@ router.get('/buy/nego', passport.authenticate('user', { session: false }), async
                 attributes: {
                   exclude: ['createdAt', 'updatedAt', 'deletedAt']
                 }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        model: models.Room,
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        as: 'room',
+        include: [
+          {
+            required: true,
+            model: models.RoomMember,
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            as: 'members',
+            where: {
+              userId: id
+            },
+            include: [
+              {
+                model: models.User,
+                attributes: {
+                  exclude: ['password', 'deletedAt']
+                },
+                as: 'member',
+                include: [
+                  {
+                    model: models.File,
+                    as: 'file',
+                    attributes: {
+                      exclude: ['type', 'createdAt', 'updatedAt', 'deletedAt']
+                    }
+                  }
+                ]
               }
             ]
           }
