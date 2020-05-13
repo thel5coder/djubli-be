@@ -2660,7 +2660,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
 
 router.put('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
-  const { price, location, km, meetingSchedules, address, cityId, subsistrictId } = req.body;
+  const { price, location, km, meetingSchedules, address, cityId, subdistrictId } = req.body;
   const { images } = req.files;
   const update = {};
 
@@ -2739,16 +2739,16 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
     Object.assign(update, { cityId });
   }
-  if (subsistrictId) {
+  if (subdistrictId) {
     const subDistrictExist = await models.SubDistrict.findOne({
       where: {
-        id: subsistrictId,
+        id: subdistrictId,
         cityId
       }
     });
     if (!subDistrictExist)
       return res.status(404).json({ success: false, errors: 'sub district not found' });
-    Object.assign(update, { subsistrictId });
+    Object.assign(update, { subdistrictId });
   }
 
   const carExists = await models.Car.findByPk(id);
