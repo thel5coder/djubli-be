@@ -388,16 +388,14 @@ async function getByModelYearId(req, res, params) {
     });
 }
 
-router.get('/models/years/:modelYearId', async (req, res) => {
-  return getByModelYearId(req, res, { auth: false });
-});
+router.get('/models/years/:modelYearId', async (req, res) =>
+  getByModelYearId(req, res, { auth: false })
+);
 
 router.get(
   '/logon/models/years/:modelYearId',
   passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    return getByModelYearId(req, res, { auth: true });
-  }
+  async (req, res) => getByModelYearId(req, res, { auth: true })
 );
 
 router.get('/id/:id', passport.authenticate('user', { session: false }), async (req, res) => {
@@ -442,11 +440,33 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
 });
 
 router.post('/', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { carId, paymentMethod, haveSeenCar } = req.body;
+  const { carId, paymentMethod, haveSeenCar, bargainId } = req.body;
+
+  if(!carId) {
+    return res.status(404).json({
+      success: false,
+      errors: 'carId is mandatory'
+    });
+  }
+
+  if(!paymentMethod) {
+    return res.status(404).json({
+      success: false,
+      errors: 'payment method is mandatory'
+    });
+  }
+
+  if(!bargainId) {
+    return res.status(404).json({
+      success: false,
+      errors: 'bargainId is mandatory'
+    });
+  }
 
   const carData = await models.Car.findOne({
     where: { id: carId }
   });
+
   if (!carData) {
     return res.status(404).json({
       success: false,
@@ -459,6 +479,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     plain: false,
     where: { carId: carData.id }
   });
+
   likers.map(async liker => {
     userNotifs.push({
       userId: liker.DISTINCT,
@@ -476,22 +497,26 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   // return res.status(200).json({ success: true, data: userNotifs });
 
   const trans = await models.sequelize.transaction();
-  await carData
-    .update(
-      {
-        status: 2
-      },
-      {
-        transaction: trans
-      }
-    )
-    .catch(err => {
-      trans.rollback();
-      res.status(422).json({
-        success: false,
-        errors: err.message
-      });
+  await carData.update({ status: 2 }, { transaction: trans }).catch(err => {
+    trans.rollback();
+    res.status(422).json({
+      success: false,
+      errors: err.message
     });
+  });
+
+  await models.Bargain.destroy({
+    where: {
+      id: bargainId
+    },
+    transaction: trans
+  }).catch(err => {
+    trans.rollback();
+    res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
 
   return models.Purchase.create(
     {
@@ -501,9 +526,7 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       paymentMethod,
       haveSeenCar
     },
-    {
-      transaction: trans
-    }
+    { transaction: trans }
   )
     .then(async data => {
       trans.commit();
