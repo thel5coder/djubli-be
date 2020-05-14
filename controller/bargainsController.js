@@ -44,13 +44,13 @@ async function getSellNego(req, res) {
     bidType: 1
   };
 
-  if (negotiationType == 0) {
+  if (negotiationType == '0') {
     Object.assign(whereBargain, {
       negotiationType: {
         [Op.eq]: negotiationType
       }
     });
-  } else if (negotiationType == 1) {
+  } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       [Op.or]: [
         { negotiationType: 1 },
@@ -429,12 +429,12 @@ async function getBuyNego(req, res) {
     bidType: 1
   };
 
-  if (negotiationType == 0) {
+  if (negotiationType == '0') {
     Object.assign(whereBargain, {
       [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
     });
     order.push([{ model: models.Bargain, as: 'bargain' }, 'id', 'desc']);
-  } else if (negotiationType == 1) {
+  } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       [Op.or]: [
         { negotiationType: 1 },
