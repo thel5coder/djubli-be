@@ -547,11 +547,13 @@ async function checkData(req, res) {
     } 
   }
 
+  const title = await generateNextTitle(params, res);
   return res.json({
     success: true,
     data: {
       message: 'Search data valid',
-      type: 1
+      type: 1,
+      title
     }
   });
 }
