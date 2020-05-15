@@ -456,13 +456,6 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
 
-  if(!bargainId) {
-    return res.status(404).json({
-      success: false,
-      errors: 'bargainId is mandatory'
-    });
-  }
-
   const carData = await models.Car.findOne({
     where: { id: carId }
   });
@@ -505,18 +498,20 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   });
 
-  await models.Bargain.destroy({
-    where: {
-      id: bargainId
-    },
-    transaction: trans
-  }).catch(err => {
-    trans.rollback();
-    res.status(422).json({
-      success: false,
-      errors: err.message
+  if(bargainId) {
+    await models.Bargain.destroy({
+      where: {
+        id: bargainId
+      },
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
     });
-  });
+  }
 
   return models.Purchase.create(
     {
