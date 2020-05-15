@@ -21,6 +21,10 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
   return await searchHistoryController.create(req, res);
 });
 
+router.post('/checkData', passport.authenticate('user', { session: false }), async (req, res) => {
+  return await searchHistoryController.checkData(req, res);
+});
+
 router.put('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   return await searchHistoryController.edit(req, res);
 });

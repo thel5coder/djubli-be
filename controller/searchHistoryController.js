@@ -389,6 +389,171 @@ async function create(req, res) {
   });
 }
 
+async function checkData(req, res) {
+  const {
+    limit,
+    page,
+    by,
+    sort,
+    modelYearId,
+    condition,
+    brandId,
+    groupModelId,
+    modelId,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    radius,
+    latitude,
+    longitude,
+    minKm,
+    maxKm,
+    subdistrictId,
+    cityId,
+    typeId,
+    id,
+    exteriorColorId,
+    interiorColorId
+  } = req.body;
+
+  const params = [
+    {
+      key: 'limit',
+      value: limit || ''
+    },
+    {
+      key: 'page',
+      value: page || ''
+    },
+    {
+      key: 'by',
+      value: by || ''
+    },
+    {
+      key: 'sort',
+      value: sort || ''
+    },
+    {
+      key: 'modelYearId',
+      value: modelYearId || ''
+    },
+    {
+      key: 'condition',
+      value: condition || ''
+    },
+    {
+      key: 'brandId',
+      value: brandId || ''
+    },
+    {
+      key: 'groupModelId',
+      value: groupModelId || ''
+    },
+    {
+      key: 'modelId',
+      value: modelId || ''
+    },
+    {
+      key: 'minPrice',
+      value: minPrice || ''
+    },
+    {
+      key: 'maxPrice',
+      value: maxPrice || ''
+    },
+    {
+      key: 'minYear',
+      value: minYear || ''
+    },
+    {
+      key: 'maxYear',
+      value: maxYear || ''
+    },
+    {
+      key: 'radius[0]',
+      value: radius && Array.isArray(radius) && radius[0] ? radius[0] : ''
+    },
+    {
+      key: 'radius[1]',
+      value: radius && Array.isArray(radius) && radius[1] ? radius[1] : ''
+    },
+    {
+      key: 'latitude',
+      value: latitude || ''
+    },
+    {
+      key: 'longitude',
+      value: longitude || ''
+    },
+    {
+      key: 'minKm',
+      value: minKm || ''
+    },
+    {
+      key: 'maxKm',
+      value: maxKm || ''
+    },
+    {
+      key: 'subdistrictId',
+      value: subdistrictId || ''
+    },
+    {
+      key: 'cityId',
+      value: cityId || ''
+    },
+    {
+      key: 'typeId',
+      value: typeId || ''
+    },
+    {
+      key: 'id',
+      value: id || ''
+    },
+    {
+      key: 'exteriorColorId',
+      value: exteriorColorId || ''
+    },
+    {
+      key: 'interiorColorId',
+      value: interiorColorId || ''
+    }
+  ];
+
+  const newParams = generateParams(params);
+  const apiURL = generateUrl(newParams);
+
+  if(!apiURL) {
+    return res.status(400).json({
+      success: false,
+      errors: "something went wrong, backend can't generate apiURL, please try again later"
+    });
+  } else {
+    const checkApiURL = await models.SearchHistory.findOne({
+      where: {
+        apiURL
+      }
+    });
+
+    if(checkApiURL) {
+      return res.json({
+        success: true,
+        data: {
+          message: 'Search data alredy exist',
+          similiarData: checkApiURL
+        }
+      });
+    } 
+  }
+
+  return res.json({
+    success: true,
+    data: {
+      message: 'Search data valid'
+    }
+  });
+}
+
 async function edit(req, res) {
   let { title, countResult } = req.body;
   const { id: idHistory } = req.params;
@@ -817,6 +982,7 @@ module.exports = {
   getById,
   generateTitle,
   create,
+  checkData,
   edit,
   destroy
 };
