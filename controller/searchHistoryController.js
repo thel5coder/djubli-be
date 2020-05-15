@@ -538,9 +538,9 @@ async function checkData(req, res) {
     if(checkApiURL) {
       return res.json({
         success: true,
-        type: 0,
         data: {
           message: 'Search data alredy exist',
+          type: 0,
           similiarData: checkApiURL
         }
       });
@@ -549,9 +549,9 @@ async function checkData(req, res) {
 
   return res.json({
     success: true,
-    type: 1,
     data: {
-      message: 'Search data valid'
+      message: 'Search data valid',
+      type: 1
     }
   });
 }
