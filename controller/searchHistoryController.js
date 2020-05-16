@@ -547,7 +547,7 @@ async function checkData(req, res) {
     } 
   }
 
-  const title = await generateNextTitle(params, res);
+  const title = await generateNextTitle(newParams, res);
   return res.json({
     success: true,
     data: {
@@ -813,6 +813,7 @@ async function edit(req, res) {
     })
   );
 
+  data.countResult = parseInt(data.countResult);
   trans.commit();
   return res.json({
     success: true,
