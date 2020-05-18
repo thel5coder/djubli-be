@@ -890,7 +890,7 @@ async function generateNextTitle(params, res) {
     if (!brand) {
       return res.status(400).json({
         success: false,
-        errors: 'data Brand Body/Query not found'
+        errors: 'data Brand from Body/Query not found'
       });
     }
 
@@ -902,7 +902,7 @@ async function generateNextTitle(params, res) {
     if (!groupModel) {
       return res.status(400).json({
         success: false,
-        errors: 'data Group Model Body/Query not found'
+        errors: 'data Group Model from Body/Query not found'
       });
     }
 
@@ -914,7 +914,7 @@ async function generateNextTitle(params, res) {
     if (!model) {
       return res.status(400).json({
         success: false,
-        errors: 'data Group Model Body/Query not found'
+        errors: 'data Group Model from Body/Query not found'
       });
     }
 
@@ -926,11 +926,119 @@ async function generateNextTitle(params, res) {
     if (!modelYear) {
       return res.status(400).json({
         success: false,
-        errors: 'data Model Year Body/Query not found'
+        errors: 'data Model Year from Body/Query not found'
       });
     }
 
     customTitle.push(modelYear.year);
+  }
+
+  if (params.limit) {
+    customTitle.push(`Limit ${params.limit}`);
+  }
+
+  if (params.page) {
+    customTitle.push(`Page ${params.page}`);
+  }
+
+  if (params.by) {
+    customTitle.push(`Order By ${params.by}`);
+  }
+
+  if (params.sort) {
+    customTitle.push(`Sorting ${params.sort}`);
+  }
+
+  if (params.condition) {
+    customTitle.push(`Car Condition ${params.condition}`);
+  }
+
+  if (params.minPrice && params.maxPrice) {
+    customTitle.push(`Price ${params.minPrice}-${params.maxPrice}`);
+  }
+
+  if (params.minYear && params.maxYear) {
+    customTitle.push(`Year ${params.minYear}-${params.maxYear}`);
+  }
+
+  if (params['radius[0]'] && params['radius[1]']) {
+    customTitle.push(`Radius ${params['radius[0]']}-${params['radius[1]']}`);
+  }
+
+  if (params.latitude && params.longitude) {
+    customTitle.push(`Latitude ${params.latitude} & Longitude ${params.longitude}`);
+  }
+
+  if (params.minKm && params.maxKm) {
+    customTitle.push(`KM ${params.minKm}-${params.maxKm}`);
+  }
+
+  if (params.subdistrictId) {
+    const subdistrict = await models.SubDistrict.findByPk(params.subdistrictId);
+    if (!subdistrict) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Subdistrict from Body/Query not found'
+      });
+    }
+
+    const capitalizeWord = (string) => {
+      return string.charAt(0).toUpperCase() + string.slice(1);
+    }
+
+    customTitle.push(`Subdistrict ${capitalizeWord((subdistrict.name).toLowerCase())}`);
+  }
+
+  if (params.cityId) {
+    const city = await models.City.findByPk(params.cityId);
+    if (!city) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data City from Body/Query not found'
+      });
+    }
+
+    customTitle.push(`City ${city.name}`);
+  }
+
+  if (params.typeId) {
+    const type = await models.Type.findByPk(params.typeId);
+    if (!type) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Type from Body/Query not found'
+      });
+    }
+    
+    customTitle.push(`Type ${type.name}`);
+  }
+
+  if (params.id) {
+    customTitle.push(`Id ${params.id}`);
+  }
+
+  if (params.exteriorColorId) {
+    const exteriorColor = await models.Color.findByPk(params.exteriorColorId);
+    if (!exteriorColor) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Exterior Color from Body/Query not found'
+      });
+    }
+    
+    customTitle.push(`Exterior Color ${exteriorColor.name}`);
+  }
+
+  if (params.interiorColorId) {
+    const interiorColor = await models.Color.findByPk(params.interiorColorId);
+    if (!interiorColor) {
+      return res.status(400).json({
+        success: false,
+        errors: 'data Interior Color from Body/Query not found'
+      });
+    }
+    
+    customTitle.push(`Interior Color ${interiorColor.name}`);
   }
 
   customTitle = customTitle.join(' - ');
