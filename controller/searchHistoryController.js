@@ -22,7 +22,7 @@ async function get(req, res) {
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  if (by === 'id' || by === 'userId' || by === 'createdAt') order = [[by, sort]];
+  if (by === 'id' || by === 'userId' || by === 'createdAt' || by === 'title') order = [[by, sort]];
 
   const where = {
     userId: req.user.id
@@ -531,7 +531,8 @@ async function checkData(req, res) {
   } else {
     const checkApiURL = await models.SearchHistory.findOne({
       where: {
-        apiURL
+        apiURL,
+        userId: req.user.id
       }
     });
 
