@@ -3,7 +3,7 @@ module.exports = (sequelize, DataTypes) => {
     'SearchHistory',
     {
       userId: DataTypes.INTEGER,
-      title: DataTypes.STRING,
+      title: DataTypes.TEXT,
       countResult: DataTypes.INTEGER,
       apiURL: DataTypes.TEXT
     },
