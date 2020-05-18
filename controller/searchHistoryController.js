@@ -933,21 +933,21 @@ async function generateNextTitle(params, res) {
     customTitle.push(modelYear.year);
   }
 
-  if (params.limit) {
-    customTitle.push(`Limit ${params.limit}`);
-  }
+  // if (params.limit) {
+  //   customTitle.push(`Limit ${params.limit}`);
+  // }
 
-  if (params.page) {
-    customTitle.push(`Page ${params.page}`);
-  }
+  // if (params.page) {
+  //   customTitle.push(`Page ${params.page}`);
+  // }
 
-  if (params.by) {
-    customTitle.push(`Order By ${params.by}`);
-  }
+  // if (params.by) {
+  //   customTitle.push(`Order By ${params.by}`);
+  // }
 
-  if (params.sort) {
-    customTitle.push(`Sorting ${params.sort}`);
-  }
+  // if (params.sort) {
+  //   customTitle.push(`Sorting ${params.sort}`);
+  // }
 
   if (params.condition) {
     customTitle.push(`Car Condition ${params.condition}`);
@@ -1042,6 +1042,10 @@ async function generateNextTitle(params, res) {
   }
 
   customTitle = customTitle.join(' - ');
+  if(!customTitle) {
+    customTitle = 'Search All'
+  }
+
   const checkTitle = await models.SearchHistory.findOne({
     where: {
       title: `${customTitle} 1`
