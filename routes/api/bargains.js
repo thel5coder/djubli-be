@@ -113,6 +113,21 @@ router.get('/', async (req, res) => {
   }
 
   return models.Bargain.findAll({
+    attributes: {
+      include: [
+        [
+          models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
+            FROM "Bargains" b 
+            WHERE "b"."carId" = "Bargain"."carId" 
+              AND "b"."userId" = "Bargain"."userId"
+              AND "b"."bidType" = 1
+              AND "b"."expiredAt" >= (SELECT NOW())
+              AND "b"."deletedAt" IS NULL))`
+          ), 
+          'isNego'
+        ]
+      ]
+    },
     include: [
       {
         model: models.User,
@@ -207,13 +222,49 @@ router.get('/', async (req, res) => {
     limit
   })
     .then(async data => {
-      const count = await models.Bargain.count({ where });
+      const findAndCount = await models.Bargain.findAndCountAll({ 
+        attributes: {
+          include: [
+            [
+              models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
+                FROM "Bargains" b 
+                WHERE "b"."carId" = "Bargain"."carId" 
+                  AND "b"."userId" = "Bargain"."userId"
+                  AND "b"."bidType" = 1
+                  AND "b"."expiredAt" >= (SELECT NOW())
+                  AND "b"."deletedAt" IS NULL))`
+              ), 
+              'isNego'
+            ]
+          ]
+        },
+        include: [
+          {
+            model: models.User,
+            as: 'user',
+            where: whereUser
+          }
+        ],
+        where
+      });
+
+      let isNego = false;
+      findAndCount.rows.map(item => {
+        if(item.dataValues.isNego) {
+          isNego = true;
+        }
+      });
+
+      const count = findAndCount.count;
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
         success: true,
         pagination,
-        data
+        data: {
+          isNego,
+          data
+        }
       });
     })
     .catch(err => {
@@ -275,7 +326,8 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
         roomId: carExists.roomId,
         expiredAt: {
           [Op.gte]: models.sequelize.literal('(SELECT NOW())')
-        }
+        },
+        bidType: 1
       }
     });
 
