@@ -966,9 +966,9 @@ async function generateNextTitle(params, req, res) {
     customTitle.push(`Year ${params.minYear}-${params.maxYear}`);
   }
 
-  // if (params['radius[0]'] && params['radius[1]']) {
-  //   customTitle.push(`Radius ${params['radius[0]']}-${params['radius[1]']}`);
-  // }
+  if (params["radius[0]"] && params["radius[1]"]) {
+    customTitle.push(`Radius ${params["radius[0]"]}-${params["radius[1]"]}`);
+  }
 
   if (params.latitude && params.longitude) {
     customTitle.push(`Latitude ${params.latitude} & Longitude ${params.longitude}`);
