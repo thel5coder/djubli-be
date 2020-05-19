@@ -157,7 +157,7 @@ async function getById(req, res) {
 
 async function generateTitle(req, res) {
   const params = req.query;
-  const title = await generateNextTitle(params, res);
+  const title = await generateNextTitle(params, req, res);
   
   return res.json({
     success: true,
@@ -207,11 +207,12 @@ async function create(req, res) {
 
   if (!title) {
     const params = req.body;
-    title = await generateNextTitle(params, res);
+    title = await generateNextTitle(params, req, res);
   } else {
     const checkTitle = await models.SearchHistory.findOne({
       where: {
-        title
+        title,
+        userId: req.user.id
       }
     });
 
@@ -337,7 +338,8 @@ async function create(req, res) {
   } else {
     const checkApiURL = await models.SearchHistory.findOne({
       where: {
-        apiURL
+        apiURL,
+        userId: req.user.id
       }
     });
 
@@ -548,7 +550,7 @@ async function checkData(req, res) {
     } 
   }
 
-  const title = await generateNextTitle(newParams, res);
+  const title = await generateNextTitle(newParams, req, res);
   return res.json({
     success: true,
     data: {
@@ -632,7 +634,8 @@ async function edit(req, res) {
         title,
         id: {
           [Op.ne]: idHistory
-        }
+        },
+        userId: req.user.id
       }
     });
 
@@ -764,7 +767,8 @@ async function edit(req, res) {
         apiURL,
         id: {
           [Op.ne]: idHistory
-        }
+        },
+        userId: req.user.id
       }
     });
 
@@ -881,7 +885,7 @@ async function destroy(req, res) {
 
 
 // Helper Functions
-async function generateNextTitle(params, res) {
+async function generateNextTitle(params, req, res) {
   let customTitle = [];
   let title = '';
 
@@ -1048,13 +1052,15 @@ async function generateNextTitle(params, res) {
 
   const checkTitle = await models.SearchHistory.findOne({
     where: {
-      title: `${customTitle} 1`
+      title: `${customTitle} 1`,
+      userId: req.user.id
     }
   });
 
   if (checkTitle) {
     const getLastTitle = await models.SearchHistory.findOne({
-      where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*'`),
+      where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*' 
+        AND SearchHistory"."userId" = ${req.user.id}`),
       order: [['title', 'desc']]
     });
 
