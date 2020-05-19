@@ -1060,7 +1060,7 @@ async function generateNextTitle(params, req, res) {
   if (checkTitle) {
     const getLastTitle = await models.SearchHistory.findOne({
       where: Sequelize.literal(`"SearchHistory"."title" SIMILAR TO '${customTitle} [0-9]*' 
-        AND SearchHistory"."userId" = ${req.user.id}`),
+        AND "SearchHistory"."userId" = ${req.user.id}`),
       order: [['title', 'desc']]
     });
 
