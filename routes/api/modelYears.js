@@ -990,13 +990,13 @@ router.get('/listingAllNew', async (req, res) => {
   if (exteriorColorId) {
     Object.assign(whereCar, { exteriorColorId });
     required = true;
-    whereQuery += ` AND ("Car"."exteriorColorId" >= ${exteriorColorId})`;
+    whereQuery += ` AND ("Car"."exteriorColorId" = ${exteriorColorId})`;
   }
 
   if (interiorColorId) {
     Object.assign(whereCar, { interiorColorId });
     required = true;
-    whereQuery += ` AND ("Car"."interiorColorId" >= ${interiorColorId})`;
+    whereQuery += ` AND ("Car"."interiorColorId" = ${interiorColorId})`;
   }
 
   const whereGroupModel = {};
@@ -1160,6 +1160,7 @@ router.get('/listingAllNew', async (req, res) => {
     fields: ['maxPriceModel', 'minPriceModel', 'maxKm', 'minKm', 'maxYear', 'minYear'],
     whereQuery
   });
+
   return models.Model.findAll({
     attributes: Object.keys(models.Model.attributes).concat(modelAttribute),
     include: [
