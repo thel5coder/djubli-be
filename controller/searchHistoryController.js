@@ -884,6 +884,7 @@ async function destroy(req, res) {
 
 
 
+
 // Helper Functions
 async function generateNextTitle(params, req, res) {
   let customTitle = [];
