@@ -966,7 +966,6 @@ async function generateNextTitle(params, req, res) {
     customTitle.push(`Year ${params.minYear}-${params.maxYear}`);
   }
 
-
   if (params["radius[0]"] && params["radius[1]"]) {
     customTitle.push(`Radius ${params["radius[0]"]}-${params["radius[1]"]}`);
   }
@@ -1054,7 +1053,7 @@ async function generateNextTitle(params, req, res) {
 
   const checkTitle = await models.SearchHistory.findOne({
     where: {
-      title: `${customTitle} 1`,
+      title: `${customTitle}`,
       userId: req.user.id
     }
   });
@@ -1066,11 +1065,13 @@ async function generateNextTitle(params, req, res) {
       order: [['title', 'desc']]
     });
 
-    if (parseInt(getLastTitle.title.slice(-1)) > 0) {
+    if (getLastTitle && parseInt(getLastTitle.title.slice(-1)) > 0) {
       title = `${customTitle} ${parseInt(getLastTitle.title.slice(-1)) + 1}`;
+    } else {
+      title = `${customTitle} 2`;
     }
   } else {
-    title = `${customTitle} 1`;
+    title = `${customTitle}`;
   }
 
   return title;
