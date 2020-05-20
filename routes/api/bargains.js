@@ -456,7 +456,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 
   if (validator.isInt(userId ? userId.toString() : '') === false)
     return res.status(406).json({ success: false, errors: 'type of userId must be int' });
-  if (validator.isInt(bidderId ? bidderId.toString() : '') === false)
+  if (bidderId && validator.isInt(bidderId ? bidderId.toString() : '') === false)
     return res.status(406).json({ success: false, errors: 'type of bidderId must be int' });
   if (validator.isInt(carId ? carId.toString() : '') === false)
     return res.status(406).json({ success: false, errors: 'type of carId must be int' });
