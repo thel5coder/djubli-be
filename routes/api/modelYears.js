@@ -738,6 +738,7 @@ router.get('/listingAllNew', async (req, res) => {
       break;
     case 'brand':
       order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}, "groupModel.name" ${sort}, "name" ${sort}`)]);
+      orderModelYear.push([Sequelize.literal(`"modelYears.year" ${sort}`)]);
       break;
     case 'km':
       order.push([
