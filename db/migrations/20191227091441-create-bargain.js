@@ -10,6 +10,9 @@ module.exports = {
       userId: {
         type: Sequelize.INTEGER
       },
+      bidderId: {
+        type: Sequelize.INTEGER
+      },
       carId: {
         type: Sequelize.INTEGER
       },
