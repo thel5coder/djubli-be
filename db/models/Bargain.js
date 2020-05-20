@@ -11,6 +11,7 @@ module.exports = (sequelize, DataTypes) => {
           key: 'userId'
         }
       },
+      bidderId: DataTypes.INTEGER,
       carId: DataTypes.INTEGER,
       bidAmount: DataTypes.NUMERIC,
       haveSeenCar: DataTypes.BOOLEAN,
@@ -28,6 +29,11 @@ module.exports = (sequelize, DataTypes) => {
     Bargain.belongsTo(models.User, {
       foreginKey: 'userId',
       as: 'user',
+      onDelete: 'CASCADE'
+    });
+    Bargain.belongsTo(models.User, {
+      foreginKey: 'bidderId',
+      as: 'bidder',
       onDelete: 'CASCADE'
     });
     Bargain.belongsTo(models.Car, {

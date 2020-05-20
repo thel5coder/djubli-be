@@ -119,7 +119,7 @@ router.get('/', async (req, res) => {
           models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
             FROM "Bargains" b 
             WHERE "b"."carId" = "Bargain"."carId" 
-              AND "b"."userId" = "Bargain"."userId"
+              AND "b"."bidderId" = "Bargain"."userId"
               AND "b"."bidType" = 1
               AND "b"."expiredAt" >= (SELECT NOW())
               AND "b"."deletedAt" IS NULL))`
@@ -229,7 +229,7 @@ router.get('/', async (req, res) => {
               models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
                 FROM "Bargains" b 
                 WHERE "b"."carId" = "Bargain"."carId" 
-                  AND "b"."userId" = "Bargain"."userId"
+                  AND "b"."userId" = "car"."userId"
                   AND "b"."bidType" = 1
                   AND "b"."expiredAt" >= (SELECT NOW())
                   AND "b"."deletedAt" IS NULL))`
@@ -243,6 +243,10 @@ router.get('/', async (req, res) => {
             model: models.User,
             as: 'user',
             where: whereUser
+          },
+          {
+            model: models.Car,
+            as: 'car'
           }
         ],
         where
@@ -439,6 +443,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
   const { id } = req.user;
   const {
     userId,
+    bidderId,
     carId,
     bidAmount,
     haveSeenCar,
@@ -451,6 +456,8 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 
   if (validator.isInt(userId ? userId.toString() : '') === false)
     return res.status(406).json({ success: false, errors: 'type of userId must be int' });
+  if (validator.isInt(bidderId ? bidderId.toString() : '') === false)
+    return res.status(406).json({ success: false, errors: 'type of bidderId must be int' });
   if (validator.isInt(carId ? carId.toString() : '') === false)
     return res.status(406).json({ success: false, errors: 'type of carId must be int' });
   if (validator.isInt(negotiationType ? negotiationType.toString() : '') === false)
@@ -522,6 +529,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 
   const create = {
     userId,
+    bidderId,
     carId,
     bidAmount,
     haveSeenCar,
