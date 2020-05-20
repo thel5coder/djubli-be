@@ -263,7 +263,7 @@ router.get('/', async (req, res) => {
         pagination,
         data: {
           isNego,
-          data
+          bidderList: data
         }
       });
     })
