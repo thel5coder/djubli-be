@@ -15,7 +15,7 @@ const {
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-async function listingAllNew(req, res) {
+async function listingAllNew(req, res, fromCallback = false) {
   let {
     page,
     limit,
@@ -759,6 +759,10 @@ async function listingAllNew(req, res) {
         ],
         raw: true
       });
+
+      if(fromCallback) {
+        return data
+      }
 
       res.status(200).json({
         success: true,

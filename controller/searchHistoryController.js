@@ -3,6 +3,7 @@ const Sequelize = require('sequelize');
 const supertest = require('supertest');
 const models = require('../db/models');
 const paginator = require('../helpers/paginator');
+const modelYearController = require('./modelYearController');
 
 const { Op } = Sequelize;
 
@@ -57,27 +58,37 @@ async function get(req, res) {
 
           const newParams = generateParams(item.params);
           item.dataValues.params = newParams;
-          const client = supertest(req.app);
-          const resultAPI = await client.get(item.apiURL);
 
-          if (resultAPI.body && resultAPI.body.pagination) {
-            item.countResult = resultAPI.body.pagination.count;
-            await models.SearchHistory.update(
-              {
-                countResult: resultAPI.body.pagination.count
-              },
-              {
-                where: {
-                  id: item.id
-                }
-              }
-            ).catch(err =>
-              res.status(422).json({
-                success: false,
-                errors: err.message
-              })
-            );
+          if(typeof newParams['radius[0]'] !== 'undefined' && typeof newParams['radius[1]'] !== 'undefined') {
+            newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
           }
+
+          const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
+          let count = 0;
+          getCountResult.map(itemResult => {
+            itemResult.modelYears.map(subItemResult => {
+              if(subItemResult.dataValues.numberOfCar) {
+                count += subItemResult.dataValues.numberOfCar;
+              }
+            });
+          });
+
+          item.countResult = count;
+          await models.SearchHistory.update(
+            {
+              countResult: count
+            },
+            {
+              where: {
+                id: item.id
+              }
+            }
+          ).catch(err =>
+            res.status(422).json({
+              success: false,
+              errors: err.message
+            })
+          );
         })
       );
 
@@ -120,27 +131,37 @@ async function getById(req, res) {
 
       const newParams = generateParams(data.params);
       data.dataValues.params = newParams;
-      const client = supertest(req.app);
-      const resultAPI = await client.get(data.apiURL);
 
-      if (resultAPI.body && resultAPI.body.pagination) {
-        data.countResult = resultAPI.body.pagination.count;
-        await models.SearchHistory.update(
-          {
-            countResult: resultAPI.body.pagination.count
-          },
-          {
-            where: {
-              id: data.id
-            }
-          }
-        ).catch(err =>
-          res.status(422).json({
-            success: false,
-            errors: err.message
-          })
-        );
+      if(typeof newParams['radius[0]'] !== 'undefined' && typeof newParams['radius[1]'] !== 'undefined') {
+        newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
       }
+
+      const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
+      let count = 0;
+      getCountResult.map(item => {
+        item.modelYears.map(subItem => {
+          if(subItem.dataValues.numberOfCar) {
+            count += subItem.dataValues.numberOfCar;
+          }
+        });
+      });
+
+      data.countResult = count;
+      await models.SearchHistory.update(
+        {
+          countResult: count
+        },
+        {
+          where: {
+            id: data.id
+          }
+        }
+      ).catch(err =>
+        res.status(422).json({
+          success: false,
+          errors: err.message
+        })
+      );
 
       res.json({
         success: true,
