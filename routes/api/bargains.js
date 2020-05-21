@@ -229,7 +229,7 @@ router.get('/', async (req, res) => {
               models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
                 FROM "Bargains" b 
                 WHERE "b"."carId" = "Bargain"."carId" 
-                  AND "b"."userId" = "Bargain"."userId"
+                  AND "b"."bidderId" = "Bargain"."userId"
                   AND "b"."bidType" = 1
                   AND "b"."expiredAt" >= (SELECT NOW())
                   AND "b"."deletedAt" IS NULL))`
