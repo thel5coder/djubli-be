@@ -63,11 +63,13 @@ async function get(req, res) {
             newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
           }
 
+          await modelYearController.listingAllNew({ query: newParams }, res);
           const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
           let count = 0;
           getCountResult.map(itemResult => {
             itemResult.modelYears.map(subItemResult => {
               if(subItemResult.dataValues.numberOfCar) {
+                console.log(subItemResult.dataValues.numberOfCar)
                 count += subItemResult.dataValues.numberOfCar;
               }
             });
