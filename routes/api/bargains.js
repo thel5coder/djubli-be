@@ -121,6 +121,7 @@ router.get('/', async (req, res) => {
             WHERE "b"."carId" = "Bargain"."carId" 
               AND "b"."bidderId" = "Bargain"."userId"
               AND "b"."bidType" = 1
+              AND "b"."negotiationType" NOT IN (3, 4)
               AND "b"."expiredAt" >= (SELECT NOW())
               AND "b"."deletedAt" IS NULL))`
           ), 
@@ -231,6 +232,7 @@ router.get('/', async (req, res) => {
                 WHERE "b"."carId" = "Bargain"."carId" 
                   AND "b"."bidderId" = "Bargain"."userId"
                   AND "b"."bidType" = 1
+                  AND "b"."negotiationType" NOT IN (3, 4)
                   AND "b"."expiredAt" >= (SELECT NOW())
                   AND "b"."deletedAt" IS NULL))`
               ), 
