@@ -13,7 +13,8 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  let { page, limit, sort, groupModelId } = req.query;
+  let { page, limit, sort } = req.query;
+  const { groupModelId, name, by } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -21,20 +22,51 @@ router.get('/', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
+  let order = [['createdAt', 'desc']];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
+  if (by === 'name') order = [[by, sort]];
+  if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];
+
   const where = {};
+  let whereCar = '';
   if (groupModelId) {
     Object.assign(where, {
       groupModelId: {
         [Op.eq]: groupModelId
       }
     });
+
+    whereCar += ` AND "Car"."groupModelId" = ${groupModelId}
+      AND "Car"."brandId" = (SELECT "GroupModels"."brandId"
+        FROM "GroupModels" 
+        WHERE "GroupModels"."id" = ${groupModelId})`;
+  }
+
+  if(name) {
+    Object.assign(where, {
+      name: {
+        [Op.iLike]: `%${name}%`
+      }
+    });
   }
 
   return models.Model.findAll({
+    attributes: {
+      include: [
+        [
+          models.sequelize.literal(`(SELECT COUNT("Car"."id") 
+            FROM "Cars" as "Car" 
+            WHERE "Car"."modelId" = "Model"."id"
+              ${whereCar}
+              AND "Car"."status" = 0
+              AND "Car"."deletedAt" IS NULL
+          )`),
+          'countResult'
+        ]
+      ]
+    },
     where,
     order,
     offset,
