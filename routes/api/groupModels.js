@@ -12,7 +12,8 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  let { page, limit, sort, brandId } = req.query;
+  let { page, limit, sort } = req.query;
+  const { brandId, name, by } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -20,20 +21,48 @@ router.get('/', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
+  let order = [['createdAt', 'desc']];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
+  if (by === 'name') order = [[by, sort]];
+  if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];
+
   const where = {};
+  let whereCar = '';
   if (brandId) {
     Object.assign(where, {
       brandId: {
         [Op.eq]: brandId
       }
     });
+
+    whereCar += ` AND "Car"."brandId" = ${brandId}`;
+  }
+
+  if(name) {
+    Object.assign(where, {
+      name: {
+        [Op.iLike]: `%${name}%`
+      }
+    });
   }
 
   return models.GroupModel.findAll({
+    attributes: {
+      include: [
+        [
+          models.sequelize.literal(`(SELECT COUNT("Car"."id") 
+            FROM "Cars" as "Car" 
+            WHERE "Car"."groupModelId" = "GroupModel"."id"
+              ${whereCar}
+              AND "Car"."status" = 0
+              AND "Car"."deletedAt" IS NULL
+          )`),
+          'countResult'
+        ]
+      ]
+    },
     where,
     order,
     offset,
