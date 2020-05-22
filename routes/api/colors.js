@@ -1,9 +1,11 @@
 /* eslint-disable linebreak-style */
 const express = require('express');
 const validator = require('validator');
+const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 
+const { Op } = Sequelize;
 const router = express.Router();
 
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
@@ -11,6 +13,7 @@ const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
   let { page, limit, sort } = req.query;
+  const { name, by } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -18,13 +21,37 @@ router.get('/', async (req, res) => {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const order = [['createdAt', 'desc']];
+  let order = [['createdAt', 'desc']];
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
+  if (by === 'name') order = [[by, sort]];
+  if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];
+
   const where = {};
+  if(name) {
+    Object.assign(where, {
+      name: {
+        [Op.iLike]: `%${name}%`
+      }
+    });
+  }
 
   return models.Color.findAll({
+    attributes: {
+      include: [
+        [
+          models.sequelize.literal(`(SELECT COUNT("Car"."id") 
+            FROM "Cars" as "Car" 
+            WHERE ("Car"."interiorColorId" = "Color"."id" OR 
+                "Car"."exteriorColorId" = "Color"."id")
+              AND "Car"."status" = 0
+              AND "Car"."deletedAt" IS NULL
+          )`),
+          'countResult'
+        ]
+      ]
+    },
     where,
     order,
     offset,
