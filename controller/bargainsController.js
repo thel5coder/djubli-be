@@ -632,7 +632,8 @@ async function getSellNego(req, res) {
 
       data.map(item => {
         if (negotiationType == 0) {
-          item.dataValues.statusNego = 'Ajak Nego';
+          // item.dataValues.statusNego = 'Ajak Nego';
+          item.dataValues.statusNego = 'Tunggu Jawaban';
         } else if (negotiationType == 1) {
           if (
             item.dataValues.bargain.length == 0 ||
@@ -1016,7 +1017,8 @@ async function getBuyNego(req, res) {
 
       data.map(item => {
         if (negotiationType == 0) {
-          item.dataValues.statusNego = 'Diajak Nego';
+          // item.dataValues.statusNego = 'Diajak Nego';
+          item.dataValues.statusNego = 'Jawaban anda ditunggu';
         } else if (negotiationType == 1) {
           if (
             item.dataValues.bargain.length == 0 ||
