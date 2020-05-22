@@ -13,7 +13,7 @@ const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
   let { page, limit, sort } = req.query;
-  const { name, by } = req.query;
+  const { name, by, brandId, modelId, groupModelId, exteriorColorId, interiorType } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -29,6 +29,9 @@ router.get('/', async (req, res) => {
   if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];
 
   const where = {};
+  let whereColor = `("Car"."interiorColorId" = "Color"."id" OR 
+    "Car"."exteriorColorId" = "Color"."id")`;
+  let whereCar = '';
   if(name) {
     Object.assign(where, {
       name: {
@@ -37,14 +40,35 @@ router.get('/', async (req, res) => {
     });
   }
 
+  if(brandId) {
+    whereCar += ` AND "Car"."brandId" = ${brandId}`;
+  }
+
+  if(modelId) {
+    whereCar += ` AND "Car"."modelId" = ${modelId}`;
+  }
+
+  if(groupModelId) {
+    whereCar += ` AND "Car"."groupModelId" = ${groupModelId}`;
+  }
+
+  if(exteriorColorId) {
+    whereCar += ` AND "Car"."exteriorColorId" = ${exteriorColorId}`;
+  }
+
+  if(interiorType == 1) {
+    whereColor = `"Car"."interiorColorId" = "Color"."id"`;
+  } else if(interiorType == 2) {
+    whereColor = `"Car"."exteriorColorId" = "Color"."id"`;
+  }
+
   return models.Color.findAll({
     attributes: {
       include: [
         [
           models.sequelize.literal(`(SELECT COUNT("Car"."id") 
             FROM "Cars" as "Car" 
-            WHERE ("Car"."interiorColorId" = "Color"."id" OR 
-                "Car"."exteriorColorId" = "Color"."id")
+            WHERE ${whereColor} ${whereCar}
               AND "Car"."status" = 0
               AND "Car"."deletedAt" IS NULL
           )`),
