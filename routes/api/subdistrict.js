@@ -15,7 +15,15 @@ const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 router.get('/cityId/:id', async (req, res) => {
 	const { id } = req.params;
 	let { sort } = req.query;
-	const { name, by } = req.query;
+	const { 
+		name, 
+		by,
+		brandId, 
+		modelId, 
+		groupModelId, 
+		exteriorColorId, 
+		interiorColorId
+	} = req.query;
 
 	let order = [['createdAt', 'desc']];
   	if (!sort) sort = 'asc';
@@ -24,6 +32,7 @@ router.get('/cityId/:id', async (req, res) => {
   	if (by === 'name') order = [[by, sort]];
   	if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];	
 
+  	let whereCar = '';
   	const where = {
   		cityId: id
   	};
@@ -36,6 +45,26 @@ router.get('/cityId/:id', async (req, res) => {
 	    });
 	}
 
+	if(brandId) {
+    	whereCar += ` AND "Car"."brandId" = ${brandId}`;
+  	}
+
+  	if(modelId) {
+    	whereCar += ` AND "Car"."modelId" = ${modelId}`;
+  	}
+
+  	if(groupModelId) {
+    	whereCar += ` AND "Car"."groupModelId" = ${groupModelId}`;
+  	}
+
+  	if(exteriorColorId) {
+    	whereCar += ` AND "Car"."exteriorColorId" = ${exteriorColorId}`;
+  	}
+
+  	if(interiorColorId) {
+    	whereCar += ` AND "Car"."interiorColorId" = ${interiorColorId}`;
+  	}
+
 	return models.SubDistrict.findAll({
 		attributes: {
 	      	include: [
@@ -45,6 +74,7 @@ router.get('/cityId/:id', async (req, res) => {
 			            WHERE "Car"."subdistrictId" = "SubDistrict"."id"
 			              	AND "Car"."status" = 0
 			              	AND "Car"."deletedAt" IS NULL
+			              	${whereCar}
 			        )`),
 			        'countResult'
 		        ]
