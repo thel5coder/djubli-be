@@ -70,7 +70,7 @@ async function getByBusinessType(req, res) {
 	    	{
 	    		model: models.User,
 	    		as: 'user',
-	    		attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+	    		attributes: ['id', 'name', 'email', 'phone', 'address', 'type', 'companyType'],
 	    		include: [
 	    			{
 	    				model: models.Dealer,
