@@ -50,7 +50,8 @@ router.get('/user/:id', async (req, res) => {
     minPrice,
     maxPrice,
     minYear,
-    maxYear
+    maxYear,
+    status
   } = req.query;
   let { page, limit, by, sort } = req.query;
   let offset = 0;
@@ -155,6 +156,17 @@ router.get('/user/:id', async (req, res) => {
       year: {
         [Op.lte]: maxYear
       }
+    });
+  }
+
+  if(status) {
+    let defaultOperator = `=`;
+    if(!status.match(/^[0-9]*$/)) {
+      defaultOperator = ``;
+    }
+
+    Object.assign(where, {
+      [Op.and]: models.sequelize.literal(`"Car"."status" ${defaultOperator} ${status}`)
     });
   }
 
