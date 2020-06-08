@@ -4,6 +4,8 @@ const models = require('../db/models');
 const paginator = require('../helpers/paginator');
 const calculateDistance = require('../helpers/calculateDistance');
 const carHelper = require('../helpers/car');
+const general = require('../helpers/general');
+const notification = require('../helpers/notification');
 
 const { Op } = Sequelize;
 
@@ -504,6 +506,309 @@ async function carsGet(req, res, auth = false) {
     });
 }
 
+async function sell(req, res) {
+  const {
+    userId,
+    brandId,
+    groupModelId,
+    modelId,
+    modelYearId,
+    exteriorColorId,
+    interiorColorId,
+    price,
+    condition,
+    usedFrom,
+    frameNumber,
+    engineNumber,
+    STNKnumber,
+    location,
+    status,
+    interior,
+    exterior,
+    day,
+    startTime,
+    endTime,
+    km,
+    address
+  } = req.body;
+
+  let { city, subdistrict } = req.body;
+  const { images } = req.files;
+
+  if (!userId) return res.status(400).json({ success: false, errors: 'user is mandatory' });
+  if (!brandId) return res.status(400).json({ success: false, errors: 'brand is mandatory' });
+  if (!groupModelId) return res.status(400).json({ success: false, errors: 'groupModel is mandatory' });
+  if (!modelId) return res.status(400).json({ success: false, errors: 'model is mandatory' });
+  if (!modelYearId) return res.status(400).json({ success: false, errors: 'model year is mandatory' });
+  if (!location) {
+    return res.status(400).json({ success: false, errors: 'location is mandatory' });
+  } else {
+    let locations = location.split(',');
+    locations[0] = general.customReplace(locations[0], ' ', '');
+    locations[1] = general.customReplace(locations[1], ' ', '');
+    if (validator.isNumeric(locations[0] ? locations[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (validator.isNumeric(locations[1] ? locations[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid longitude' });
+  }
+  if (km) {
+    if (validator.isInt(km) === false)
+      return res.status(422).json({ success: false, errors: 'km is number' });
+  }
+
+  let STNKphoto = null;
+  const result = {};
+  if (images) {
+    const tname = randomize('0', 4);
+    result.name = `djublee/images/car/${tname}${moment().format('x')}${unescape(
+      images[0].originalname
+    ).replace(/\s/g, '')}`;
+    result.mimetype = images[0].mimetype;
+    result.data = images[0].buffer;
+    STNKphoto = result.name;
+    // imageHelper.uploadToS3(result);
+  }
+  const errors = [];
+  const insert = {
+    userId,
+    brandId,
+    modelId,
+    groupModelId,
+    modelYearId,
+    exteriorColorId,
+    interiorColorId,
+    price,
+    condition,
+    usedFrom,
+    frameNumber,
+    engineNumber,
+    STNKnumber,
+    STNKphoto,
+    location: location.replace(/\s/g, ''),
+    status,
+    km,
+    oldPrice:price
+  };
+
+  if (address) Object.assign(insert, { address });
+
+  if(subdistrict) {
+    subdistrict = subdistrict.toLowerCase().replace('kec.', '').replace('kecamatan', '').trim();
+    const subDistrictExist = await models.SubDistrict.findOne({
+      where: {
+        name: {
+          [Op.iLike]: `%${subdistrict}%`
+        }
+      }
+    });
+
+    if(!subDistrictExist) {
+      return res.status(422).json({ success: false, errors: 'subdistrict not found' });
+    }
+
+    Object.assign(insert, { subdistrictId: subDistrictExist.id });
+
+    if(city) {
+      city = city.toLowerCase().replace('kota', '').replace('city', '').trim();
+      const cityExist = await models.City.findOne({
+        where: {
+          id: subDistrictExist.cityId,
+          name: {
+            [Op.iLike]: `%${city}%`
+          }
+        }
+      });
+
+      if(!subDistrictExist) {
+        return res.status(422).json({ success: false, errors: 'city not found' });
+      }
+
+      Object.assign(insert, { cityId: cityExist.id });
+    }
+  }
+
+  // if (cityId) {
+  //   const cityExist = await models.City.findByPk(cityId);
+  //   if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
+  //   Object.assign(insert, { cityId });
+  // }
+  // if (subdistrictId) {
+  //   const subDistrictExist = await models.SubDistrict.findOne({
+  //     where: {
+  //       id: subdistrictId,
+  //       cityId
+  //     }
+  //   });
+  //   if (!subDistrictExist)
+  //     return res.status(404).json({ success: false, errors: 'sub district not found' });
+  //   Object.assign(insert, { subdistrictId });
+  // }
+
+  const userNotifs = [];
+  const otherBidders = await models.Bargain.aggregate('Bargain.userId', 'DISTINCT', {
+    plain: false,
+    include:[
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: [],
+        where: {
+          brandId,
+          modelId,
+          groupModelId
+        }
+      }
+    ],
+    where: {
+      userId: {
+        [Op.ne]: req.user.id
+      }
+    }
+  });  
+  otherBidders.map(async otherBidder => {
+    userNotifs.push({
+      userId: otherBidder.DISTINCT,
+      collapseKey: null,
+      notificationTitle: `Notifikasi Beli`,
+      notificationBody: `mobil sejenis`,
+      notificationClickAction: `similiarCarBeli`,
+      dataReferenceId: 123,
+      category: 2,
+      status: 1,
+      tab: `tabBeli`
+    });
+  });
+
+  const otherCarSells = await models.Car.aggregate('userId', 'DISTINCT', {
+    plain: false,
+    where: {
+      brandId,
+      modelId,
+      groupModelId,
+      userId: {
+        [Op.ne]: req.user.id
+      }
+    }
+  });
+  otherCarSells.map(async otherCarSell => {
+    userNotifs.push({
+      userId: otherCarSell.DISTINCT,
+      collapseKey: null,
+      notificationTitle: `Notifikasi Jual`,
+      notificationBody: `mobil sejenis`,
+      notificationClickAction: `similiarCarSell`,
+      dataReferenceId: 123,
+      category: 1,
+      status: 2,
+      tab: `tabJual`
+    });
+  });
+  
+  // return apiResponse._success({
+  //   res,
+  //   data: {otherBidders, userNotifs}
+  // });
+
+  const trans = await models.sequelize.transaction();
+  const data = await models.Car.create(insert, {
+    transaction: trans
+  }).catch(err => {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
+
+  if (Object.keys(result).length > 0) imageHelper.uploadToS3(result);
+
+  if (interior) {
+    let { interiorGalery } = [];
+    interiorGalery = await general.mapping(interior);
+    await Promise.all(
+      interiorGalery.map(async interiorData => {
+        await models.InteriorGalery.create(
+          {
+            carId: data.id,
+            fileId: interiorData
+          },
+          {
+            transaction: trans
+          }
+        ).catch(err => {
+          errors.push(err);
+        });
+      })
+    );
+  }
+
+  if (exterior) {
+    let { exteriorGalery } = [];
+    exteriorGalery = await general.mapping(exterior);
+    await Promise.all(
+      exteriorGalery.map(async exteriorData => {
+        await models.ExteriorGalery.create(
+          {
+            carId: data.id,
+            fileId: exteriorData
+          },
+          {
+            transaction: trans
+          }
+        ).catch(err => {
+          errors.push(err);
+        });
+      })
+    );
+  }
+
+  if (day && startTime && endTime) {
+    let { dayTemp, startTimeTemp, endTimeTemp } = [];
+    dayTemp = general.mapping(day);
+    startTimeTemp = general.mapping(startTime);
+    endTimeTemp = general.mapping(endTime);
+
+    const schedule = [];
+    for (let i = 0; i < dayTemp.length; i += 1) {
+      schedule.push({
+        carId: data.id,
+        day: dayTemp[i],
+        startTime: startTimeTemp[i],
+        endTime: endTimeTemp[i]
+      });
+    }
+
+    await models.MeetingSchedule.bulkCreate(schedule, { transaction: trans }).catch(err => {
+      errors.push(err);
+    });
+  }
+
+  if (errors.length > 0) {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors
+    });
+  }
+  trans.commit();
+
+  userNotifs.map(async userNotif => {
+    Object.assign(userNotif, {
+      dataReferenceId: data.id
+    });
+    const emit = await notification.insertNotification(userNotif);
+    req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
+    notification.userNotif(userNotif);
+    console.log(userNotif);
+  });
+
+  return res.json({
+    success: true,
+    data
+  });
+}
+
 module.exports = {
-  carsGet
+  carsGet,
+  sell
 };
