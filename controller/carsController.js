@@ -592,9 +592,22 @@ async function sell(req, res) {
 
   if (address) Object.assign(insert, { address });
 
-  if(subdistrict) {
+  if(subdistrict && city) {
+    city = city.toLowerCase().replace('kota', '').replace('city', '').trim();
     subdistrict = subdistrict.toLowerCase().replace('kec.', '').replace('kecamatan', '').trim();
+
     const subDistrictExist = await models.SubDistrict.findOne({
+      include: [
+        {
+          model: models.City,
+          as: 'city',
+          where: {
+            name: {
+              [Op.iLike]: `%${city}%`
+            }
+          }
+        }
+      ],
       where: {
         name: {
           [Op.iLike]: `%${subdistrict}%`
@@ -606,43 +619,22 @@ async function sell(req, res) {
       return res.status(422).json({ success: false, errors: 'subdistrict not found' });
     }
 
-    Object.assign(insert, { subdistrictId: subDistrictExist.id });
-
-    if(city) {
-      city = city.toLowerCase().replace('kota', '').replace('city', '').trim();
-      const cityExist = await models.City.findOne({
-        where: {
-          id: subDistrictExist.cityId,
-          name: {
-            [Op.iLike]: `%${city}%`
-          }
+    const cityExist = await models.City.findOne({
+      where: {
+        id: subDistrictExist.cityId,
+        name: {
+          [Op.iLike]: `%${city}%`
         }
-      });
-
-      if(!subDistrictExist) {
-        return res.status(422).json({ success: false, errors: 'city not found' });
       }
+    });
 
-      Object.assign(insert, { cityId: cityExist.id });
+    if(!cityExist) {
+      return res.status(422).json({ success: false, errors: 'city not found' });
     }
-  }
 
-  // if (cityId) {
-  //   const cityExist = await models.City.findByPk(cityId);
-  //   if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
-  //   Object.assign(insert, { cityId });
-  // }
-  // if (subdistrictId) {
-  //   const subDistrictExist = await models.SubDistrict.findOne({
-  //     where: {
-  //       id: subdistrictId,
-  //       cityId
-  //     }
-  //   });
-  //   if (!subDistrictExist)
-  //     return res.status(404).json({ success: false, errors: 'sub district not found' });
-  //   Object.assign(insert, { subdistrictId });
-  // }
+    Object.assign(insert, { subdistrictId: subDistrictExist.id });
+    Object.assign(insert, { cityId: cityExist.id });
+  }
 
   const userNotifs = [];
   const otherBidders = await models.Bargain.aggregate('Bargain.userId', 'DISTINCT', {
