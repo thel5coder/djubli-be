@@ -636,23 +636,6 @@ async function sell(req, res) {
     Object.assign(insert, { cityId: cityExist.id });
   }
 
-  // if (cityId) {
-  //   const cityExist = await models.City.findByPk(cityId);
-  //   if (!cityExist) return res.status(404).json({ success: false, errors: 'city not found' });
-  //   Object.assign(insert, { cityId });
-  // }
-  // if (subdistrictId) {
-  //   const subDistrictExist = await models.SubDistrict.findOne({
-  //     where: {
-  //       id: subdistrictId,
-  //       cityId
-  //     }
-  //   });
-  //   if (!subDistrictExist)
-  //     return res.status(404).json({ success: false, errors: 'sub district not found' });
-  //   Object.assign(insert, { subdistrictId });
-  // }
-
   const userNotifs = [];
   const otherBidders = await models.Bargain.aggregate('Bargain.userId', 'DISTINCT', {
     plain: false,
