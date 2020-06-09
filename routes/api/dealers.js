@@ -104,6 +104,7 @@ router.get('/', async (req, res) => {
       {
         model: models.Car,
         as: 'car',
+        required: false,
         where: whereCar,
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
@@ -123,6 +124,7 @@ router.get('/', async (req, res) => {
           {
             model: models.Car,
             as: 'car',
+            required: false,
             where: whereCar
           }
         ],
