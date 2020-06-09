@@ -3,7 +3,7 @@
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.addColumn('Cars', 'oldPrice', {
-      type: Sequelize.INTEGER
+      type: Sequelize.NUMERIC
     });
   },
 
