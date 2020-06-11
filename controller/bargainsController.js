@@ -312,30 +312,39 @@ async function getSellNego(req, res) {
     bidType: 1
   };
 
+  const where = {
+    userId: {
+      [Op.eq]: id
+    }
+  };
+
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
       negotiationType: {
         [Op.eq]: negotiationType
       }
     });
-  } else if (negotiationType == '1') {
-    Object.assign(whereBargain, {
-      [Op.or]: [
-        { negotiationType: 1 },
-        { negotiationType: 2 },
-        { negotiationType: 3 },
-        { negotiationType: 4 },
-        { negotiationType: 5 },
-        { negotiationType: 6 }
+
+    // so that it doesn't appear on the "jual->nego->ajak nego" page
+    // when the data is already on the "jual->nego->sedang nego" page
+    Object.assign(where, {
+      [Op.and]: [
+           models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "Car"."id" 
+              AND "Bargains"."negotiationType" = 1 
+              AND "Bargains"."deletedAt" IS NULL
+            ) = 0`
+          )
       ]
     });
+  } else if (negotiationType == '1') {
+    Object.assign(whereBargain, {
+      negotiationType: {
+        [Op.between]: [1, 6]
+      }
+    });
   }
-
-  const where = {
-    userId: {
-      [Op.eq]: id
-    }
-  };
 
   if (modelYearId) {
     Object.assign(where, {
