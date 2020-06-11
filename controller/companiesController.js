@@ -45,7 +45,8 @@ async function getBusinessType(req, res) {
 }
 
 async function getByBusinessType(req, res) {
-	const { businessType, sort, by } = req.query;
+	const { businessType } = req.query;
+	let { sort, by } = req.query;
 
 	if (!by) by = 'createdAt';
   	let order = [['createdAt', 'desc']];
