@@ -13,4 +13,8 @@ router.get('/getByBusinessType', async (req, res) => {
 	return await companiesController.getByBusinessType(req, res);
 });
 
+router.get('/:id', async (req, res) => {
+	return await companiesController.getById(req, res);
+});
+
 module.exports = router;

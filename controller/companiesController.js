@@ -45,7 +45,21 @@ async function getBusinessType(req, res) {
 }
 
 async function getByBusinessType(req, res) {
-	const { businessType } = req.query;
+	const { businessType, sort, by } = req.query;
+
+	if (!by) by = 'createdAt';
+  	let order = [['createdAt', 'desc']];
+
+	if (!sort) sort = 'asc';
+  	else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
+
+  	if (by === 'createdAt') {
+  		order = [[by, sort]];
+  	} else if(by === 'countCar') {
+  		order = [[models.sequelize.literal('"countCar"'), sort]];
+  	} else if(by === 'address') {
+  		order = [[{ model: models.User, as: 'user' }, models.sequelize.col('address'), sort]];
+  	}
 
 	if(!businessType) {
 		return res.status(400).json({
@@ -84,7 +98,54 @@ async function getByBusinessType(req, res) {
 	    ],
 	    where: {
 	    	businessType
-	    }
+	    },
+	    order
+	 })
+	    .then(async data => {
+	    	res.json({
+		        success: true,
+		        data
+		    });
+	    })
+	    .catch(err => {
+	      	res.status(422).json({
+	        	success: false,
+	        	errors: err.message
+	      	});
+	    });
+}
+
+async function getById(req, res) {
+	const { id } = req.params;
+
+	return models.Company.findByPk(id, {
+	    attributes: {
+	    	include: [
+	    		[
+	    			models.sequelize.literal(`(SELECT COUNT("Car"."id") 
+	    				FROM "Cars" as "Car" 
+	    				WHERE "Car"."userId" = "Company"."userId" 
+	    					AND "Car"."deletedAt" IS NULL)`),
+			        'countCar'
+	    		]
+	    	]
+	    },
+	    include: [
+	    	{
+	    		model: models.User,
+	    		as: 'user',
+	    		attributes: ['id', 'name', 'email', 'phone', 'address', 'type', 'companyType'],
+	    		include: [
+	    			{
+	    				model: models.Dealer,
+	    				as: 'dealer',
+	    				attributes: {
+				        	exclude: ['createdAt', 'updatedAt', 'deletedAt']
+				        }
+	    			}
+	    		]
+	    	}
+	    ]
 	 })
 	    .then(async data => {
 	    	res.json({
@@ -102,5 +163,6 @@ async function getByBusinessType(req, res) {
 
 module.exports = {
   getBusinessType,
-  getByBusinessType
+  getByBusinessType,
+  getById
 };
