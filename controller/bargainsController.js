@@ -707,29 +707,39 @@ async function getBuyNego(req, res) {
     bidType: 1
   };
 
-  if (negotiationType == '0') {
-    Object.assign(whereBargain, {
-      [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
-    });
-    order.push([{ model: models.Bargain, as: 'bargain' }, 'id', 'desc']);
-  } else if (negotiationType == '1') {
-    Object.assign(whereBargain, {
-      [Op.or]: [
-        { negotiationType: 1 },
-        { negotiationType: 2 },
-        { negotiationType: 3 },
-        { negotiationType: 4 },
-        { negotiationType: 5 },
-        { negotiationType: 6 }
-      ]
-    });
-  }
-
   const where = {
     userId: {
       [Op.ne]: id
     }
   };
+
+  if (negotiationType == '0') {
+    Object.assign(whereBargain, {
+      [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
+    });
+
+    // so that it doesn't appear on the "beli->nego->diajak nego" page
+    // when the data is already on the "beli->nego->sedang nego" page
+    Object.assign(where, {
+      [Op.and]: [
+           models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "Car"."id" 
+              AND "Bargains"."negotiationType" = 1 
+              AND "Bargains"."deletedAt" IS NULL
+            ) = 0`
+          )
+      ]
+    });
+
+    order.push([{ model: models.Bargain, as: 'bargain' }, 'id', 'desc']);
+  } else if (negotiationType == '1') {
+    Object.assign(whereBargain, {
+      negotiationType: {
+        [Op.between]: [1, 6]
+      }
+    });
+  }
 
   if (modelYearId) {
     Object.assign(where, {
@@ -1027,7 +1037,7 @@ async function getBuyNego(req, res) {
       data.map(item => {
         if (negotiationType == 0) {
           // item.dataValues.statusNego = 'Diajak Nego';
-          item.dataValues.statusNego = 'Jawaban anda ditunggu';
+          item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
         } else if (negotiationType == 1) {
           if (
             item.dataValues.bargain.length == 0 ||
