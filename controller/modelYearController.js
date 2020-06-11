@@ -6,6 +6,7 @@ const passport = require('passport');
 const models = require('../db/models');
 const paginator = require('../helpers/paginator');
 const carHelper = require('../helpers/car');
+const general = require('../helpers/general');
 const calculateDistance = require('../helpers/calculateDistance');
 
 const {
@@ -805,145 +806,152 @@ async function luxuryCar(req, res) {
   };
 
   if (minPrice && maxPrice) {
-    Object.assign(where, {
+    Object.assign(whereInclude, {
       price: {
         [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
       }
     });
 
-    whereQuery += ` AND "ModelYear"."price" >= ${minPrice} AND "ModelYear"."price" <= ${maxPrice}`;
+    whereQuery += ` AND "Car"."price" >= ${minPrice} AND "Car"."price" <= ${maxPrice}`;
   }
 
-  // if (condition) {
-  //   Object.assign(whereInclude, {
-  //     condition: {
-  //       [Op.eq]: condition
-  //     }
-  //   });
+  if (condition) {
+    Object.assign(whereInclude, {
+      condition: {
+        [Op.eq]: condition
+      }
+    });
 
-  //   whereQuery += ` AND "Cars"."condition" = ${condition}`;
-  // }
+    whereQuery += ` AND "Cars"."condition" = ${condition}`;
+  }
 
   // Object.assign(whereInclude, {
   //   id: {
   //     [Op.eq]: models.sequelize.literal(
-  //       `(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" ON "Bargains"."carId" = "Cars"."id" WHERE "Cars"."modelYearId" = "ModelYear"."id" AND "Bargains"."deletedAt" IS NULL ORDER BY "Bargains"."bidAmount" DESC LIMIT 1
+  //       `(SELECT "Bargains"."carId" 
+  //         FROM "Bargains" 
+  //         LEFT JOIN "Cars" 
+  //           ON "Bargains"."carId" = "Cars"."id" 
+  //         WHERE "Cars"."modelYearId" = "ModelYear"."id" 
+  //           AND "Bargains"."deletedAt" IS NULL 
+  //         ORDER BY "Bargains"."bidAmount" DESC 
+  //         LIMIT 1
   //       )`
   //     )
   //   }
   // });
 
-  // const addAttribute = await carHelper.customFields({
-  //   fields: [
-  //     'numberOfBidderModelYear',
-  //     'highestBidderModelYear',
-  //     'numberOfCar',
-  //     'maxPrice',
-  //     'minPrice',
-  //     'highestBidderCarId',
-  //     'purchase'
-  //   ],
-  //   upperCase: true,
-  //   whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)
-  // });
+  const addAttribute = await carHelper.customFields({
+    fields: [
+      'numberOfBidderModelYear',
+      'highestBidderModelYear',
+      'numberOfCar',
+      'maxPrice',
+      'minPrice',
+      'highestBidderCarId',
+      'purchase'
+    ],
+    upperCase: true,
+    whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)
+  });
 
-  // const includeCar = [
-  //   {
-  //     model: models.User,
-  //     as: 'user',
-  //     attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
-  //     include: [
-  //       {
-  //         model: models.Purchase,
-  //         as: 'purchase',
-  //         attributes: {
-  //           exclude: ['deletedAt']
-  //         },
-  //         order: [['id', 'desc']],
-  //         limit: 1
-  //       }
-  //     ]
-  //   },
-  //   {
-  //     model: models.Brand,
-  //     as: 'brand',
-  //     attributes: ['id', 'name', 'logo', 'status']
-  //   },
-  //   {
-  //     model: models.Model,
-  //     as: 'model',
-  //     attributes: ['id', 'name', 'groupModelId']
-  //   },
-  //   {
-  //     model: models.GroupModel,
-  //     as: 'groupModel',
-  //     attributes: ['id', 'name', 'brandId']
-  //   },
-  //   {
-  //     model: models.Color,
-  //     as: 'interiorColor',
-  //     attributes: ['id', 'name', 'hex']
-  //   },
-  //   {
-  //     model: models.Color,
-  //     as: 'exteriorColor',
-  //     attributes: ['id', 'name', 'hex']
-  //   },
-  //   {
-  //     model: models.MeetingSchedule,
-  //     as: 'meetingSchedule',
-  //     attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-  //   },
-  //   {
-  //     model: models.InteriorGalery,
-  //     as: 'interiorGalery',
-  //     attributes: ['id', 'fileId', 'carId'],
-  //     include: {
-  //       model: models.File,
-  //       as: 'file',
-  //       attributes: ['type', 'url']
-  //     }
-  //   },
-  //   {
-  //     model: models.ExteriorGalery,
-  //     as: 'exteriorGalery',
-  //     attributes: ['id', 'fileId', 'carId'],
-  //     include: {
-  //       model: models.File,
-  //       as: 'file',
-  //       attributes: ['type', 'url']
-  //     }
-  //   }
-  // ];
+  const includeCar = [
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+      include: [
+        {
+          model: models.Purchase,
+          as: 'purchase',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']],
+          limit: 1
+        }
+      ]
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    }
+  ];
 
   return models.ModelYear.findAll({
-    // attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
+    attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
-      // {
-      //   model: models.Model,
-      //   as: 'model',
-      //   attributes: {
-      //     exclude: ['createdAt', 'updatedAt', 'deletedAt']
-      //   },
-      //   include: [
-      //     {
-      //       model: models.GroupModel,
-      //       as: 'groupModel',
-      //       attributes: {
-      //         exclude: ['createdAt', 'updatedAt', 'deletedAt']
-      //       },
-      //       include: [
-      //         {
-      //           model: models.Brand,
-      //           as: 'brand',
-      //           attributes: {
-      //             exclude: ['createdAt', 'updatedAt', 'deletedAt']
-      //           }
-      //         }
-      //       ]
-      //     }
-      //   ]
-      // },
+      {
+        model: models.Model,
+        as: 'model',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            include: [
+              {
+                model: models.Brand,
+                as: 'brand',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          }
+        ]
+      },
       {
         model: models.Car,
         as: 'car',
@@ -954,7 +962,7 @@ async function luxuryCar(req, res) {
             fields: ['bidAmountModelYears', 'numberOfBidder', 'like', 'view']
           })
         },
-        // include: includeCar
+        include: includeCar
       }
     ],
     where,
@@ -963,18 +971,17 @@ async function luxuryCar(req, res) {
     limit
   })
     .then(async data => {
-      // const count = await models.ModelYear.count({
-      //   include: [
-      //     {
-      //       model: models.Car,
-      //       as: 'car',
-      //       where: whereInclude
-      //     }
-      //   ],
-      //   where
-      // });
-      // const pagination = paginator.paging(page, count, limit);
-      const pagination = paginator.paging(page, 2, limit);
+      const count = await models.ModelYear.count({
+        include: [
+          {
+            model: models.Car,
+            as: 'car',
+            where: whereInclude
+          }
+        ],
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
 
       res.json({
         success: true,
