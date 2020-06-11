@@ -301,8 +301,9 @@ async function getSellNego(req, res) {
 
   let order = [
     ['createdAt', 'desc'],
-    [{ model: models.Bargain, as: 'bargain' }, 'createdAt', 'desc']
+    [{ model: models.Bargain, as: 'bargain' }, 'id', 'desc']
   ];
+
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
@@ -696,7 +697,10 @@ async function getBuyNego(req, res) {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  let order = [['createdAt', 'desc']];
+  let order = [
+    ['createdAt', 'desc'],
+    [{ model: models.Bargain, as: 'bargain' }, 'id', 'desc']
+  ];
 
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
@@ -731,8 +735,6 @@ async function getBuyNego(req, res) {
           )
       ]
     });
-
-    order.push([{ model: models.Bargain, as: 'bargain' }, 'id', 'desc']);
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
