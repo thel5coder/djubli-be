@@ -645,15 +645,12 @@ async function getSellNego(req, res) {
           // item.dataValues.statusNego = 'Ajak Nego';
           item.dataValues.statusNego = 'Tunggu Jawaban';
         } else if (negotiationType == 1) {
-          if (
-            item.dataValues.bargain.length == 0 ||
-            (item.dataValues.bargain.length && item.dataValues.bargain.slice(-1).pop().userId == id)
-          ) {
+          const dataBargain = item.dataValues.bargain;
+          const userIdLastBargain = dataBargain.shift().userId;
+
+          if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
-          } else if (
-            item.dataValues.bargain.length &&
-            item.dataValues.bargain.slice(-1).pop().userId != id
-          ) {
+          } else if (dataBargain.length && userIdLastBargain != id) {
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
           }
         }
@@ -1041,15 +1038,12 @@ async function getBuyNego(req, res) {
           // item.dataValues.statusNego = 'Diajak Nego';
           item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
         } else if (negotiationType == 1) {
-          if (
-            item.dataValues.bargain.length == 0 ||
-            (item.dataValues.bargain.length && item.dataValues.bargain.slice(-1).pop().userId == id)
-          ) {
+          const dataBargain = item.dataValues.bargain;
+          const userIdLastBargain = dataBargain.shift().userId;
+
+          if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
-          } else if (
-            item.dataValues.bargain.length &&
-            item.dataValues.bargain.slice(-1).pop().userId != id
-          ) {
+          } else if (dataBargain.length > 0 && userIdLastBargain != id) {
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
           }
         }
