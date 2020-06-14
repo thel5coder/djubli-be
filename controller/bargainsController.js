@@ -646,7 +646,7 @@ async function getSellNego(req, res) {
           item.dataValues.statusNego = 'Tunggu Jawaban';
         } else if (negotiationType == 1) {
           const dataBargain = item.dataValues.bargain;
-          const userIdLastBargain = dataBargain.shift().userId;
+          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
 
           if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
@@ -1039,7 +1039,7 @@ async function getBuyNego(req, res) {
           item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
         } else if (negotiationType == 1) {
           const dataBargain = item.dataValues.bargain;
-          const userIdLastBargain = dataBargain.shift().userId;
+          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
 
           if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
