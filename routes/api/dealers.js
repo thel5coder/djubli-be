@@ -56,30 +56,38 @@ router.get('/', async (req, res) => {
     attributes: Object.keys(models.Dealer.attributes).concat([
       [
         models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") 
-                          FROM "Cars" 
-                          WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
-                              ${whereCondition} 
-                              AND "Cars"."userId" = "Dealer"."userId" 
-                              AND "Cars"."deletedAt" IS NULL
-                      )`
+            `(SELECT COUNT("Cars"."id") 
+                FROM "Cars" 
+                WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
+                     ${whereCondition} 
+                    AND "Cars"."userId" = "Dealer"."userId" 
+                    AND "Cars"."deletedAt" IS NULL
+            )`
         ),
         'countListing'
       ],
       [
         models.sequelize.literal(
-          `(SELECT "GroupModels"."name" 
-                          FROM "GroupModels" 
-                          WHERE "GroupModels"."brandId" = "Dealer"."authorizedBrandId" 
-                              AND "GroupModels"."deletedAt" IS NULL 
-                          ORDER BY (SELECT COUNT("Cars"."id") 
-                              FROM "Cars" 
-                              WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
-                                  ${whereCondition} 
-                                  AND "Cars"."userId" = "Dealer"."userId" 
-                                  AND "Cars"."deletedAt" IS NULL) DESC 
-                          LIMIT 1
-                      )`
+            `(COALESCE(NULLIF((SELECT "GroupModels"."name" 
+                FROM "GroupModels" 
+                WHERE "GroupModels"."brandId" = "Dealer"."authorizedBrandId" 
+                    AND "GroupModels"."deletedAt" IS NULL
+                    AND (SELECT COUNT("Cars"."id") 
+                        FROM "Cars" 
+                        WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
+                            AND "Cars"."userId" = "Dealer"."userId" 
+                            ${whereCondition}
+                            AND "Cars"."groupModelId" = "GroupModels"."id"
+                            AND "Cars"."deletedAt" IS NULL) > 0
+                ORDER BY (SELECT COUNT("Cars"."id") 
+                    FROM "Cars" 
+                    WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
+                        AND "Cars"."userId" = "Dealer"."userId" 
+                        ${whereCondition} 
+                        AND "Cars"."groupModelId" = "GroupModels"."id"
+                        AND "Cars"."deletedAt" IS NULL) DESC 
+                LIMIT 1
+            ), ''), ''))`
         ),
         'groupModelMostListing'
       ]
@@ -105,6 +113,7 @@ router.get('/', async (req, res) => {
         model: models.Car,
         as: 'car',
         where: whereCar,
+        required: false,
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
