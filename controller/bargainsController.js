@@ -10,11 +10,11 @@ const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 async function bargainsList(req, res) {
   let { page, limit, sort, by } = req.query;
-  const { userId, carId, bidType, negotiationType, expiredAt, paymentMethod, haveSeenCar, profileUser } = req.query;
+  const { userId, carId, bidType, negotiationType, expiredAt, paymentMethod, haveSeenCar, profileUser, readerId } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  // if (limit > MAX_LIMIT) limit = MAX_LIMIT; // FOR CHAT
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -118,6 +118,16 @@ async function bargainsList(req, res) {
               AND "b"."deletedAt" IS NULL))`
           ), 
           'isNego'
+        ],
+        [
+          models.sequelize.literal(`(EXISTS(SELECT "r"."id" 
+            FROM "BargainReaders" r 
+            WHERE "r"."bargainId" = "Bargain"."id" 
+              AND "r"."userId" = "Bargain"."userId"
+              AND "r"."isRead" = TRUE
+              AND "r"."deletedAt" IS NULL))`
+          ), 
+          'isRead'
         ]
       ]
     },
@@ -257,6 +267,33 @@ async function bargainsList(req, res) {
 
       const count = findAndCount.count;
       const pagination = paginator.paging(page, count, limit);
+
+      if(readerId && readerId !== '') {
+        await Promise.all(
+          data.map(async item => {
+            const findBargainReader = await models.BargainReader.findOne({
+              where: {
+                userId: readerId,
+                bargainId: item.id
+              }
+            });
+
+            if(!findBargainReader) {
+              await models.BargainReader.create({
+                userId: readerId,
+                bargainId: item.id,
+                isRead: true
+              })
+                .catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: 'failed to read bargain chat'
+                  });
+                });
+            }
+          })
+        );
+      }
 
       res.json({
         success: true,
@@ -640,21 +677,33 @@ async function getSellNego(req, res) {
       });
       const pagination = paginator.paging(page, count, limit);
 
-      data.map(item => {
-        if (negotiationType == 0) {
-          // item.dataValues.statusNego = 'Ajak Nego';
-          item.dataValues.statusNego = 'Tunggu Jawaban';
-        } else if (negotiationType == 1) {
-          const dataBargain = item.dataValues.bargain;
-          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
-
-          if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
+      await Promise.all(
+        data.map(async item => {
+          if (negotiationType == 0) {
+            // item.dataValues.statusNego = 'Ajak Nego';
             item.dataValues.statusNego = 'Tunggu Jawaban';
-          } else if (dataBargain.length && userIdLastBargain != id) {
-            item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
+          } else if (negotiationType == 1) {
+            const dataBargain = item.dataValues.bargain;
+            const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
+
+            if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
+              item.dataValues.statusNego = 'Tunggu Jawaban';
+            } else if (dataBargain.length && userIdLastBargain != id) {
+              item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
+            }
           }
-        }
-      });
+
+          const getReader = await models.BargainReader.findOne({
+            where: {
+              userId: item.dataValues.bargain[0].userId,
+              bargainId: item.dataValues.bargain[0].id,
+              isRead: true
+            }
+          });
+
+          item.dataValues.isRead = getReader ? true : false;
+        })
+      );
 
       res.json({
         success: true,
@@ -1033,21 +1082,33 @@ async function getBuyNego(req, res) {
 
       const pagination = paginator.paging(page, count, limit);
 
-      data.map(item => {
-        if (negotiationType == 0) {
-          // item.dataValues.statusNego = 'Diajak Nego';
-          item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-        } else if (negotiationType == 1) {
-          const dataBargain = item.dataValues.bargain;
-          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
-
-          if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
-            item.dataValues.statusNego = 'Tunggu Jawaban';
-          } else if (dataBargain.length > 0 && userIdLastBargain != id) {
+      await Promise.all(
+        data.map(async item => {
+          if (negotiationType == 0) {
+            // item.dataValues.statusNego = 'Diajak Nego';
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
+          } else if (negotiationType == 1) {
+            const dataBargain = item.dataValues.bargain;
+            const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;            
+
+            if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
+              item.dataValues.statusNego = 'Tunggu Jawaban';
+            } else if (dataBargain.length > 0 && userIdLastBargain != id) {
+              item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
+            }
           }
-        }
-      });
+
+          const getReader = await models.BargainReader.findOne({
+            where: {
+              userId: item.dataValues.bargain[0].userId,
+              bargainId: item.dataValues.bargain[0].id,
+              isRead: true
+            }
+          });
+
+          item.dataValues.isRead = getReader ? true : false;
+        })
+      );
 
       res.json({
         success: true,
