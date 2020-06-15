@@ -77,8 +77,28 @@ async function getByBusinessType(req, res) {
 	    				FROM "Cars" as "Car" 
 	    				WHERE "Car"."userId" = "Company"."userId" 
 	    					AND "Car"."deletedAt" IS NULL)`),
-			        'countCar'
-	    		]
+			        'countListing'
+	    		],
+	    		[
+			        models.sequelize.literal(
+			          	`(COALESCE(NULLIF((SELECT "GroupModels"."name"
+							FROM "GroupModels"
+							WHERE "GroupModels"."deletedAt" IS NULL
+							    AND (SELECT COUNT("Cars"."id") 
+							        FROM "Cars" 
+							        WHERE "Cars"."userId" = "Company"."userId" 
+							            AND "Cars"."groupModelId" = "GroupModels"."id"
+							            AND "Cars"."deletedAt" IS NULL) > 0
+							ORDER BY (SELECT COUNT("Cars"."id") 
+							    FROM "Cars" 
+							    WHERE "Cars"."userId" = 10 
+							        AND "Cars"."groupModelId" = "GroupModels"."id"
+							        AND "Cars"."deletedAt" IS NULL) DESC 
+							LIMIT 1
+						), ''), ''))`
+			        ),
+			        'groupModelMostListing'
+			    ]
 	    	]
 	    },
 	    include: [
