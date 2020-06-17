@@ -51,7 +51,8 @@ router.get('/user/:id', async (req, res) => {
     maxPrice,
     minYear,
     maxYear,
-    status
+    status,
+    bidType
   } = req.query;
   let { page, limit, by, sort } = req.query;
   let offset = 0;
@@ -159,9 +160,9 @@ router.get('/user/:id', async (req, res) => {
     });
   }
 
-  if(status) {
+  if (status) {
     let defaultOperator = `=`;
-    if(!status.match(/^[0-9]*$/)) {
+    if (!status.match(/^[0-9]*$/)) {
       defaultOperator = ``;
     }
 
@@ -172,6 +173,7 @@ router.get('/user/:id', async (req, res) => {
 
   const whereModelYear = {};
   const whereProfile = {};
+  const whereBargain = {};
   const customFields = {
     fields: ['islike', 'isBidFromLike', 'like', 'view', 'numberOfBidder', 'highestBidder'],
     id,
@@ -242,6 +244,12 @@ router.get('/user/:id', async (req, res) => {
     Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
   }
 
+  if (bidType) {
+    Object.assign(whereBargain, {
+      [Op.and]: [{ bidType: { [Op.eq]: bidType } }]
+    });
+  }
+
   const includes = [
     {
       model: models.ModelYear,
@@ -309,6 +317,11 @@ router.get('/user/:id', async (req, res) => {
         as: 'file',
         attributes: ['type', 'url']
       }
+    },
+    {
+      model: models.Bargain,
+      as: 'bargain',
+      where: whereBargain
     }
   ];
   return models.Car.findAll({
@@ -1361,7 +1374,7 @@ router.get('/bid/list', passport.authenticate('user', { session: false }), async
 
 async function sellList(req, res) {
   // const { id } = req.user;
-  const id =(req.user)? req.user.id:null;
+  const id = req.user ? req.user.id : null;
   const { status } = req.params;
   const {
     condition,
@@ -2880,22 +2893,27 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
   });
 });
 
-router.delete('/meet/schedules/:id', passport.authenticate('user', { session: false }), async (req, res) => {
-  const { id } = req.params;
-  if (validator.isInt(id ? id.toString() : '') === false) return res.status(400).json({ success: false, errors: 'Invalid Parameter' });
-  
-  const data = await models.MeetingSchedule.findByPk(id);
-  if (!data) return res.status(400).json({ success: false, errors: 'Schedule not found' });
+router.delete(
+  '/meet/schedules/:id',
+  passport.authenticate('user', { session: false }),
+  async (req, res) => {
+    const { id } = req.params;
+    if (validator.isInt(id ? id.toString() : '') === false)
+      return res.status(400).json({ success: false, errors: 'Invalid Parameter' });
 
-  return data
-    .destroy(id)
-    .then(async data => {
-      return apiResponse._success({ res, data });
-    })
-    .catch(err => {
-      return apiResponse._error({ res, errors: err });
-    });
-});
+    const data = await models.MeetingSchedule.findByPk(id);
+    if (!data) return res.status(400).json({ success: false, errors: 'Schedule not found' });
+
+    return data
+      .destroy(id)
+      .then(async data => {
+        return apiResponse._success({ res, data });
+      })
+      .catch(err => {
+        return apiResponse._error({ res, errors: err });
+      });
+  }
+);
 
 async function viewLike(req, res) {
   const {
