@@ -244,12 +244,6 @@ router.get('/user/:id', async (req, res) => {
     Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
   }
 
-  if (bidType) {
-    Object.assign(whereBargain, {
-      [Op.and]: [{ bidType: { [Op.eq]: bidType } }]
-    });
-  }
-
   const includes = [
     {
       model: models.ModelYear,
@@ -317,13 +311,31 @@ router.get('/user/:id', async (req, res) => {
         as: 'file',
         attributes: ['type', 'url']
       }
-    },
-    {
-      model: models.Bargain,
-      as: 'bargain',
-      where: whereBargain
     }
   ];
+
+  if (bidType) {
+    Object.assign(whereBargain, {
+      bidType,
+      [Op.and]: [
+           models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "Car"."id" 
+              AND "Bargains"."negotiationType" BETWEEN 1 AND 6
+              AND "Bargains"."deletedAt" IS NULL
+            ) = 0`
+          )
+      ]
+    });
+
+    includes.push({
+      model: models.Bargain,
+      as: 'bargain',
+      required: true,
+      where: whereBargain
+    });
+  }
+
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(
       await carHelper.customFields(customFields)
