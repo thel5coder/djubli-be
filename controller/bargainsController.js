@@ -123,7 +123,9 @@ async function bargainsList(req, res) {
           models.sequelize.literal(`(EXISTS(SELECT "r"."id" 
             FROM "BargainReaders" r 
             WHERE "r"."bargainId" = "Bargain"."id" 
+              AND "r"."carId" = "Bargain"."carId"
               AND "r"."userId" = "Bargain"."userId"
+              AND "r"."type" = 4
               AND "r"."isRead" = TRUE
               AND "r"."deletedAt" IS NULL))`
           ), 
@@ -282,6 +284,8 @@ async function bargainsList(req, res) {
               await models.BargainReader.create({
                 userId: readerId,
                 bargainId: item.id,
+                carId: item.carId,
+                type: 4,
                 isRead: true
               })
                 .catch(err => {
@@ -693,15 +697,17 @@ async function getSellNego(req, res) {
             }
           }
 
-          const getReader = await models.BargainReader.findOne({
-            where: {
-              userId: item.dataValues.bargain[0].userId,
-              bargainId: item.dataValues.bargain[0].id,
-              isRead: true
-            }
-          });
+          // const getReader = await models.BargainReader.findOne({
+          //   where: {
+          //     userId: item.dataValues.bargain[0].userId,
+          //     bargainId: item.dataValues.bargain[0].id,
+          //     carId: item.dataValues.bargain[0].carId,
+          //     type: 4,
+          //     isRead: true
+          //   }
+          // });
 
-          item.dataValues.isRead = getReader ? true : false;
+          // item.dataValues.isRead = getReader ? true : false;
         })
       );
 
@@ -1098,15 +1104,17 @@ async function getBuyNego(req, res) {
             }
           }
 
-          const getReader = await models.BargainReader.findOne({
-            where: {
-              userId: item.dataValues.bargain[0].userId,
-              bargainId: item.dataValues.bargain[0].id,
-              isRead: true
-            }
-          });
+          // const getReader = await models.BargainReader.findOne({
+          //   where: {
+          //     userId: item.dataValues.bargain[0].userId,
+          //     bargainId: item.dataValues.bargain[0].id,
+          //     carId: item.dataValues.bargain[0].carId,
+          //     type: 4,
+          //     isRead: true
+          //   }
+          // });
 
-          item.dataValues.isRead = getReader ? true : false;
+          // item.dataValues.isRead = getReader ? true : false;
         })
       );
 

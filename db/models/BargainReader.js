@@ -4,6 +4,8 @@ module.exports = (sequelize, DataTypes) => {
 	  	{
 		    userId: DataTypes.INTEGER,
 		    bargainId: DataTypes.INTEGER,
+		    carId: DataTypes.INTEGER,
+		    type: DataTypes.INTEGER,
 		    isRead: DataTypes.BOOLEAN
 		}, 
 		{ timestamps: true, paranoid: true }
