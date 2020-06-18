@@ -1108,4 +1108,31 @@ router.get('/car/bidList/:id', async (req, res) => {
         });
 });
 
+router.get('/sellAndBuyBrand/:id', async (req, res) => {
+    const { id } = req.params;
+    return models.DealerSellAndBuyBrand.findOne({
+            where: {
+                dealerId: id
+            },
+            include: [
+                {
+                    model: models.Brand,
+                    as: 'brand'
+                }
+            ]
+        })
+        .then(async data => {
+            res.json({
+                success: true,
+                data
+            });
+        })
+        .catch(err => {
+            res.status(422).json({
+                success: false,
+                errors: err.message
+            });
+        });
+});
+
 module.exports = router;
