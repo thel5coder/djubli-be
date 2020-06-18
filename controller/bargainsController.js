@@ -686,28 +686,19 @@ async function getSellNego(req, res) {
           if (negotiationType == 0) {
             // item.dataValues.statusNego = 'Ajak Nego';
             item.dataValues.statusNego = 'Tunggu Jawaban';
+            item.dataValues.isRead = true;
           } else if (negotiationType == 1) {
             const dataBargain = item.dataValues.bargain;
             const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
 
             if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
+              item.dataValues.isRead = true;
             } else if (dataBargain.length && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
+              item.dataValues.isRead = false;
             }
           }
-
-          // const getReader = await models.BargainReader.findOne({
-          //   where: {
-          //     userId: item.dataValues.bargain[0].userId,
-          //     bargainId: item.dataValues.bargain[0].id,
-          //     carId: item.dataValues.bargain[0].carId,
-          //     type: 4,
-          //     isRead: true
-          //   }
-          // });
-
-          // item.dataValues.isRead = getReader ? true : false;
         })
       );
 
@@ -1093,28 +1084,19 @@ async function getBuyNego(req, res) {
           if (negotiationType == 0) {
             // item.dataValues.statusNego = 'Diajak Nego';
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
+            item.dataValues.isRead = false;
           } else if (negotiationType == 1) {
             const dataBargain = item.dataValues.bargain;
             const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;            
 
             if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
+              item.dataValues.isRead = true;
             } else if (dataBargain.length > 0 && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
+              item.dataValues.isRead = false;
             }
           }
-
-          // const getReader = await models.BargainReader.findOne({
-          //   where: {
-          //     userId: item.dataValues.bargain[0].userId,
-          //     bargainId: item.dataValues.bargain[0].id,
-          //     carId: item.dataValues.bargain[0].carId,
-          //     type: 4,
-          //     isRead: true
-          //   }
-          // });
-
-          // item.dataValues.isRead = getReader ? true : false;
         })
       );
 
