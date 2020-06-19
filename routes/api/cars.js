@@ -318,13 +318,12 @@ router.get('/user/:id', async (req, res) => {
     Object.assign(whereBargain, {
       bidType,
       [Op.and]: [
-           models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."negotiationType" BETWEEN 1 AND 6
               AND "Bargains"."deletedAt" IS NULL
-            ) = 0`
-          )
+            ) = 0`)
       ]
     });
 
@@ -1634,11 +1633,30 @@ async function sellList(req, res) {
         as: 'file',
         attributes: ['type', 'url']
       }
+    },
+    {
+      model: models.Purchase,
+      as: 'purchase',
+      attributes: ['price', 'createdAt']
     }
   ];
 
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(
+      [
+        [
+          models.sequelize.literal(
+            `(SELECT "SubDistricts"."name" FROM "SubDistricts" where "SubDistricts".id = "Car"."subdistrictId")`
+          ),
+          'subdistrictName'
+        ],
+        [
+          models.sequelize.literal(
+            `(SELECT "Cities"."name" FROM "Cities" where "Cities".id = "Car"."cityId")`
+          ),
+          'cityName'
+        ]
+      ],
       await carHelper.customFields(customFields)
     ),
     include: includes,
