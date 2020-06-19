@@ -180,6 +180,63 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
     });
 });
 
+router.put('/extend/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const id = req.params.id;
+  const userId = req.user.id;
+  const { expiredAt } = req.body;
+
+  if (!expiredAt)
+    return res.status(400).json({ success: false, errors: 'expiredAt must be filled' });
+  if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid())
+    return res.status(400).json({ success: false, errors: 'Invalid expired date' });
+
+  const data = await models.Bargain.findOne({
+    where: {
+      id,
+      userId
+    }
+  });
+
+  if (!data) {
+    return res.status(400).json({ 
+      success: false, errors: 'data not found or you are not the author of this data' 
+    });
+  }
+
+  return data
+    .update({
+      expiredAt
+    })
+    .then(async data => {
+      // const carExists = await models.Car.findByPk(carId);
+
+      // const userNotif = {
+      //   userId: carExists.userId,
+      //   collapseKey: null,
+      //   notificationTitle: `Notifikasi Jual`,
+      //   notificationBody: `penawaran berubah`,
+      //   notificationClickAction: `carOffer`,
+      //   dataReferenceId: carId,
+      //   category: 1,
+      //   status: 4
+      // };
+      // const emit = await notification.insertNotification(userNotif);
+      // req.io.emit(`tabJual-${carExists.userId}`, emit);
+      // notification.userNotif(userNotif);
+
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
+
 router.post('/negotiate', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
   const {
