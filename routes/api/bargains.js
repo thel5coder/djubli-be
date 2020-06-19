@@ -319,15 +319,42 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 });
 
 router.delete(
-  '/failureNegotiation/:id',
+  '/failureNegotiation/:carId',
   passport.authenticate('user', { session: false }),
   async (req, res) => {
-    const { id } = req.params;
+    const { carId } = req.params;
+    const { withBid } = req.body;
+
+    const car = await models.Car.findByPk(carId);
+    if(!car) {
+      return res.status(422).json({ 
+        success: false, errors: 'car not found' 
+      });
+    }
+
+    const where = {
+      carId
+    }
+
+    if(withBid) {
+      const roomMembers = await models.RoomMember.findAll({
+        where: {
+          roomId: car.roomId
+        }
+      });
+
+      let usersId = roomMembers.map(item => item.userId);
+      const where = {
+        usersId
+      }
+    } else {
+      Object.assign(where, {
+        bidType: 1
+      });
+    }
 
     return models.Bargain.destroy({
-      where: {
-        [Op.and]: [{ carId: id }, { bidType: 1 }]
-      }
+      where
     })
       .then(() => {
         res.json({
