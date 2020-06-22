@@ -13,7 +13,7 @@ module.exports = (sequelize, DataTypes) => {
       categoryNotification: {
         type: DataTypes.VIRTUAL,
         get() {
-          const stsCategorys = ['NULL', 'notifJual', 'notifBeli', 'notifLike'];
+          const stsCategorys = ['NULL', 'notifJual', 'notifBeli', 'notifLike', 'notifExtendExpiredAt'];
           return stsCategorys[this.category];
         }
       },

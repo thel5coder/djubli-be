@@ -208,21 +208,20 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
       expiredAt
     })
     .then(async data => {
-      // const carExists = await models.Car.findByPk(carId);
+      const userNotif = {
+        userId: data.userId,
+        collapseKey: null,
+        notificationTitle: 'Notifikasi Extend Waktu Penawaran',
+        notificationBody: `Waktu penawaran diperpanjang sampai ${expiredAt}`,
+        notificationClickAction: `carOffer`,
+        dataReferenceId: data.carId,
+        category: 4,
+        status: 4
+      };
 
-      // const userNotif = {
-      //   userId: carExists.userId,
-      //   collapseKey: null,
-      //   notificationTitle: `Notifikasi Jual`,
-      //   notificationBody: `penawaran berubah`,
-      //   notificationClickAction: `carOffer`,
-      //   dataReferenceId: carId,
-      //   category: 1,
-      //   status: 4
-      // };
-      // const emit = await notification.insertNotification(userNotif);
-      // req.io.emit(`tabJual-${carExists.userId}`, emit);
-      // notification.userNotif(userNotif);
+      const emit = await notification.insertNotification(userNotif);
+      req.io.emit(`extend-${data.carId}`, emit);
+      notification.userNotif(userNotif);
 
       res.json({
         success: true,
