@@ -374,7 +374,7 @@ async function getSellNego(req, res) {
            models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."negotiationType" BETWEEN 1 AND 6
+              AND "Bargains"."negotiationType" IN (1, 2, 4, 5, 6)
               AND "Bargains"."deletedAt" IS NULL
             ) = 0`
           )
@@ -383,7 +383,7 @@ async function getSellNego(req, res) {
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
-        [Op.between]: [1, 6]
+        [Op.in]: [1, 2, 4, 5, 6]
       }
     });
   }
@@ -698,6 +698,11 @@ async function getSellNego(req, res) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
               item.dataValues.isRead = false;
             }
+
+            if(dataBargain.length && dataBargain[0].negotiationType == 4) {
+              item.dataValues.statusNego = 'Nego Berhasil';
+              item.dataValues.isRead = true;
+            }
           }
         })
       );
@@ -772,7 +777,7 @@ async function getBuyNego(req, res) {
            models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."negotiationType" BETWEEN 1 AND 6
+              AND "Bargains"."negotiationType" IN (1, 2, 4, 5, 6)
               AND "Bargains"."deletedAt" IS NULL
             ) = 0`
           )
@@ -781,7 +786,7 @@ async function getBuyNego(req, res) {
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
-        [Op.between]: [1, 6]
+        [Op.in]: [1, 2, 4, 5, 6]
       }
     });
   }
@@ -1095,6 +1100,11 @@ async function getBuyNego(req, res) {
             } else if (dataBargain.length > 0 && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
               item.dataValues.isRead = false;
+            }
+
+            if(dataBargain.length && dataBargain[0].negotiationType == 4) {
+              item.dataValues.statusNego = 'Nego Berhasil';
+              item.dataValues.isRead = true;
             }
           }
         })
