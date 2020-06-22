@@ -1110,7 +1110,7 @@ router.get('/car/bidList/:id', async (req, res) => {
 
 router.get('/sellAndBuyBrand/:id', async (req, res) => {
     const { id } = req.params;
-    return models.DealerSellAndBuyBrand.findOne({
+    return models.DealerSellAndBuyBrand.findAll({
             where: {
                 dealerId: id
             },
