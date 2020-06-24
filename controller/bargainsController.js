@@ -1,3 +1,4 @@
+const moment = require('moment');
 const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../db/models');
@@ -130,6 +131,17 @@ async function bargainsList(req, res) {
               AND "r"."deletedAt" IS NULL))`
           ), 
           'isRead'
+        ],
+        [
+          models.sequelize.literal(`(NOT EXISTS(SELECT "b"."id" 
+            FROM "Bargains" b 
+            WHERE "b"."carId" = "Bargain"."carId"
+              AND "b"."bidType" = 1
+              AND "b"."negotiationType" NOT IN (3, 4)
+              AND "b"."expiredAt" > (SELECT NOW())
+              AND "b"."deletedAt" IS NULL))`
+          ), 
+          'isExpired'
         ]
       ]
     },
@@ -237,7 +249,7 @@ async function bargainsList(req, res) {
                   AND "b"."bidderId" = "Bargain"."userId"
                   AND "b"."bidType" = 1
                   AND "b"."negotiationType" NOT IN (3, 4)
-                  AND "b"."expiredAt" >= (SELECT NOW())
+                  AND "b"."expiredAt" > (SELECT NOW())
                   AND "b"."deletedAt" IS NULL))`
               ), 
               'isNego'
@@ -699,10 +711,15 @@ async function getSellNego(req, res) {
               item.dataValues.isRead = false;
             }
 
-            if(dataBargain.length && dataBargain[0].negotiationType == 4) {
-              item.dataValues.statusNego = 'Nego Berhasil';
+            if(dataBargain.length && moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss')) {
+              item.dataValues.statusNego = 'Nego Gagal';
               item.dataValues.isRead = true;
             }
+
+            // if(dataBargain.length && dataBargain[0].negotiationType == 4) {
+            //   item.dataValues.statusNego = 'Nego Berhasil';
+            //   item.dataValues.isRead = true;
+            // }
           }
         })
       );
@@ -787,6 +804,9 @@ async function getBuyNego(req, res) {
     Object.assign(whereBargain, {
       negotiationType: {
         [Op.in]: [1, 2, 4, 5, 6]
+      },
+      expiredAt: {
+        [Op.gt]: moment().format()
       }
     });
   }
