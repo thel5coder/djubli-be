@@ -86,7 +86,20 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
       break;
   }
 
-  const where = { userId: id };
+  const whereBargainUser = Sequelize.literal(`(SELECT "Bargains"."userId" 
+    FROM "Bargains" 
+    WHERE "Bargains"."id" = "Purchase"."bargainId"
+      AND "Bargains"."deletedAt" IS null)`);
+
+  const where = { 
+    [Op.or]: [
+      { userId: id },
+      Sequelize.where(whereBargainUser, {
+        [Op.eq]: id
+      })
+    ]
+  };
+
   const whereCar = {};
   const whereModelYear = {};
   const whereProfile = {};
@@ -243,6 +256,10 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
           }
         }
       ]
+    },
+    {
+      model: models.Bargain,
+      as: 'bargain',
     }
   ];
 
@@ -262,6 +279,12 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
         where
       });
       const pagination = paginator.paging(page, count, limit);
+
+      data.map(item => {
+        if(item.dataValues.bargainId) {
+          item.dataValues.status = 'Tunggu DP';
+        }
+      });
 
       res.json({
         success: true,

@@ -347,6 +347,21 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     return res.status(422).json({ success: false, errors: err.message });
   });
 
+  if(negotiationType == 4) {
+    await models.Purchase.create({
+      userId: carExists.room.members[0].userId,
+      carId,
+      price: bidAmount,
+      paymentMethod,
+      bargainId: data.id
+    }, {
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ success: false, errors: err.message });
+    });
+  }
+
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
 
