@@ -125,7 +125,7 @@ async function bargainsList(req, res) {
             FROM "BargainReaders" r 
             WHERE "r"."bargainId" = "Bargain"."id" 
               AND "r"."carId" = "Bargain"."carId"
-              AND "r"."userId" = "Bargain"."userId"
+              AND "r"."userId" != "Bargain"."userId"
               AND "r"."type" = 4
               AND "r"."isRead" = TRUE
               AND "r"."deletedAt" IS NULL))`
@@ -285,6 +285,7 @@ async function bargainsList(req, res) {
       if(readerId && readerId !== '') {
         await Promise.all(
           data.map(async item => {
+            // item.dataValues.isRead = true;
             const findBargainReader = await models.BargainReader.findOne({
               where: {
                 userId: readerId,
