@@ -14,7 +14,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  let { page, limit, by, sort, brandId, condition } = req.query;
+  let { page, limit, by, sort, brandId, condition, name } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -39,9 +39,22 @@ router.get('/', async (req, res) => {
     isPartner: true
   };
 
+  const whereUser = {};
   if (brandId) {
     Object.assign(where, {
       authorizedBrandId: brandId
+    });
+  }
+
+  if(name) {
+    Object.assign(where, {
+        [Op.and]: [
+            models.sequelize.literal(`(SELECT "Users"."name" 
+                FROM "Users" 
+                WHERE "Users"."id" = "Dealer"."userId"
+                    AND "Users"."deletedAt" IS NULL) iLike '%${name}%'
+            `)
+        ]
     });
   }
 

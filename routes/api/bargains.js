@@ -362,6 +362,43 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
+  const runQuery = async (query) => {
+    return await models.sequelize.query(query, { transaction: trans, type: models.sequelize.QueryTypes.SELECT });
+  }
+
+  const getIsNego = await runQuery(`SELECT(EXISTS(SELECT "b"."id" 
+    FROM "Bargains" b 
+    WHERE "b"."carId" = ${data.carId} 
+      AND "b"."bidderId" = ${data.userId}
+      AND "b"."bidType" = 1
+      AND "b"."negotiationType" NOT IN (3, 4)
+      AND "b"."expiredAt" >= (SELECT NOW())
+      AND "b"."deletedAt" IS NULL)) AS isnego`
+  );
+
+  const getIsRead = await runQuery(`SELECT(EXISTS(SELECT "r"."id" 
+    FROM "BargainReaders" r 
+    WHERE "r"."bargainId" = ${data.id}
+      AND "r"."carId" = ${data.carId}
+      AND "r"."userId" = ${id}
+      AND "r"."type" = 4
+      AND "r"."isRead" = TRUE
+      AND "r"."deletedAt" IS NULL)) AS isread`
+  );
+
+  const getIsExpired = await runQuery(`SELECT(NOT EXISTS(SELECT "b"."id" 
+    FROM "Bargains" b 
+    WHERE "b"."carId" = ${data.carId}
+      AND "b"."bidType" = 1
+      AND "b"."negotiationType" NOT IN (3, 4)
+      AND "b"."expiredAt" > (SELECT NOW())
+      AND "b"."deletedAt" IS NULL)) AS isexpired`
+  );
+
+  data.dataValues.isNego = getIsNego[0].isnego
+  data.dataValues.isRead = getIsRead[0].isread
+  data.dataValues.isExpired = getIsExpired[0].isexpired
+
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
 
@@ -383,7 +420,6 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     const emit = await notification.insertNotification(userNotif);
     req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
     notification.userNotif(userNotif);
-    console.log(userNotif);
   });
 
   return res.status(200).json({ success: true, data });
