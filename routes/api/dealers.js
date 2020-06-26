@@ -25,7 +25,15 @@ router.get('/', async (req, res) => {
   if (!by) by = 'createdAt';
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
-  let order = [[by, sort]];
+  let order;
+
+  if(by == 'name') {
+    order = [[{ model: models.User, as: 'user' }, by, sort]]
+  } else if(by == 'countListing') {
+    order = [[models.sequelize.col('countListing'), sort]]
+  } else {
+    order = [[by, sort]]
+  }
 
   const where = {
     isPartner: true
