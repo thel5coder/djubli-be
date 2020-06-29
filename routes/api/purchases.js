@@ -93,7 +93,21 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
 
   const where = { 
     [Op.or]: [
-      { userId: id },
+      { 
+        [Op.or]: [
+          {
+            userId: id,
+            bargainId: {
+              [Op.not]: null
+            },
+            isAccept: true
+          },
+          {
+            userId: id,
+            bargainId: null
+          }
+        ]
+      },
       Sequelize.where(whereBargainUser, {
         [Op.eq]: id
       })
@@ -646,6 +660,50 @@ router.delete('/:id', passport.authenticate('user', { session: false }), async (
     .catch(err => {
       res.status(422).json({
         success: true,
+        errors: err.message
+      });
+    });
+});
+
+router.put('/bargainId/:bargainId', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { bargainId } = req.params;
+  const { id } = req.user;
+  const { isAccept } = req.body;
+
+  if (validator.isInt(bargainId ? bargainId.toString() : '') === false) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Invalid Parameter'
+    });
+  }
+
+  const data = await models.Purchase.findOne({
+    where: {
+      bargainId,
+      userId: id
+    }
+  });
+
+  if (!data) {
+    return res.status(400).json({
+      success: false,
+      errors: 'Purchase not found'
+    });
+  }
+  
+  return data
+    .update({
+      isAccept
+    })
+    .then(() => {
+      res.json({
+        success: true,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
         errors: err.message
       });
     });

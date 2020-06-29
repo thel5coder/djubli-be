@@ -7,7 +7,8 @@ module.exports = (sequelize, DataTypes) => {
       bargainId: DataTypes.INTEGER,
       price: DataTypes.NUMERIC,
       paymentMethod: DataTypes.INTEGER,
-      haveSeenCar: DataTypes.BOOLEAN
+      haveSeenCar: DataTypes.BOOLEAN,
+      isAccept: DataTypes.BOOLEAN
     },
     { timestamps: true, paranoid: true }
   );

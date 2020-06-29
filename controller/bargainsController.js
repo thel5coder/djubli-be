@@ -383,6 +383,9 @@ async function getSellNego(req, res) {
     Object.assign(whereBargain, {
       negotiationType: {
         [Op.eq]: negotiationType
+      },
+      expiredAt: {
+        [Op.gt]: moment().format()
       }
     });
 
@@ -402,8 +405,23 @@ async function getSellNego(req, res) {
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
-        [Op.in]: [1, 2, 4, 5, 6]
+        [Op.in]: [1, 2, 5, 6]
+      },
+      expiredAt: {
+        [Op.gt]: moment().format()
       }
+    });
+
+    Object.assign(where, {
+      [Op.and]: [
+           models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "Car"."id" 
+              AND "Bargains"."negotiationType" IN (4)
+              AND "Bargains"."deletedAt" IS NULL
+            ) = 0`
+          )
+      ]
     });
   }
 
@@ -791,7 +809,10 @@ async function getBuyNego(req, res) {
 
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
-      [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
+      [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }],
+      expiredAt: {
+        [Op.gt]: moment().format()
+      }
     });
 
     // so that it doesn't appear on the "beli->nego->diajak nego" page
