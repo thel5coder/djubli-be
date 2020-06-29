@@ -105,45 +105,50 @@ async function bargainsList(req, res) {
     });
   }
 
+  const include = [
+    [
+      models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
+        FROM "Bargains" b 
+        WHERE "b"."carId" = "Bargain"."carId" 
+          AND "b"."bidderId" = "Bargain"."userId"
+          AND "b"."bidType" = 1
+          AND "b"."negotiationType" NOT IN (3, 4)
+          AND "b"."expiredAt" >= (SELECT NOW())
+          AND "b"."deletedAt" IS NULL))`
+      ), 
+      'isNego'
+    ],
+    [
+      models.sequelize.literal(`(NOT EXISTS(SELECT "b"."id" 
+        FROM "Bargains" b 
+        WHERE "b"."carId" = "Bargain"."carId"
+          AND "b"."bidType" = 1
+          AND "b"."negotiationType" NOT IN (3, 4)
+          AND "b"."expiredAt" > (SELECT NOW())
+          AND "b"."deletedAt" IS NULL))`
+      ), 
+      'isExpired'
+    ]
+  ];
+
+  if(readerId) {
+    include.push([
+      models.sequelize.literal(`(EXISTS(SELECT "r"."id" 
+        FROM "BargainReaders" r 
+        WHERE "r"."bargainId" = "Bargain"."id" 
+          AND "r"."carId" = "Bargain"."carId"
+          AND "r"."userId" = ${readerId}
+          AND "r"."type" = 4
+          AND "r"."isRead" = TRUE
+          AND "r"."deletedAt" IS NULL))`
+      ), 
+      'isRead'
+    ]);
+  }
+
   return models.Bargain.findAll({
     attributes: {
-      include: [
-        [
-          models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
-            FROM "Bargains" b 
-            WHERE "b"."carId" = "Bargain"."carId" 
-              AND "b"."bidderId" = "Bargain"."userId"
-              AND "b"."bidType" = 1
-              AND "b"."negotiationType" NOT IN (3, 4)
-              AND "b"."expiredAt" >= (SELECT NOW())
-              AND "b"."deletedAt" IS NULL))`
-          ), 
-          'isNego'
-        ],
-        [
-          models.sequelize.literal(`(EXISTS(SELECT "r"."id" 
-            FROM "BargainReaders" r 
-            WHERE "r"."bargainId" = "Bargain"."id" 
-              AND "r"."carId" = "Bargain"."carId"
-              AND "r"."userId" = ${readerId}
-              AND "r"."type" = 4
-              AND "r"."isRead" = TRUE
-              AND "r"."deletedAt" IS NULL))`
-          ), 
-          'isRead'
-        ],
-        [
-          models.sequelize.literal(`(NOT EXISTS(SELECT "b"."id" 
-            FROM "Bargains" b 
-            WHERE "b"."carId" = "Bargain"."carId"
-              AND "b"."bidType" = 1
-              AND "b"."negotiationType" NOT IN (3, 4)
-              AND "b"."expiredAt" > (SELECT NOW())
-              AND "b"."deletedAt" IS NULL))`
-          ), 
-          'isExpired'
-        ]
-      ]
+      include
     },
     include: [
       {
