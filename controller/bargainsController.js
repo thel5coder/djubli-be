@@ -852,7 +852,8 @@ async function getBuyNego(req, res) {
             AND ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
-        ),      ]
+        )   
+      ]
     });
   }
 
