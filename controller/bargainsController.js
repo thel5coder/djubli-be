@@ -393,19 +393,19 @@ async function getSellNego(req, res) {
     // when the data is already on the "jual->nego->sedang nego" page
     Object.assign(where, {
       [Op.and]: [
-           models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."negotiationType" IN (1, 2, 4, 5, 6)
-              AND "Bargains"."deletedAt" IS NULL
-            ) = 0`
-          )
+        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "Car"."id" 
+            AND "Bargains"."negotiationType" IN (1, 2, 4, 5, 6)
+            AND "Bargains"."deletedAt" IS NULL
+          ) = 0`
+        )
       ]
     });
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
-        [Op.in]: [1, 2, 5, 6]
+        [Op.in]: [1, 2, 3, 5, 6]
       },
       expiredAt: {
         [Op.gt]: moment().format()
@@ -414,14 +414,15 @@ async function getSellNego(req, res) {
 
     Object.assign(where, {
       [Op.and]: [
-           models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."negotiationType" IN (4)
-              AND "Bargains"."deletedAt" IS NULL
-            ) = 0`
-          )
-      ]
+        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "Car"."id" 
+            AND ("Bargains"."negotiationType" = 4 
+              OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
+            )
+            AND "Bargains"."deletedAt" IS NULL
+          ) = 0`
+        ),      ]
     });
   }
 
@@ -741,6 +742,11 @@ async function getSellNego(req, res) {
               item.dataValues.isRead = true;
             }
 
+            if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
+              item.dataValues.statusNego = 'Pembeli Keluar Nego';
+              item.dataValues.isRead = true;
+            }
+
             // if(dataBargain.length && dataBargain[0].negotiationType == 4) {
             //   item.dataValues.statusNego = 'Nego Berhasil';
             //   item.dataValues.isRead = true;
@@ -831,11 +837,23 @@ async function getBuyNego(req, res) {
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
-        [Op.in]: [1, 2, 4, 5, 6]
+        [Op.in]: [1, 2, 3, 4, 5, 6]
       },
       expiredAt: {
         [Op.gt]: moment().format()
       }
+    });
+
+    Object.assign(where, {
+      [Op.and]: [
+        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "Car"."id" 
+            AND ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
+            AND "Bargains"."deletedAt" IS NULL
+          ) = 0`
+        )   
+      ]
     });
   }
 
@@ -1152,6 +1170,11 @@ async function getBuyNego(req, res) {
 
             if(dataBargain.length && dataBargain[0].negotiationType == 4) {
               item.dataValues.statusNego = 'Nego Berhasil';
+              item.dataValues.isRead = true;
+            }
+
+            if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
+              item.dataValues.statusNego = 'Penjual Keluar Nego';
               item.dataValues.isRead = true;
             }
           }
