@@ -540,6 +540,7 @@ async function sell(req, res) {
   if (!groupModelId) return res.status(400).json({ success: false, errors: 'groupModel is mandatory' });
   if (!modelId) return res.status(400).json({ success: false, errors: 'model is mandatory' });
   if (!modelYearId) return res.status(400).json({ success: false, errors: 'model year is mandatory' });
+
   if (!location) {
     return res.status(400).json({ success: false, errors: 'location is mandatory' });
   } else {
@@ -551,9 +552,47 @@ async function sell(req, res) {
     if (validator.isNumeric(locations[1] ? locations[1].toString() : '') === false)
       return apiResponse._error({ res, errors: 'invalid longitude' });
   }
+
   if (km) {
     if (validator.isInt(km) === false)
       return res.status(422).json({ success: false, errors: 'km is number' });
+  }
+
+  if(frameNumber) {
+    const checkFrameNumber = await models.Car.findOne({
+      where: {
+        frameNumber
+      }
+    });
+
+    if(checkFrameNumber) {
+      return res.status(422).json({ success: false, errors: 'frame number alredy exists' });
+    }
+  }
+
+  if(engineNumber) {
+    const checkEngineNumber = await models.Car.findOne({
+      where: {
+        engineNumber
+      }
+    });
+
+    if(checkEngineNumber) {
+      return res.status(422).json({ success: false, errors: 'engine number alredy exists' });
+    }
+  }
+
+
+  if(STNKnumber) {
+    const checkSTNKnumber = await models.Car.findOne({
+      where: {
+        STNKnumber
+      }
+    });
+
+    if(checkSTNKnumber) {
+      return res.status(422).json({ success: false, errors: 'STNK number alredy exists' });
+    }
   }
 
   let STNKphoto = null;
@@ -568,6 +607,7 @@ async function sell(req, res) {
     STNKphoto = result.name;
     // imageHelper.uploadToS3(result);
   }
+
   const errors = [];
   const insert = {
     userId,
@@ -656,7 +696,8 @@ async function sell(req, res) {
         [Op.ne]: req.user.id
       }
     }
-  });  
+  });
+
   otherBidders.map(async otherBidder => {
     userNotifs.push({
       userId: otherBidder.DISTINCT,
@@ -682,6 +723,7 @@ async function sell(req, res) {
       }
     }
   });
+
   otherCarSells.map(async otherCarSell => {
     userNotifs.push({
       userId: otherCarSell.DISTINCT,
