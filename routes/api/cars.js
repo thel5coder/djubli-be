@@ -1685,6 +1685,7 @@ async function sellList(req, res) {
       });
     });
 }
+
 router.get(
   '/sell_list/status/:status',
   passport.authenticate('user', { session: false }),
@@ -1692,6 +1693,7 @@ router.get(
     return sellList(req, res);
   }
 );
+
 router.get(
   '/sell/list/status/:status',
   // passport.authenticate('user', { session: false }),
@@ -3209,9 +3211,11 @@ async function viewLike(req, res) {
       });
     });
 }
+
 router.get('/viewLike', async (req, res) => {
   return viewLike(req, res);
 });
+
 router.get('/views/like', async (req, res) => {
   return viewLike(req, res);
 });
