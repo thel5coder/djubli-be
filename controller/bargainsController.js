@@ -119,13 +119,9 @@ async function bargainsList(req, res) {
       'isNego'
     ],
     [
-      models.sequelize.literal(`(NOT EXISTS(SELECT "b"."id" 
-        FROM "Bargains" b 
-        WHERE "b"."carId" = "Bargain"."carId"
-          AND "b"."bidType" = 1
-          AND "b"."negotiationType" NOT IN (3, 4)
-          AND "b"."expiredAt" > (SELECT NOW())
-          AND "b"."deletedAt" IS NULL))`
+      models.sequelize.literal(`(CASE WHEN "expiredAt" >= now()
+        THEN false
+        ELSE true END)`
       ), 
       'isExpired'
     ]
