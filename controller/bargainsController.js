@@ -852,6 +852,18 @@ async function getBuyNego(req, res) {
             AND ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
+        ),
+        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "Car"."id" 
+            AND "Bargains"."negotiationType" = 4
+            AND (SELECT COUNT("Purchases"."id") 
+              FROM "Purchases"
+              WHERE "Purchases"."bargainId" = "Bargains"."id"
+                AND "Purchases"."isAccept" = true
+                AND "Purchases"."deletedAt" IS NULL) > 0
+            AND "Bargains"."deletedAt" IS NULL
+          ) = 0`
         )   
       ]
     });
