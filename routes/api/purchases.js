@@ -87,34 +87,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
       break;
   }
 
-  // const whereBargainUser = Sequelize.literal(`(SELECT "Bargains"."userId" 
-  //   FROM "Bargains" 
-  //   WHERE "Bargains"."id" = "Purchase"."bargainId"
-  //     AND "Bargains"."deletedAt" IS null)`);
-
-  const where = { 
-    // [Op.or]: [
-    //   { 
-    //     [Op.or]: [
-    //       {
-    //         userId: id,
-    //         bargainId: {
-    //           [Op.not]: null
-    //         },
-    //         isAccept: true
-    //       },
-    //       {
-    //         userId: id,
-    //         bargainId: null
-    //       }
-    //     ]
-    //   },
-    //   Sequelize.where(whereBargainUser, {
-    //     [Op.eq]: id
-    //   })
-    // ]
-  };
-
+  const where = {};
   if(tabType == 0) {
     const whereBargainUser = Sequelize.literal(`(SELECT "Bargains"."userId" 
       FROM "Bargains" 
