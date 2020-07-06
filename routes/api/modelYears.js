@@ -518,7 +518,7 @@ router.get('/listingAll', async (req, res) => {
   }
 
   Object.assign(where, {
-    [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 1 })]
+    [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 0 })]
   });
 
   const addAttribute = await carHelper.customFields({
@@ -592,6 +592,7 @@ router.get('/listingAll', async (req, res) => {
     upperCase
   });
 
+  console.log(where)
   return models.ModelYear.findAll({
     attributes: Object.keys(models.ModelYear.attributes).concat(addAttribute),
     include: [
