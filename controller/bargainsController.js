@@ -744,9 +744,7 @@ async function getSellNego(req, res) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
             item.dataValues.isRead = true;
 
-            if(dataBargain.length && 
-              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss')
-            ) {
+            if(dataBargain.length && dataBargain[0].expiredAt < moment().format('YYYY-MM-DD HH:mm:ss')) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
           } else if (negotiationType == 1) {
@@ -759,7 +757,7 @@ async function getSellNego(req, res) {
             }
 
             if(dataBargain.length && 
-              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss') && 
+              dataBargain[0].expiredAt < moment().format('YYYY-MM-DD HH:mm:ss') && 
               [1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
               // item.dataValues.statusNego = 'Nego Gagal';
@@ -1202,7 +1200,7 @@ async function getBuyNego(req, res) {
             item.dataValues.isRead = false;
 
             if(dataBargain.length && 
-              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss')
+              dataBargain[0].expiredAt < moment().format('YYYY-MM-DD HH:mm:ss')
             ) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
@@ -1216,7 +1214,7 @@ async function getBuyNego(req, res) {
             }
 
             if(dataBargain.length && 
-              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss') && 
+              dataBargain[0].expiredAt < moment().format('YYYY-MM-DD HH:mm:ss') && 
               [0,1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
               // item.dataValues.statusNego = 'Nego Gagal';
