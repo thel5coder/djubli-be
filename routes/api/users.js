@@ -465,7 +465,7 @@ router.post('/login', async (req, res) => {
       status: true
     }
   });
-  
+
   if (!data) {
     return res.status(404).json({
       success: false,
@@ -749,7 +749,7 @@ router.post('/register', async (req, res) => {
       });
     });
 
-    if (fileId) {
+    if (fileId && fileId.length) {
       await Promise.all(
         fileId.map(async file => {
           await models.CompanyGallery.create(
@@ -785,7 +785,7 @@ router.post('/register', async (req, res) => {
         errors: err.message
       });
     });
-    if (fileId) {
+    if (fileId && fileId.length) {
       await Promise.all(
         fileId.map(async file => {
           await models.DealerGallery.create(
@@ -803,7 +803,7 @@ router.post('/register', async (req, res) => {
       );
     }
 
-    if (authorizedWorkshop) {
+    if (authorizedWorkshop && authorizedWorkshop.length) {
       await Promise.all(
         authorizedWorkshop.map(async brandData => {
           await models.DealerWorkshopAuthorizedBrand.create(
@@ -820,7 +820,7 @@ router.post('/register', async (req, res) => {
         })
       );
     }
-    if (otherWorkshop) {
+    if (otherWorkshop && otherWorkshop.length) {
       await Promise.all(
         otherWorkshop.map(async brandData => {
           await models.DealerWorkshopOtherBrand.create(
@@ -837,7 +837,7 @@ router.post('/register', async (req, res) => {
         })
       );
     }
-    if (sellAndBuy) {
+    if (sellAndBuy && sellAndBuy.length) {
       await Promise.all(
         sellAndBuy.map(async brandData => {
           await models.DealerSellAndBuyBrand.create(
