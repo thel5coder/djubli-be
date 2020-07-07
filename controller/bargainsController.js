@@ -418,10 +418,11 @@ async function getSellNego(req, res) {
     Object.assign(whereBargain, {
       negotiationType: {
         [Op.in]: [1, 2, 3, 5, 6]
-      },
-      expiredAt: {
-        [Op.gt]: moment().format()
       }
+      // ,
+      // expiredAt: {
+      //   [Op.gt]: moment().format()
+      // }
     });
 
     Object.assign(where, {
@@ -750,8 +751,12 @@ async function getSellNego(req, res) {
               item.dataValues.isRead = false;
             }
 
-            if(dataBargain.length && moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss')) {
-              item.dataValues.statusNego = 'Nego Gagal';
+            if(dataBargain.length && 
+              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss') && 
+              [1,2,5,6].includes(dataBargain[0].negotiationType)
+            ) {
+              // item.dataValues.statusNego = 'Nego Gagal';
+              item.dataValues.statusNego = 'Waktu Habis';
               item.dataValues.isRead = true;
             }
 
@@ -851,10 +856,11 @@ async function getBuyNego(req, res) {
     Object.assign(whereBargain, {
       negotiationType: {
         [Op.in]: [1, 2, 3, 4, 5, 6]
-      },
-      expiredAt: {
-        [Op.gt]: moment().format()
       }
+      // ,
+      // expiredAt: {
+      //   [Op.gt]: moment().format()
+      // }
     });
 
     Object.assign(where, {
@@ -1191,6 +1197,15 @@ async function getBuyNego(req, res) {
             } else if (dataBargain.length > 0 && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
               item.dataValues.isRead = false;
+            }
+
+            if(dataBargain.length && 
+              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss') && 
+              [1,2,5,6].includes(dataBargain[0].negotiationType)
+            ) {
+              // item.dataValues.statusNego = 'Nego Gagal';
+              item.dataValues.statusNego = 'Waktu Habis';
+              item.dataValues.isRead = true;
             }
 
             if(dataBargain.length && dataBargain[0].negotiationType == 4) {
