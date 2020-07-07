@@ -393,12 +393,11 @@ async function getSellNego(req, res) {
 
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
-      negotiationType: {
-        [Op.eq]: negotiationType
-      },
-      expiredAt: {
-        [Op.gt]: moment().format()
-      }
+      negotiationType
+      // ,
+      // expiredAt: {
+      //   [Op.gt]: moment().format()
+      // }
     });
 
     // so that it doesn't appear on the "jual->nego->ajak nego" page
@@ -425,6 +424,8 @@ async function getSellNego(req, res) {
       // }
     });
 
+    // so that it doesn't appear on the "jual->nego->sedan nego" page
+    // when the data have 3/4/7/8 negotiationType
     Object.assign(where, {
       [Op.and]: [
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
@@ -735,14 +736,20 @@ async function getSellNego(req, res) {
 
       await Promise.all(
         data.map(async item => {
+          const dataBargain = item.dataValues.bargain;
+          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
+
           if (negotiationType == 0) {
             // item.dataValues.statusNego = 'Ajak Nego';
             item.dataValues.statusNego = 'Tunggu Jawaban';
             item.dataValues.isRead = true;
-          } else if (negotiationType == 1) {
-            const dataBargain = item.dataValues.bargain;
-            const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
 
+            if(dataBargain.length && 
+              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss')
+            ) {
+              item.dataValues.statusNego = 'Waktu Habis';
+            }
+          } else if (negotiationType == 1) {
             if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
               item.dataValues.isRead = true;
@@ -833,10 +840,11 @@ async function getBuyNego(req, res) {
 
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
-      [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }],
-      expiredAt: {
-        [Op.gt]: moment().format()
-      }
+      [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
+      // ,
+      // expiredAt: {
+      //   [Op.gt]: moment().format()
+      // }
     });
 
     // so that it doesn't appear on the "beli->nego->diajak nego" page
@@ -863,6 +871,8 @@ async function getBuyNego(req, res) {
       // }
     });
 
+    // so that it doesn't appear on the "jual->nego->sedan nego" page
+    // when the data have 3/4/7/8 negotiationType
     Object.assign(where, {
       [Op.and]: [
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
@@ -1183,14 +1193,20 @@ async function getBuyNego(req, res) {
 
       await Promise.all(
         data.map(async item => {
+          const dataBargain = item.dataValues.bargain;
+          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;  
+
           if (negotiationType == 0) {
             // item.dataValues.statusNego = 'Diajak Nego';
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
             item.dataValues.isRead = false;
-          } else if (negotiationType == 1) {
-            const dataBargain = item.dataValues.bargain;
-            const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;            
 
+            if(dataBargain.length && 
+              moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss')
+            ) {
+              item.dataValues.statusNego = 'Waktu Habis';
+            }
+          } else if (negotiationType == 1) {
             if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
               item.dataValues.isRead = true;
@@ -1201,7 +1217,7 @@ async function getBuyNego(req, res) {
 
             if(dataBargain.length && 
               moment(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().format('YYYY-MM-DD HH:mm:ss') && 
-              [1,2,5,6].includes(dataBargain[0].negotiationType)
+              [0,1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
               // item.dataValues.statusNego = 'Nego Gagal';
               item.dataValues.statusNego = 'Waktu Habis';
