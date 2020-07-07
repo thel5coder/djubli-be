@@ -105,6 +105,11 @@ async function bargainsList(req, res) {
     });
   }
 
+  let customWhen = readerId ? `WHEN ((SELECT COUNT("b"."id")
+      FROM "Bargains" b 
+      WHERE "b"."carId" = "Bargain"."carId"
+        AND "b"."negotiationType" = 7 AND "b"."userId" = ${readerId}) > 0)
+    THEN true` : ``;
   const include = [
     [
       models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
@@ -119,8 +124,7 @@ async function bargainsList(req, res) {
       'isNego'
     ],
     [
-      models.sequelize.literal(`(CASE WHEN "expiredAt" >= now()
-        THEN false
+      models.sequelize.literal(`(CASE ${customWhen} WHEN "expiredAt" >= now() THEN false
         ELSE true END)`
       ), 
       'isExpired'
@@ -140,6 +144,18 @@ async function bargainsList(req, res) {
       ), 
       'isRead'
     ]);
+
+    Object.assign(where, {
+      [Op.and]: [
+        models.sequelize.literal(`(SELECT COUNT("b"."id") 
+          FROM "Bargains" b
+          WHERE "b"."carId" = "Bargain"."carId" 
+            AND "b"."negotiationType" = 8 AND "b"."userId" = ${readerId}
+            AND "b"."deletedAt" IS NULL
+          ) = 0`
+        )
+      ]
+    });
   }
 
   return models.Bargain.findAll({
@@ -414,11 +430,12 @@ async function getSellNego(req, res) {
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
             AND ("Bargains"."negotiationType" = 4 
-              OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
+              OR ("Bargains"."negotiationType" IN (3,7,8) AND "Bargains"."userId" = ${id})
             )
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
-        ),      ]
+        )
+      ]
     });
   }
 
@@ -845,7 +862,7 @@ async function getBuyNego(req, res) {
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
-            AND ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
+            AND ("Bargains"."negotiationType" IN (3,7,8) AND "Bargains"."userId" = ${id})
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
         ),
