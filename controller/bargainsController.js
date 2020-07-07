@@ -1199,9 +1199,7 @@ async function getBuyNego(req, res) {
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
             item.dataValues.isRead = false;
 
-            if(dataBargain.length && 
-              dataBargain[0].expiredAt < moment().format('YYYY-MM-DD HH:mm:ss')
-            ) {
+            if(dataBargain.length && dataBargain[0].expiredAt < moment().format('YYYY-MM-DD HH:mm:ss')) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
           } else if (negotiationType == 1) {
