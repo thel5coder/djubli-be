@@ -1,4 +1,5 @@
 const models = require('../../db/models');
+const moment = require('moment');
 
 module.exports = (sequelize, DataTypes) => {
   const Bargain = sequelize.define(
@@ -16,7 +17,12 @@ module.exports = (sequelize, DataTypes) => {
       bidAmount: DataTypes.NUMERIC,
       haveSeenCar: DataTypes.BOOLEAN,
       paymentMethod: DataTypes.INTEGER,
-      expiredAt: DataTypes.DATE,
+      expiredAt: {
+        type: DataTypes.DATE,
+        get() {
+          return moment(this.getDataValue('expiredAt')).format('YYYY-MM-DD HH:mm:ss');
+        }
+      },
       comment: DataTypes.STRING,
       bidType: DataTypes.INTEGER,
       negotiationType: DataTypes.INTEGER,
