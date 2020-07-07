@@ -277,6 +277,40 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
     {
       model: models.Bargain,
       as: 'bargain',
+      include: [
+        {
+          model: models.User,
+          as: 'user',
+          attributes: {
+            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+          },
+          include: [
+            {
+              model: models.File,
+              as: 'file',
+              attributes: {
+                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      model: models.User,
+      as: 'user',
+      attributes: {
+        exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+      },
+      include: [
+        {
+          model: models.File,
+          as: 'file',
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          }
+        }
+      ]
     }
   ];
 
