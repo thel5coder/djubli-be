@@ -214,7 +214,16 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
         {
           model: models.User,
           as: 'user',
-          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+          include: [
+            {
+              model: models.File,
+              as: 'file',
+              attributes: {
+                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              }
+            }
+          ]
         },
         {
           model: models.User,
@@ -326,6 +335,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
   })
     .then(async data => {
       const count = await models.Purchase.count({
+        distinct: true,
         include: includes,
         where
       });
