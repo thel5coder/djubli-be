@@ -481,13 +481,19 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  if (data.type === 0 && data.companyType === 0) {
-    userType = 'Member';
-  } else if (data.type === 0 && data.companyType === 1) {
-    userType = 'Company';
-  } else if (data.type === 1) {
-    userType = 'Dealer';
-  }
+  // if (data.type == 0 && data.companyType == 0) {
+  //   userType = 'Member';
+  // } else if (data.type == 0 && data.companyType == 1) {
+  //   userType = 'Company';
+  // } else if (data.type == 1) {
+  //   userType = 'Dealer';
+  // }
+
+  if (this.type == 0 && this.companyType == 0) userType = 'End User';
+  else if (this.type == 0 && this.companyType == 1) userType = 'End User';
+  else if (this.type == 1 && this.companyType == 0) userType = 'Dealer';
+  else if (this.type == 1 && this.companyType == 1) userType = 'Dealer';
+  else userType = 'unknown';
 
   const payload = {
     id: data.id
@@ -595,12 +601,17 @@ router.post('/register', async (req, res) => {
     });
   }
 
-  if (type === '0' && companyType === '1') {
+  if (type == 0 && companyType == 1) {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and]: [{ type: 0 }, { companyType: 1 }, { name }]
+        [Op.and]: {
+          type,
+          companyType,
+          name
+        }
       }
     });
+
     if (uniqueName) {
       return res.status(422).json({
         success: false,
@@ -609,12 +620,16 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  if (type === '1') {
+  if (type == 1) {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and]: [{ type: 1 }, { name }]
+        [Op.and]: {
+          type,
+          name
+        }
       }
     });
+
     if (uniqueName) {
       return res.status(422).json({
         success: false,
@@ -630,7 +645,7 @@ router.post('/register', async (req, res) => {
   let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
   let { homeStatus, homeArea, homeUsedFrom } = [];
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     // mapping car detail
     if (modelYearId) {
       carModel = general.mapping(modelYearId);
@@ -682,7 +697,7 @@ router.post('/register', async (req, res) => {
     });
   });
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     if (isCar) {
       const car = [];
       for (let i = 0; i < carModel.length; i += 1) {
@@ -730,7 +745,7 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  if (type === '0' && companyType === '1') {
+  if (type == 0 && companyType == 1) {
     const company = await models.Company.create(
       {
         userId: data.id,
@@ -768,7 +783,7 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  if (type === '1') {
+  if (type == 1) {
     const dealer = await models.Dealer.create(
       {
         userId: data.id,
@@ -785,6 +800,7 @@ router.post('/register', async (req, res) => {
         errors: err.message
       });
     });
+
     if (fileId && fileId.length) {
       await Promise.all(
         fileId.map(async file => {
@@ -820,6 +836,7 @@ router.post('/register', async (req, res) => {
         })
       );
     }
+
     if (otherWorkshop && otherWorkshop.length) {
       await Promise.all(
         otherWorkshop.map(async brandData => {
@@ -837,6 +854,7 @@ router.post('/register', async (req, res) => {
         })
       );
     }
+
     if (sellAndBuy && sellAndBuy.length) {
       await Promise.all(
         sellAndBuy.map(async brandData => {
@@ -863,8 +881,8 @@ router.post('/register', async (req, res) => {
       errors
     });
   }
-  trans.commit();
 
+  trans.commit();
   return res.json({
     success: true,
     data
@@ -967,7 +985,7 @@ router.post('/unhandledRegister', async (req, res) => {
   let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
   let { homeStatus, homeArea, homeUsedFrom } = [];
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     // mapping car detail
     if (modelYearId) {
       carModel = general.mapping(modelYearId);
@@ -1019,7 +1037,7 @@ router.post('/unhandledRegister', async (req, res) => {
     });
   });
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     if (isCar) {
       const car = [];
       for (let i = 0; i < carModel.length; i += 1) {
@@ -1067,7 +1085,7 @@ router.post('/unhandledRegister', async (req, res) => {
     }
   }
 
-  if (type === '0' && companyType === '1') {
+  if (type == 0 && companyType == 1) {
     const company = await models.Company.create(
       {
         userId: data.id,
@@ -1105,7 +1123,7 @@ router.post('/unhandledRegister', async (req, res) => {
     }
   }
 
-  if (type === '1') {
+  if (type == 1) {
     const dealer = await models.Dealer.create(
       {
         userId: data.id,
@@ -1158,6 +1176,7 @@ router.post('/unhandledRegister', async (req, res) => {
         })
       );
     }
+
     if (otherWorkshop) {
       await Promise.all(
         otherWorkshop.map(async brandData => {
@@ -1175,6 +1194,7 @@ router.post('/unhandledRegister', async (req, res) => {
         })
       );
     }
+
     if (sellAndBuy) {
       await Promise.all(
         sellAndBuy.map(async brandData => {
@@ -1201,8 +1221,8 @@ router.post('/unhandledRegister', async (req, res) => {
       errors
     });
   }
-  trans.commit();
 
+  trans.commit();
   return res.json({
     success: true,
     data
