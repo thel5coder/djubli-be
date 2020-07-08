@@ -523,7 +523,9 @@ router.post('/register', async (req, res) => {
     companyType,
     profileImageId,
     address,
-    status
+    status,
+    cityId,
+    subdistrictId
   } = req.body;
   // User Member Attribute
   const { modelYearId } = req.body;
@@ -550,6 +552,44 @@ router.post('/register', async (req, res) => {
     });
   }
 
+  if (!cityId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'cityId is mandatory'
+    });
+  }
+
+  if (!subdistrictId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'subdistrictId is mandatory'
+    });
+  }
+
+  if(cityId && subdistrictId) {
+    const getCity = await models.City.findByPk(cityId);
+    if(!getCity) {
+      return res.status(400).json({
+        success: false,
+        errors: 'city not found'
+      });
+    } else {
+      const getSubdistrict = await models.SubDistrict.findOne({
+        where: {
+          id: subdistrictId,
+          cityId
+        }
+      });
+
+      if(!getSubdistrict) {
+        return res.status(400).json({
+          success: false,
+          errors: 'subdistrict not found'
+        });
+      }
+    }
+  }
+
   if (validator.isEmail(email ? email.toString() : '') === false) {
     return res.status(400).json({
       success: false,
@@ -573,6 +613,7 @@ router.post('/register', async (req, res) => {
       ]
     }
   });
+
   if (dataUnique) {
     return res.status(400).json({
       success: false,
@@ -684,7 +725,9 @@ router.post('/register', async (req, res) => {
       companyType,
       profileImageId,
       address,
-      status
+      status,
+      cityId,
+      subdistrictId
     },
     {
       transaction: trans

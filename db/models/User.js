@@ -22,7 +22,9 @@ module.exports = (sequelize, DataTypes) => {
           else if (this.type === 1 && this.companyType === 1) return 'Dealer';
           else return 'unknown';
         }
-      }
+      },
+      cityId: DataTypes.INTEGER,
+      subdistrictId: DataTypes.INTEGER
     },
     {
       timestamps: true,
@@ -99,6 +101,16 @@ module.exports = (sequelize, DataTypes) => {
       foreignKey: 'userId',
       sourceKey: 'id',
       as: 'members',
+      onDelete: 'CASCADE'
+    });
+    User.belongsTo(models.City, {
+      foreignKey: 'cityId',
+      as: 'city',
+      onDelete: 'CASCADE'
+    });
+    User.belongsTo(models.SubDistrict, {
+      foreignKey: 'subdistrictId',
+      as: 'subdistrict',
       onDelete: 'CASCADE'
     });
   };
