@@ -1272,19 +1272,14 @@ router.post('/unhandledRegister', async (req, res) => {
   });
 });
 
-router.put(
-  '/update',
-  passport.authenticate('user', {
-    session: false
-  }),
-  async (req, res) => {
+router.put('/update', passport.authenticate('user', { session: false }), async (req, res) => {
     const { id } = req.user;
-
     const data = await models.User.findOne({
       where: {
         id
       }
     });
+
     if (!data) {
       return res.status(400).json({
         success: false,
@@ -1302,8 +1297,11 @@ router.put(
       companyType,
       profileImageId,
       address,
-      status
+      status,
+      cityId,
+      subdistrictId
     } = req.body;
+
     // User Member Attribute
     const { carId, modelYearId } = req.body;
     const { cardId, brand, bank, ccType, ccUsedFrom } = req.body;
@@ -1339,6 +1337,30 @@ router.put(
           success: false,
           errors: 'status must be boolean'
         });
+      }
+    }
+
+    if(cityId && subdistrictId) {
+      const getCity = await models.City.findByPk(cityId);
+      if(!getCity) {
+        return res.status(400).json({
+          success: false,
+          errors: 'city not found'
+        });
+      } else {
+        const getSubdistrict = await models.SubDistrict.findOne({
+          where: {
+            id: subdistrictId,
+            cityId
+          }
+        });
+
+        if(!getSubdistrict) {
+          return res.status(400).json({
+            success: false,
+            errors: 'subdistrict not found'
+          });
+        }
       }
     }
 
@@ -1420,11 +1442,11 @@ router.put(
           companyType,
           profileImageId,
           address,
-          status
+          status,
+          cityId,
+          subdistrictId
         },
-        {
-          transaction: trans
-        }
+        { transaction: trans }
       )
       .catch(err => {
         trans.rollback();
@@ -1750,8 +1772,8 @@ router.put(
         errors
       });
     }
+    
     trans.commit();
-
     return res.json({
       success: true,
       data
