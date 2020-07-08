@@ -527,6 +527,7 @@ router.post('/register', async (req, res) => {
     cityId,
     subdistrictId
   } = req.body;
+
   // User Member Attribute
   const { modelYearId } = req.body;
   const { brand, bank, ccType, ccUsedFrom } = req.body;
@@ -545,10 +546,17 @@ router.post('/register', async (req, res) => {
     });
   }
 
-  if (!type) {
+  if (typeof type === 'undefined') {
     return res.status(400).json({
       success: false,
       errors: 'type is mandatory'
+    });
+  }
+
+  if (typeof companyType === 'undefined') {
+    return res.status(400).json({
+      success: false,
+      errors: 'companyType is mandatory'
     });
   }
 
@@ -599,18 +607,7 @@ router.post('/register', async (req, res) => {
 
   const dataUnique = await models.User.findOne({
     where: {
-      [Op.or]: [
-        {
-          email: {
-            [Op.eq]: email
-          }
-        },
-        {
-          phone: {
-            [Op.eq]: phone
-          }
-        }
-      ]
+      [Op.or]: [ { email }, { phone: phone.toString() } ]
     }
   });
 
@@ -645,11 +642,9 @@ router.post('/register', async (req, res) => {
   if (type == 0 && companyType == 1) {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and]: {
-          type,
-          companyType,
-          name
-        }
+        type,
+        companyType,
+        name
       }
     });
 
@@ -664,10 +659,8 @@ router.post('/register', async (req, res) => {
   if (type == 1) {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and]: {
-          type,
-          name
-        }
+        type,
+        name
       }
     });
 
@@ -963,10 +956,17 @@ router.post('/unhandledRegister', async (req, res) => {
     });
   }
 
-  if (!type) {
+  if (typeof type === 'undefined') {
     return res.status(400).json({
       success: false,
       errors: 'type is mandatory'
+    });
+  }
+
+  if (typeof companyType === 'undefined') {
+    return res.status(400).json({
+      success: false,
+      errors: 'companyType is mandatory'
     });
   }
 
