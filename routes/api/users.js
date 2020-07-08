@@ -481,13 +481,19 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  if (data.type === 0 && data.companyType === 0) {
-    userType = 'Member';
-  } else if (data.type === 0 && data.companyType === 1) {
-    userType = 'Company';
-  } else if (data.type === 1) {
-    userType = 'Dealer';
-  }
+  // if (data.type == 0 && data.companyType == 0) {
+  //   userType = 'Member';
+  // } else if (data.type == 0 && data.companyType == 1) {
+  //   userType = 'Company';
+  // } else if (data.type == 1) {
+  //   userType = 'Dealer';
+  // }
+
+  if (this.type == 0 && this.companyType == 0) userType = 'End User';
+  else if (this.type == 0 && this.companyType == 1) userType = 'End User';
+  else if (this.type == 1 && this.companyType == 0) userType = 'Dealer';
+  else if (this.type == 1 && this.companyType == 1) userType = 'Dealer';
+  else userType = 'unknown';
 
   const payload = {
     id: data.id
@@ -517,7 +523,9 @@ router.post('/register', async (req, res) => {
     companyType,
     profileImageId,
     address,
-    status
+    status,
+    cityId,
+    subdistrictId
   } = req.body;
   // User Member Attribute
   const { modelYearId } = req.body;
@@ -544,6 +552,44 @@ router.post('/register', async (req, res) => {
     });
   }
 
+  if (!cityId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'cityId is mandatory'
+    });
+  }
+
+  if (!subdistrictId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'subdistrictId is mandatory'
+    });
+  }
+
+  if(cityId && subdistrictId) {
+    const getCity = await models.City.findByPk(cityId);
+    if(!getCity) {
+      return res.status(400).json({
+        success: false,
+        errors: 'city not found'
+      });
+    } else {
+      const getSubdistrict = await models.SubDistrict.findOne({
+        where: {
+          id: subdistrictId,
+          cityId
+        }
+      });
+
+      if(!getSubdistrict) {
+        return res.status(400).json({
+          success: false,
+          errors: 'subdistrict not found'
+        });
+      }
+    }
+  }
+
   if (validator.isEmail(email ? email.toString() : '') === false) {
     return res.status(400).json({
       success: false,
@@ -567,6 +613,7 @@ router.post('/register', async (req, res) => {
       ]
     }
   });
+
   if (dataUnique) {
     return res.status(400).json({
       success: false,
@@ -595,12 +642,17 @@ router.post('/register', async (req, res) => {
     });
   }
 
-  if (type === '0' && companyType === '1') {
+  if (type == 0 && companyType == 1) {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and]: [{ type: 0 }, { companyType: 1 }, { name }]
+        [Op.and]: {
+          type,
+          companyType,
+          name
+        }
       }
     });
+
     if (uniqueName) {
       return res.status(422).json({
         success: false,
@@ -609,12 +661,16 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  if (type === '1') {
+  if (type == 1) {
     const uniqueName = await models.User.findOne({
       where: {
-        [Op.and]: [{ type: 1 }, { name }]
+        [Op.and]: {
+          type,
+          name
+        }
       }
     });
+
     if (uniqueName) {
       return res.status(422).json({
         success: false,
@@ -630,7 +686,7 @@ router.post('/register', async (req, res) => {
   let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
   let { homeStatus, homeArea, homeUsedFrom } = [];
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     // mapping car detail
     if (modelYearId) {
       carModel = general.mapping(modelYearId);
@@ -669,7 +725,9 @@ router.post('/register', async (req, res) => {
       companyType,
       profileImageId,
       address,
-      status
+      status,
+      cityId,
+      subdistrictId
     },
     {
       transaction: trans
@@ -682,7 +740,7 @@ router.post('/register', async (req, res) => {
     });
   });
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     if (isCar) {
       const car = [];
       for (let i = 0; i < carModel.length; i += 1) {
@@ -730,7 +788,7 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  if (type === '0' && companyType === '1') {
+  if (type == 0 && companyType == 1) {
     const company = await models.Company.create(
       {
         userId: data.id,
@@ -768,7 +826,7 @@ router.post('/register', async (req, res) => {
     }
   }
 
-  if (type === '1') {
+  if (type == 1) {
     const dealer = await models.Dealer.create(
       {
         userId: data.id,
@@ -785,6 +843,7 @@ router.post('/register', async (req, res) => {
         errors: err.message
       });
     });
+
     if (fileId && fileId.length) {
       await Promise.all(
         fileId.map(async file => {
@@ -820,6 +879,7 @@ router.post('/register', async (req, res) => {
         })
       );
     }
+
     if (otherWorkshop && otherWorkshop.length) {
       await Promise.all(
         otherWorkshop.map(async brandData => {
@@ -837,6 +897,7 @@ router.post('/register', async (req, res) => {
         })
       );
     }
+
     if (sellAndBuy && sellAndBuy.length) {
       await Promise.all(
         sellAndBuy.map(async brandData => {
@@ -863,8 +924,8 @@ router.post('/register', async (req, res) => {
       errors
     });
   }
-  trans.commit();
 
+  trans.commit();
   return res.json({
     success: true,
     data
@@ -967,7 +1028,7 @@ router.post('/unhandledRegister', async (req, res) => {
   let { cardBrand, cardType, cardBank, cardUsedFrom } = [];
   let { homeStatus, homeArea, homeUsedFrom } = [];
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     // mapping car detail
     if (modelYearId) {
       carModel = general.mapping(modelYearId);
@@ -1019,7 +1080,7 @@ router.post('/unhandledRegister', async (req, res) => {
     });
   });
 
-  if (type === '0' && companyType === '0') {
+  if (type == 0 && companyType == 0) {
     if (isCar) {
       const car = [];
       for (let i = 0; i < carModel.length; i += 1) {
@@ -1067,7 +1128,7 @@ router.post('/unhandledRegister', async (req, res) => {
     }
   }
 
-  if (type === '0' && companyType === '1') {
+  if (type == 0 && companyType == 1) {
     const company = await models.Company.create(
       {
         userId: data.id,
@@ -1105,7 +1166,7 @@ router.post('/unhandledRegister', async (req, res) => {
     }
   }
 
-  if (type === '1') {
+  if (type == 1) {
     const dealer = await models.Dealer.create(
       {
         userId: data.id,
@@ -1158,6 +1219,7 @@ router.post('/unhandledRegister', async (req, res) => {
         })
       );
     }
+
     if (otherWorkshop) {
       await Promise.all(
         otherWorkshop.map(async brandData => {
@@ -1175,6 +1237,7 @@ router.post('/unhandledRegister', async (req, res) => {
         })
       );
     }
+
     if (sellAndBuy) {
       await Promise.all(
         sellAndBuy.map(async brandData => {
@@ -1201,27 +1264,22 @@ router.post('/unhandledRegister', async (req, res) => {
       errors
     });
   }
-  trans.commit();
 
+  trans.commit();
   return res.json({
     success: true,
     data
   });
 });
 
-router.put(
-  '/update',
-  passport.authenticate('user', {
-    session: false
-  }),
-  async (req, res) => {
+router.put('/update', passport.authenticate('user', { session: false }), async (req, res) => {
     const { id } = req.user;
-
     const data = await models.User.findOne({
       where: {
         id
       }
     });
+
     if (!data) {
       return res.status(400).json({
         success: false,
@@ -1239,8 +1297,11 @@ router.put(
       companyType,
       profileImageId,
       address,
-      status
+      status,
+      cityId,
+      subdistrictId
     } = req.body;
+
     // User Member Attribute
     const { carId, modelYearId } = req.body;
     const { cardId, brand, bank, ccType, ccUsedFrom } = req.body;
@@ -1276,6 +1337,30 @@ router.put(
           success: false,
           errors: 'status must be boolean'
         });
+      }
+    }
+
+    if(cityId && subdistrictId) {
+      const getCity = await models.City.findByPk(cityId);
+      if(!getCity) {
+        return res.status(400).json({
+          success: false,
+          errors: 'city not found'
+        });
+      } else {
+        const getSubdistrict = await models.SubDistrict.findOne({
+          where: {
+            id: subdistrictId,
+            cityId
+          }
+        });
+
+        if(!getSubdistrict) {
+          return res.status(400).json({
+            success: false,
+            errors: 'subdistrict not found'
+          });
+        }
       }
     }
 
@@ -1357,11 +1442,11 @@ router.put(
           companyType,
           profileImageId,
           address,
-          status
+          status,
+          cityId,
+          subdistrictId
         },
-        {
-          transaction: trans
-        }
+        { transaction: trans }
       )
       .catch(err => {
         trans.rollback();
@@ -1687,8 +1772,8 @@ router.put(
         errors
       });
     }
+    
     trans.commit();
-
     return res.json({
       success: true,
       data
