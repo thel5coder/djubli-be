@@ -332,9 +332,7 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
       const pagination = paginator.paging(page, count, limit);
 
       data.map(item => {
-        if(item.dataValues.bargainId) {
-          item.dataValues.status = 'Tunggu DP';
-        }
+        item.dataValues.status = 'Tunggu DP';
       });
 
       res.json({
