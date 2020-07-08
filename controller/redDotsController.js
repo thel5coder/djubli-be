@@ -3,6 +3,16 @@ const Sequelize = require('sequelize');
 const models = require('../db/models');
 
 const { Op } = Sequelize;
+const queryRedDotExpiredAt = (id) => `(EXISTS(SELECT "bs"."id" FROM (SELECT *
+    	FROM "Bargains" b
+    		WHERE "b"."carId" = "bargain"."carId"
+        		AND "b"."deletedAt" IS NULL
+    		ORDER BY "b"."createdAt" desc
+    	LIMIT 1) AS bs
+	WHERE "bs"."expiredAt" < now()
+    	AND "bs"."negotiationType" IN (0,1,2,5,6)
+    	AND "bs"."userId" = ${id}
+))`;
 
 // GET Read Dots
 async function getJual(req, res) {
@@ -21,16 +31,19 @@ async function getJual(req, res) {
 				    negotiationType: {
 				    	[Op.between]: [0, 6]
 				    },
-				    [Op.and]: [
-				        models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "bargain"."carId"
-				            	AND "BargainReaders"."bargainId" = "bargain"."id"
-				            	AND "BargainReaders"."type" = 1
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0`
-				        )
+				    [Op.or]: [
+				    	{
+				    		[Op.and]: models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
+						        FROM "BargainReaders" 
+						        WHERE "BargainReaders"."carId" = "bargain"."carId"
+						            AND "BargainReaders"."bargainId" = "bargain"."id"
+						            AND "BargainReaders"."type" = 1
+						            AND "BargainReaders"."userId" = ${id}
+						            AND "BargainReaders"."deletedAt" IS NULL
+						        ) = 0`
+						    )
+				    	},
+				    	{ [Op.and]: models.sequelize.literal(queryRedDotExpiredAt(id)) }
 				    ]
 				}
           	},
@@ -76,16 +89,19 @@ async function getJualNego(req, res) {
 				    negotiationType: {
 				    	[Op.between]: [0, 6]
 				    },
-				    [Op.and]: [
-				        models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "bargain"."carId"
-				            	AND "BargainReaders"."bargainId" = "bargain"."id"
-				            	AND "BargainReaders"."type" = 2
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0`
-				        )
+				    [Op.or]: [
+				    	{
+				    		[Op.and]: models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
+						        FROM "BargainReaders" 
+						        WHERE "BargainReaders"."carId" = "bargain"."carId"
+						           	AND "BargainReaders"."bargainId" = "bargain"."id"
+						           	AND "BargainReaders"."type" = 2
+						           	AND "BargainReaders"."userId" = ${id}
+						           	AND "BargainReaders"."deletedAt" IS NULL
+						        ) = 0`
+						    )
+				    	},
+				    	{ [Op.and]: models.sequelize.literal(queryRedDotExpiredAt(id)) }
 				    ]
 				}
           	},
@@ -123,18 +139,7 @@ async function getJualNegoTab(req, res) {
 	    bidType: 1,
 	    userId: {
 			[Op.ne]: id
-		},
-	    [Op.and]: [
-			models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
-				FROM "BargainReaders" 
-				WHERE "BargainReaders"."carId" = "bargain"."carId"
-				    AND "BargainReaders"."bargainId" = "bargain"."id"
-				    AND "BargainReaders"."type" = 3
-				    AND "BargainReaders"."userId" = ${id}
-				    AND "BargainReaders"."deletedAt" IS NULL
-				) = 0`
-			)
-		]
+		}
 	};
 
 	const where = {
@@ -166,6 +171,23 @@ async function getJualNegoTab(req, res) {
 	      	}
 	    });
 	}
+
+	Object.assign(whereBargain, {
+	    [Op.or]: [
+			{
+				[Op.and]: models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
+					FROM "BargainReaders" 
+					WHERE "BargainReaders"."carId" = "bargain"."carId"
+						   AND "BargainReaders"."bargainId" = "bargain"."id"
+						   AND "BargainReaders"."type" = 3
+						   AND "BargainReaders"."userId" = ${id}
+						   AND "BargainReaders"."deletedAt" IS NULL
+					) = 0`
+				)
+			},
+			{ [Op.and]: models.sequelize.literal(queryRedDotExpiredAt(id)) }
+		]
+	});
 
 	const count = await models.Car.count({
         distinct: true,
@@ -221,16 +243,19 @@ async function getBeli(req, res) {
 						} 
 					}
 				],
-				[Op.and]: [
-			        models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
-			            FROM "BargainReaders" 
-			            WHERE "BargainReaders"."carId" = "bargain"."carId"
-				            AND "BargainReaders"."bargainId" = "bargain"."id"
-			            	AND "BargainReaders"."type" = 1
-			            	AND "BargainReaders"."userId" = ${id}
-			            	AND "BargainReaders"."deletedAt" IS NULL
-			            ) = 0`
-			        )
+				[Op.or]: [
+			        {
+			        	[Op.and]: models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
+				            FROM "BargainReaders" 
+				            WHERE "BargainReaders"."carId" = "bargain"."carId"
+					            AND "BargainReaders"."bargainId" = "bargain"."id"
+				            	AND "BargainReaders"."type" = 1
+				            	AND "BargainReaders"."userId" = ${id}
+				            	AND "BargainReaders"."deletedAt" IS NULL
+				            ) = 0`
+				        )
+			        },
+			        { [Op.and]: models.sequelize.literal(queryRedDotExpiredAt(id)) }
 			    ]
 			}
           },
@@ -284,16 +309,19 @@ async function getBeliNego(req, res) {
 						} 
 					}
 				],
-				[Op.and]: [
-			        models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
-			            FROM "BargainReaders" 
-			            WHERE "BargainReaders"."carId" = "bargain"."carId"
-				            AND "BargainReaders"."bargainId" = "bargain"."id"
-			            	AND "BargainReaders"."type" = 2
-			            	AND "BargainReaders"."userId" = ${id}
-			            	AND "BargainReaders"."deletedAt" IS NULL
-			            ) = 0`
-			        )
+				[Op.or]: [
+			        {
+			        	[Op.and]: models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
+				            FROM "BargainReaders" 
+				            WHERE "BargainReaders"."carId" = "bargain"."carId"
+					            AND "BargainReaders"."bargainId" = "bargain"."id"
+				            	AND "BargainReaders"."type" = 2
+				            	AND "BargainReaders"."userId" = ${id}
+				            	AND "BargainReaders"."deletedAt" IS NULL
+				            ) = 0`
+				        )
+			        },
+			        { [Op.and]: models.sequelize.literal(queryRedDotExpiredAt(id)) }
 			    ]
 			}
           },
@@ -333,18 +361,7 @@ async function getBeliNegoTab(req, res) {
 	    bidType: 1,
 	    userId: {
 			[Op.ne]: id
-		},
-	    [Op.and]: [
-			models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
-			    FROM "BargainReaders" 
-			    WHERE "BargainReaders"."carId" = "bargain"."carId"
-					AND "BargainReaders"."bargainId" = "bargain"."id"
-					AND "BargainReaders"."type" = 3
-					AND "BargainReaders"."userId" = ${id}
-					AND "BargainReaders"."deletedAt" IS NULL
-			    ) = 0`
-			)
-		]
+		}
 	};
 
 	const where = {
@@ -378,6 +395,23 @@ async function getBeliNegoTab(req, res) {
 	      	}
 	    });
   	}
+
+  	Object.assign(whereBargain, {
+	    [Op.or]: [
+			{
+				[Op.and]: models.sequelize.literal(`(SELECT COUNT("BargainReaders"."id") 
+					FROM "BargainReaders" 
+					WHERE "BargainReaders"."carId" = "bargain"."carId"
+						   AND "BargainReaders"."bargainId" = "bargain"."id"
+						   AND "BargainReaders"."type" = 3
+						   AND "BargainReaders"."userId" = ${id}
+						   AND "BargainReaders"."deletedAt" IS NULL
+					) = 0`
+				)
+			},
+			{ [Op.and]: models.sequelize.literal(queryRedDotExpiredAt(id)) }
+		]
+	});
 
 	const count = await models.Car.count({
         distinct: true,

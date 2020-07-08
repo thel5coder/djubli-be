@@ -407,7 +407,7 @@ async function getSellNego(req, res) {
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."negotiationType" IN (1, 2, 4, 5, 6)
+            AND "Bargains"."negotiationType" IN (1,2,4,5,6)
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
         )
@@ -852,7 +852,7 @@ async function getBuyNego(req, res) {
            models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."negotiationType" IN (1, 2, 4, 5, 6)
+              AND "Bargains"."negotiationType" IN (1,2,4,5,6)
               AND "Bargains"."deletedAt" IS NULL
             ) = 0`
           )

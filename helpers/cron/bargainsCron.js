@@ -36,6 +36,32 @@ const {
 /* Bid Type: 1; */
 
 // cron.schedule('* * * * *', function() {
-// 	handleExpired(1);
+	// handleExpired(1);
+  	// console.log('Running task handleExpired every minute');
+// });
+
+
+// Cron to Notif reddot
+// let handleExpired = async () => {
+// 	const where = {
+// 		expiredAt: {
+// 			[Op.lte]: models.sequelize.literal('NOW()')
+// 	    }
+// 	}
+
+// 	await models.Bargain.findAll({ 
+// 		where,
+// 		attributes: ['id'],
+//     	raw : true
+// 	}).then(data => {
+// 		console.log(data);
+// 	}).catch(err => {
+// 		console.log(`ERROR Get Bargains Data!`);
+// 		console.log(err.message);
+// 	});
+// }
+
+// cron.schedule('*/2 * * * *', function() {
+// 	handleExpired();
 //   	console.log('Running task handleExpired every minute');
 // });
