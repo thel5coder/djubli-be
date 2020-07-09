@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
       expiredAt: {
         type: DataTypes.DATE,
         get() {
-          return moment(this.getDataValue('expiredAt')).format('YYYY-MM-DD HH:mm:ss');
+          return moment(this.getDataValue('expiredAt')).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
         }
       },
       comment: DataTypes.STRING,
