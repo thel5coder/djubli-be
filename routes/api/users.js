@@ -507,7 +507,9 @@ router.post('/login', async (req, res) => {
     return res.json({
       success: true,
       token: `Bearer ${token}`,
-      userType
+      userType,
+      type: data.type,
+      companyType: data.companyType
     });
   });
 });
