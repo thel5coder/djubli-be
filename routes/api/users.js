@@ -625,7 +625,8 @@ router.post('/register', async (req, res) => {
     });
   }
 
-  if (validator.isBoolean(status ? status.toString() : '') === false) {
+  // if (validator.isBoolean(status ? status.toString() : '') === false) {
+  if (!typeof status === "boolean") {
     return res.status(400).json({
       success: false,
       errors: 'status must be boolean'
