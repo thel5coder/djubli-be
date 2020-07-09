@@ -1120,7 +1120,12 @@ async function bidList(req, res) {
     },
     bidType: {
       [Op.eq]: 0
-    }
+    },
+    [Op.and]: models.sequelize.literal(`(SELECT COUNT("Purchases"."id")
+      FROM "Purchases"
+      WHERE "Purchases"."deletedAt" IS NULL
+        AND "Purchases"."carId" = "Bargain"."carId"
+    ) = 0`)
   };
 
   if (modelYearId) {
@@ -1376,6 +1381,7 @@ async function bidList(req, res) {
       });
     });
 }
+
 router.get('/bid_list', passport.authenticate('user', { session: false }), async (req, res) => {
   return bidList(req, res);
 });
