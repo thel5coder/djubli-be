@@ -489,10 +489,10 @@ router.post('/login', async (req, res) => {
   //   userType = 'Dealer';
   // }
 
-  if (this.type == 0 && this.companyType == 0) userType = 'End User';
-  else if (this.type == 0 && this.companyType == 1) userType = 'End User';
-  else if (this.type == 1 && this.companyType == 0) userType = 'Dealer';
-  else if (this.type == 1 && this.companyType == 1) userType = 'Dealer';
+  if (data.type == 0 && data.companyType == 0) userType = 'End User';
+  else if (data.type == 0 && data.companyType == 1) userType = 'End User';
+  else if (data.type == 1 && data.companyType == 0) userType = 'Dealer';
+  else if (data.type == 1 && data.companyType == 1) userType = 'Dealer';
   else userType = 'unknown';
 
   const payload = {
