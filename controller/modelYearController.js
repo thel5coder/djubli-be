@@ -267,17 +267,21 @@ async function listingAll(req, res) {
     });
   }
 
-  let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
+  let whereQuery;
   const whereInclude = {};
 
   if(isMarket && JSON.parse(isMarket) == true) {
     Object.assign(whereInclude, {
       status: 2
     });
+
+    whereQuery = ' AND "Car"."status" = 2 AND "Car"."deletedAt" IS NULL';
   } else {
     Object.assign(whereInclude, {
       [Op.or]: [{ status: 0 }, { status: 1 }]
     });
+
+    whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
   }
 
   // Search by City, Subdistrict/Area without Radius

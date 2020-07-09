@@ -1410,6 +1410,7 @@ async function sellList(req, res) {
     minYear,
     maxYear
   } = req.query;
+
   let { page, limit, by, sort } = req.query;
   let offset = 0;
 
@@ -1508,6 +1509,7 @@ async function sellList(req, res) {
       return apiResponse._error({ res, errors: 'invalid condition' });
     Object.assign(where, { condition: { [Op.eq]: condition } });
   }
+
   if (km) {
     if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
     if (validator.isInt(km[0] ? km[0].toString() : '') === false)
@@ -1516,6 +1518,7 @@ async function sellList(req, res) {
       return apiResponse._error({ res, errors: 'invalid km[1]' });
     Object.assign(where, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
   }
+
   if (price) {
     if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
     if (validator.isInt(price[0] ? price[0].toString() : '') === false)
@@ -1524,6 +1527,7 @@ async function sellList(req, res) {
       return apiResponse._error({ res, errors: 'invalid price[1]' });
     Object.assign(where, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
   }
+
   if (year) {
     if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
     if (validator.isInt(year[0] ? year[0].toString() : '') === false)
@@ -1534,6 +1538,7 @@ async function sellList(req, res) {
       [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
     });
   }
+
   if (radius) {
     if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
     if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
@@ -1559,6 +1564,7 @@ async function sellList(req, res) {
       }
     });
   }
+
   if (profile) {
     const arrprofile = ['end user', 'dealer'];
     if (arrprofile.indexOf(profile) < 0)
@@ -1667,11 +1673,12 @@ async function sellList(req, res) {
   })
     .then(async data => {
       const count = await models.Car.count({
+        distinct: true,
         include: includes,
         where
       });
-      const pagination = paginator.paging(page, count, limit);
 
+      const pagination = paginator.paging(page, count, limit);
       res.json({
         success: true,
         pagination,
