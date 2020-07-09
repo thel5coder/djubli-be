@@ -145,17 +145,17 @@ async function bargainsList(req, res) {
       'isRead'
     ]);
 
-    Object.assign(where, {
-      [Op.and]: [
-        models.sequelize.literal(`(SELECT COUNT("b"."id") 
-          FROM "Bargains" b
-          WHERE "b"."carId" = "Bargain"."carId" 
-            AND "b"."negotiationType" = 8 AND "b"."userId" = ${readerId}
-            AND "b"."deletedAt" IS NULL
-          ) = 0`
-        )
-      ]
-    });
+    // Object.assign(where, {
+    //   [Op.and]: [
+    //     models.sequelize.literal(`(SELECT COUNT("b"."id") 
+    //       FROM "Bargains" b
+    //       WHERE "b"."carId" = "Bargain"."carId" 
+    //         AND "b"."negotiationType" = 8 AND "b"."userId" = ${readerId}
+    //         AND "b"."deletedAt" IS NULL
+    //       ) = 0`
+    //     )
+    //   ]
+    // });
   }
 
   return models.Bargain.findAll({
