@@ -145,17 +145,19 @@ async function bargainsList(req, res) {
       'isRead'
     ]);
 
-    // Object.assign(where, {
-    //   [Op.and]: [
-    //     models.sequelize.literal(`(SELECT COUNT("b"."id") 
-    //       FROM "Bargains" b
-    //       WHERE "b"."carId" = "Bargain"."carId" 
-    //         AND "b"."negotiationType" = 8 AND "b"."userId" = ${readerId}
-    //         AND "b"."deletedAt" IS NULL
-    //       ) = 0`
-    //     )
-    //   ]
-    // });
+    if(bidType == 0) {
+      Object.assign(where, {
+        [Op.and]: [
+          models.sequelize.literal(`(SELECT COUNT("b"."id") 
+            FROM "Bargains" b
+            WHERE "b"."carId" = "Bargain"."carId" 
+              AND "b"."negotiationType" = 8
+              AND "b"."deletedAt" IS NULL
+            ) = 0`
+          )
+        ]
+      });
+    }
   }
 
   return models.Bargain.findAll({
@@ -407,7 +409,7 @@ async function getSellNego(req, res) {
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."negotiationType" IN (1,2,4,5,6)
+            AND "Bargains"."negotiationType" IN (1,2,4,5,6,7,8)
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
         )
@@ -431,8 +433,8 @@ async function getSellNego(req, res) {
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
-            AND ("Bargains"."negotiationType" = 4 
-              OR ("Bargains"."negotiationType" IN (3,7,8) AND "Bargains"."userId" = ${id})
+            AND ("Bargains"."negotiationType" = (4,7,8) 
+              OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
             )
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
@@ -852,7 +854,7 @@ async function getBuyNego(req, res) {
            models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."negotiationType" IN (1,2,4,5,6)
+              AND "Bargains"."negotiationType" IN (1,2,4,5,6,7,8)
               AND "Bargains"."deletedAt" IS NULL
             ) = 0`
           )
@@ -876,7 +878,9 @@ async function getBuyNego(req, res) {
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
-            AND ("Bargains"."negotiationType" IN (3,7,8) AND "Bargains"."userId" = ${id})
+            AND ("Bargains"."negotiationType" = (4,7,8) 
+              OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
+            )
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
         ),
