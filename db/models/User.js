@@ -16,10 +16,10 @@ module.exports = (sequelize, DataTypes) => {
       profileUser: {
         type: DataTypes.VIRTUAL,
         get() {
-          if (this.type === 0 && this.companyType === 0) return 'End User';
-          else if (this.type === 0 && this.companyType === 1) return 'End User';
-          else if (this.type === 1 && this.companyType === 0) return 'Dealer';
-          else if (this.type === 1 && this.companyType === 1) return 'Dealer';
+          if (this.type == 0 && this.companyType == 0) return 'End User';
+          else if (this.type == 0 && this.companyType == 1) return 'End User';
+          else if (this.type == 1 && this.companyType == 0) return 'Dealer';
+          else if (this.type == 1 && this.companyType == 1) return 'Dealer';
           else return 'unknown';
         }
       },
