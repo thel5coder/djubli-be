@@ -304,30 +304,33 @@ async function bargainsList(req, res) {
       if(readerId && readerId !== '') {
         await Promise.all(
           data.map(async item => {
-            // item.dataValues.isRead = true;
-            const findBargainReader = await models.BargainReader.findOne({
-              where: {
-                userId: readerId,
-                bargainId: item.id,
-                type: 4
-              }
-            });
 
-            if(!findBargainReader) {
-              await models.BargainReader.create({
-                userId: readerId,
-                bargainId: item.id,
-                carId: item.carId,
-                type: 4,
-                isRead: true
-              })
-                .catch(err => {
-                  res.status(422).json({
-                    success: false,
-                    errors: 'failed to read bargain chat'
+            if(item.userId != readerId) {
+              const findBargainReader = await models.BargainReader.findOne({
+                where: {
+                  userId: readerId,
+                  bargainId: item.id,
+                  type: 4
+                }
+              });
+
+              if(!findBargainReader) {
+                await models.BargainReader.create({
+                  userId: readerId,
+                  bargainId: item.id,
+                  carId: item.carId,
+                  type: 4,
+                  isRead: true
+                })
+                  .catch(err => {
+                    res.status(422).json({
+                      success: false,
+                      errors: 'failed to read bargain chat'
+                    });
                   });
-                });
+              }
             }
+            
           })
         );
       }
