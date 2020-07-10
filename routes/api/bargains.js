@@ -191,9 +191,17 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
     return res.status(400).json({ success: false, errors: 'Invalid expired date' });
 
   const data = await models.Bargain.findOne({
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        where: {
+          userId
+        }
+      }
+    ],
     where: {
-      id,
-      userId
+      id
     }
   });
 
@@ -432,57 +440,47 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
   return res.status(200).json({ success: true, data });
 });
 
-router.delete(
-  '/failureNegotiation/:carId',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    const { carId } = req.params;
-    const { withBid } = req.body;
+router.delete('/failureNegotiation/:carId', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { carId } = req.params;
+  const { withBid } = req.body;
+  const userId = req.user.id;
 
-    const car = await models.Car.findByPk(carId);
-    if(!car) {
-      return res.status(422).json({ 
-        success: false, errors: 'car not found' 
-      });
+  const car = await models.Car.findOne({
+    where: {
+      id: carId,
+      userId
     }
+  });
 
-    const where = {
-      carId
-    }
+  if (!car) {
+    return res.status(422).json({
+      success: false,
+      errors: 'car not found'
+    });
+  }
 
-    if(withBid) {
-      const roomMembers = await models.RoomMember.findAll({
-        where: {
-          roomId: car.roomId
-        }
-      });
+  const where = { carId };
+  if (!withBid) {
+    Object.assign(where, {
+      bidType: 1
+    });
+  }
 
-      let usersId = roomMembers.map(item => item.userId);
-      const where = {
-        usersId
-      }
-    } else {
-      Object.assign(where, {
-        bidType: 1
-      });
-    }
-
-    return models.Bargain.destroy({
+  return models.Bargain.destroy({
       where
     })
-      .then(() => {
-        res.json({
-          success: true
-        });
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
+    .then(() => {
+      res.json({
+        success: true
       });
-  }
-);
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+});
 
 // Jual -> Nego -> Ajak Nego/Sedang Nego
 router.get('/sell/nego', passport.authenticate('user', { session: false }), async (req, res) => {
