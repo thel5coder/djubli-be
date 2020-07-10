@@ -353,12 +353,14 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
       return res.status(422).json({ success: false, errors: err.message });
     });
     
+    const expiredAtPurchase = moment().add(2, 'd').format('YYYY-MM-DD HH:mm:ss');
     await models.Purchase.create({
       userId: carExists.room.members[0].userId,
       carId,
       price: bidAmount,
       paymentMethod,
-      bargainId: data.id
+      bargainId: data.id,
+      expiredAt: expiredAtPurchase 
     }, {
       transaction: trans
     }).catch(err => {

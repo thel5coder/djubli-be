@@ -4,6 +4,7 @@ const validator = require('validator');
 const passport = require('passport');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
+const moment = require('moment');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
 const calculateDistance = require('../../helpers/calculateDistance');
@@ -595,13 +596,15 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
     });
   }
 
+  const expiredAtPurchase = moment().add(2, 'd').format('YYYY-MM-DD HH:mm:ss');
   return models.Purchase.create(
     {
       carId,
       userId: req.user.id,
       price: carData.price,
       paymentMethod,
-      haveSeenCar
+      haveSeenCar,
+      expiredAt: expiredAtPurchase
     },
     { transaction: trans }
   )
