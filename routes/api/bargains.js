@@ -83,7 +83,8 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
   }
 
   // return res.status(200).json({ success: true, userId, data: carExists });
-  expiredAt = moment(expiredAt).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
+  expiredAt = moment.utc(expiredAt).format('YYYY-MM-DD HH:mm:ss');
+  // expiredAt = moment(expiredAt).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
   return models.Bargain.create({
     userId,
     carId,
@@ -213,7 +214,8 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  expiredAt = moment(expiredAt).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
+  expiredAt = moment.utc(expiredAt).format('YYYY-MM-DD HH:mm:ss');
+  // expiredAt = moment(expiredAt).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
   return data
     .update({
       expiredAt
@@ -335,7 +337,9 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  expiredAt = moment(expiredAt).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
+  expiredAt = moment.utc(expiredAt).format('YYYY-MM-DD HH:mm:ss');
+  // expiredAt = moment(expiredAt).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
+  return true;
   const create = {
     userId,
     bidderId,
