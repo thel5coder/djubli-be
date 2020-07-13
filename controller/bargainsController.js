@@ -762,7 +762,7 @@ async function getSellNego(req, res) {
             }
 
             if(dataBargain.length && 
-              dataBargain[0].expiredAt < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
               [1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
               // item.dataValues.statusNego = 'Nego Gagal';
@@ -1219,7 +1219,7 @@ async function getBuyNego(req, res) {
             }
 
             if(dataBargain.length && 
-              dataBargain[0].expiredAt < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
               [0,1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
               // item.dataValues.statusNego = 'Nego Gagal';
