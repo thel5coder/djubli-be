@@ -339,7 +339,6 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 
   expiredAt = moment.utc(expiredAt).format('YYYY-MM-DD HH:mm:ss');
   // expiredAt = moment(expiredAt).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
-  return true;
   const create = {
     userId,
     bidderId,
