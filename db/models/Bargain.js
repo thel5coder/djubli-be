@@ -17,13 +17,14 @@ module.exports = (sequelize, DataTypes) => {
       bidAmount: DataTypes.NUMERIC,
       haveSeenCar: DataTypes.BOOLEAN,
       paymentMethod: DataTypes.INTEGER,
-      expiredAt: {
-        type: DataTypes.DATE,
-        get() {
-          // return moment(this.getDataValue('expiredAt')).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
-          return moment(this.getDataValue('expiredAt')).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
-        }
-      },
+      expiredAt: DataTypes.DATE,
+      // expiredAt: {
+      //   type: DataTypes.DATE,
+      //   get() {
+      //     // return moment(this.getDataValue('expiredAt')).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
+      //     return moment(this.getDataValue('expiredAt')).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
+      //   }
+      // },
       comment: DataTypes.STRING,
       bidType: DataTypes.INTEGER,
       negotiationType: DataTypes.INTEGER,
