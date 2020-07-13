@@ -337,7 +337,10 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  expiredAt = moment.utc(expiredAt).format('YYYY-MM-DD HH:mm:ss');
+  // expiredAt = moment(expiredAt).local().format('YYYY-MM-DD HH:mm:ss');
+  expiredAt = moment.utc(expiredAt, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+  // console.log(expiredAt)
+  // return true
   // expiredAt = moment(expiredAt).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
   const create = {
     userId,
