@@ -38,8 +38,7 @@ router.get('/id/:id', async (req, res) => {
 });
 
 router.post('/bid', passport.authenticate('user', { session: false }), async (req, res) => {
-  let { expiredAt } = req.body;
-  const { userId, carId, bidAmount, haveSeenCar, paymentMethod } = req.body;
+  const { userId, carId, bidAmount, haveSeenCar, paymentMethod, expiredAt } = req.body;
 
   if (!bidAmount)
     return res.status(400).json({ success: false, errors: 'bidAmount must be filled' });
@@ -83,8 +82,6 @@ router.post('/bid', passport.authenticate('user', { session: false }), async (re
   }
 
   // return res.status(200).json({ success: true, userId, data: carExists });
-  expiredAt = moment.utc(expiredAt).format('YYYY-MM-DD HH:mm:ss');
-  // expiredAt = moment(expiredAt).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
   return models.Bargain.create({
     userId,
     carId,
@@ -186,7 +183,7 @@ router.put('/bid/:id', passport.authenticate('user', { session: false }), async 
 router.put('/extend/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const id = req.params.id;
   const userId = req.user.id;
-  let { expiredAt } = req.body;
+  const { expiredAt } = req.body;
 
   if (!expiredAt)
     return res.status(400).json({ success: false, errors: 'expiredAt must be filled' });
@@ -214,8 +211,6 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  expiredAt = moment.utc(expiredAt).format('YYYY-MM-DD HH:mm:ss');
-  // expiredAt = moment(expiredAt).utcOffset(420).format('YYYY-MM-DD HH:mm:ss');
   return data
     .update({
       expiredAt
@@ -251,7 +246,6 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
 
 router.post('/negotiate', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.user;
-  let { expiredAt } = req.body;
   const {
     userId,
     bidderId,
@@ -261,7 +255,8 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     paymentMethod,
     negotiationType,
     comment,
-    carPrice
+    carPrice,
+    expiredAt
   } = req.body;
 
   if (validator.isInt(userId ? userId.toString() : '') === false)
@@ -337,10 +332,6 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  const customDate1 = moment(expiredAt).local().format('YYYY-MM-DD HH:mm:ss');
-  const customDate2 = moment.utc(expiredAt, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-  const customDate3 = moment(expiredAt).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
-  customComment = `${customDate1} ## ${customDate2} ## ${customDate3} ## ${expiredAt}`
   const create = {
     userId,
     bidderId,
@@ -351,8 +342,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     expiredAt,
     bidType: 1,
     negotiationType,
-    comment: customComment,
-    // comment,
+    comment,
     carPrice
   };
 
