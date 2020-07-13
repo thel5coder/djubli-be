@@ -137,7 +137,7 @@ async function bargainsList(req, res) {
         FROM "BargainReaders" r 
         WHERE "r"."bargainId" = "Bargain"."id" 
           AND "r"."carId" = "Bargain"."carId"
-          AND "r"."userId" = ${readerId}
+          AND "r"."userId" != ${readerId}
           AND "r"."type" = 4
           AND "r"."isRead" = TRUE
           AND "r"."deletedAt" IS NULL))`
