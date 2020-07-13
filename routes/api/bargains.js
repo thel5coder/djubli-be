@@ -339,10 +339,11 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     bidAmount,
     haveSeenCar,
     paymentMethod,
-    expiredAt,
+    expiredAt: expiredAt.toString(),
     bidType: 1,
     negotiationType,
-    comment,
+    comment: expiredAt.toString(),
+    // comment,
     carPrice
   };
 
