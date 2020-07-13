@@ -337,11 +337,10 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
-  // expiredAt = moment(expiredAt).local().format('YYYY-MM-DD HH:mm:ss');
-  expiredAt = moment.utc(expiredAt, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-  // console.log(expiredAt)
-  // return true
-  // expiredAt = moment(expiredAt).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
+  const customDate1 = moment(expiredAt).local().format('YYYY-MM-DD HH:mm:ss');
+  const customDate2 = moment.utc(expiredAt, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+  const customDate3 = moment(expiredAt).tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss');
+  customComment = `${customDate1} ## ${customDate2} ## ${customDate3} ## ${expiredAt}`
   const create = {
     userId,
     bidderId,
@@ -352,7 +351,8 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     expiredAt,
     bidType: 1,
     negotiationType,
-    comment,
+    comment: customComment,
+    // comment,
     carPrice
   };
 
