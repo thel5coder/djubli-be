@@ -107,17 +107,25 @@ async function bargainsList(req, res) {
   let customWhen = readerId ? `WHEN ((SELECT COUNT("b"."id")
       FROM "Bargains" b 
       WHERE "b"."carId" = "Bargain"."carId"
-        AND "b"."negotiationType" = 7 AND "b"."userId" = ${readerId}) > 0)
+        AND "b"."bidType" = 1
+        AND ("b"."negotiationType" = 7 AND "b"."userId" = ${readerId}
+          OR "b"."negotiationType" IN (3,4))
+        )) > 0
     THEN true` : ``;
   const include = [
     [
       models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
         FROM "Bargains" b 
-        WHERE "b"."carId" = "Bargain"."carId" 
-          AND "b"."bidderId" = "Bargain"."userId"
+        WHERE "b"."carId" = "Bargain"."carId"
           AND "b"."bidType" = 1
-          AND "b"."negotiationType" NOT IN (3, 4)
-          AND "b"."expiredAt" >= (SELECT NOW())
+          AND (SELECT COUNT("sb"."id")
+            FROM "Bargains" sb
+            WHERE "sb"."carId" = "Bargain"."carId"
+              AND "sb"."bidType" = 1
+              AND "sb"."negotiationType" IN (3,4,7)
+              AND "sb"."expiredAt" >= NOW()
+              AND "sb"."deletedAt" IS NULL) = 0
+          AND "b"."expiredAt" >= NOW()
           AND "b"."deletedAt" IS NULL))`
       ), 
       'isNego'
@@ -266,7 +274,13 @@ async function bargainsList(req, res) {
                 WHERE "b"."carId" = "Bargain"."carId" 
                   AND "b"."bidderId" = "Bargain"."userId"
                   AND "b"."bidType" = 1
-                  AND "b"."negotiationType" NOT IN (3, 4)
+                  AND (SELECT COUNT("sb"."id")
+                    FROM "Bargains" sb
+                    WHERE "sb"."carId" = "Bargain"."carId"
+                      AND "sb"."bidType" = 1
+                      AND "sb"."negotiationType" IN (3,4,7)
+                      AND "sb"."expiredAt" >= NOW()
+                      AND "sb"."deletedAt" IS NULL) = 0
                   AND "b"."expiredAt" > (SELECT NOW())
                   AND "b"."deletedAt" IS NULL))`
               ), 
