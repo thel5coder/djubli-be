@@ -816,10 +816,7 @@ router.get('/status/:status', async (req, res) => {
     });
 });
 
-router.get(
-  '/purchase_list/status/:status',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
+router.get('/purchase_list/status/:status', passport.authenticate('user', { session: false }), async (req, res) => {
     const { id } = req.user;
     const { status } = req.params;
     const {
@@ -1125,6 +1122,12 @@ async function bidList(req, res) {
       FROM "Purchases"
       WHERE "Purchases"."deletedAt" IS NULL
         AND "Purchases"."carId" = "Bargain"."carId"
+    ) = 0`),
+    [Op.and]: models.sequelize.literal(`(SELECT COUNT("b"."id") 
+      FROM "Bargains" b
+      WHERE "b"."carId" = "Bargain"."carId" 
+        AND "b"."negotiationType" = 8
+        AND "b"."deletedAt" IS NULL
     ) = 0`)
   };
 
