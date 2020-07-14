@@ -39,7 +39,7 @@ router.get('/', async (req, res) => {
     });
   }
 
-  const addAttribute = await carHelper.customFields({ fields: ['purchase'], upperCase: true });
+  const addAttribute = await carHelper.customFields({ fields: ['purchase'], upperCase: true, whereQuery: '' });
   return models.ModelYear.findAll({
     attributes: {
       include: addAttribute,
