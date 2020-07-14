@@ -22,7 +22,8 @@ module.exports = (sequelize, DataTypes) => {
       bidType: DataTypes.INTEGER,
       negotiationType: DataTypes.INTEGER,
       carPrice: DataTypes.NUMERIC,
-      roomId: DataTypes.INTEGER
+      roomId: DataTypes.INTEGER,
+      isExtend: DataTypes.BOOLEAN
     },
     { timestamps: true, paranoid: true }
   );
