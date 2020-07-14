@@ -739,7 +739,9 @@ async function getSellNego(req, res) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
             item.dataValues.isRead = true;
 
-            if(dataBargain.length && dataBargain[0].expiredAt < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')) {
+            if(dataBargain.length && 
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
+            ) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
           } else if (negotiationType == 1) {
@@ -1180,7 +1182,9 @@ async function getBuyNego(req, res) {
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
             item.dataValues.isRead = false;
 
-            if(dataBargain.length && dataBargain[0].expiredAt < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')) {
+            if(dataBargain.length && 
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
+            ) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
           } else if (negotiationType == 1) {
