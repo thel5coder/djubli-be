@@ -195,9 +195,9 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
       {
         model: models.Car,
         as: 'car',
-        where: {
-          userId
-        }
+        // where: {
+        //   userId
+        // }
       }
     ],
     where: {
@@ -447,8 +447,9 @@ router.delete('/failureNegotiation/:carId', passport.authenticate('user', { sess
 
   const car = await models.Car.findOne({
     where: {
-      id: carId,
-      userId
+      id: carId
+      // ,
+      // userId
     }
   });
 
