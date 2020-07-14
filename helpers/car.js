@@ -101,6 +101,11 @@ async function customFields(params) {
               WHERE "Bargains"."carId" = "${car}"."id" 
                 AND "Bargains"."deletedAt" IS NULL 
                 AND "Bargains"."bidType" = 0
+                AND (SELECT COUNT("b"."id")
+                  FROM "Bargains" b
+                  WHERE "b"."deletedAt" IS NULL
+                    AND "b"."negotiationType" = 8
+                    AND "b"."carId" = "Bargains"."carId") = 0
             )`
           ),
           'numberOfBidder'
@@ -277,6 +282,11 @@ async function customFields(params) {
                 AND "Bargains"."deletedAt" IS NULL 
                 AND "Bargains"."bidType" = 0 
                 ${params.whereQuery}
+                AND (SELECT COUNT("b"."id")
+                  FROM "Bargains" b
+                  WHERE "b"."deletedAt" IS NULL
+                    AND "b"."negotiationType" = 8
+                    AND "b"."carId" = "Bargains"."carId") = 0
             )`
           ),
           'numberOfBidder'
@@ -660,6 +670,11 @@ async function emitJual(params) {
             WHERE "Bargains"."carId" = "Car"."id" 
               AND "Bargains"."deletedAt" IS NULL 
               AND "Bargains"."bidType" = 0
+              AND (SELECT COUNT("b"."id")
+                FROM "Bargains" b
+                WHERE "b"."deletedAt" IS NULL
+                  AND "b"."negotiationType" = 8
+                  AND "b"."carId" = "Bargains"."carId") = 0
           )`
         ),
         'numberOfBidder'
@@ -883,6 +898,11 @@ async function emitFieldCustomCar(params) {
           WHERE "Bargains"."carId" = "${tableName}"."id" 
             AND "Bargains"."deletedAt" IS NULL 
             AND "Bargains"."bidType" = 0
+            AND (SELECT COUNT("b"."id")
+              FROM "Bargains" b
+              WHERE "b"."deletedAt" IS NULL
+                AND "b"."negotiationType" = 8
+                AND "b"."carId" = "Bargains"."carId") = 0
         )`
       ),
       'numberOfBidder'
