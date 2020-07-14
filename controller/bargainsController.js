@@ -15,7 +15,6 @@ async function bargainsList(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  // if (limit > MAX_LIMIT) limit = MAX_LIMIT; // FOR CHAT
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -144,20 +143,20 @@ async function bargainsList(req, res) {
       ), 
       'isRead'
     ]);
+  }
 
-    if(bidType == 0) {
-      Object.assign(where, {
-        [Op.and]: [
-          models.sequelize.literal(`(SELECT COUNT("b"."id") 
-            FROM "Bargains" b
-            WHERE "b"."carId" = "Bargain"."carId" 
-              AND "b"."negotiationType" = 8
-              AND "b"."deletedAt" IS NULL
-            ) = 0`
-          )
-        ]
-      });
-    }
+  if(bidType == 0) {
+    Object.assign(where, {
+      [Op.and]: [
+        models.sequelize.literal(`(SELECT COUNT("b"."id") 
+          FROM "Bargains" b
+          WHERE "b"."carId" = "Bargain"."carId" 
+            AND "b"."negotiationType" = 8
+            AND "b"."deletedAt" IS NULL
+          ) = 0`
+        )
+      ]
+    });
   }
 
   return models.Bargain.findAll({
@@ -399,10 +398,6 @@ async function getSellNego(req, res) {
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
       negotiationType
-      // ,
-      // expiredAt: {
-      //   [Op.gt]: moment().format()
-      // }
     });
 
     // so that it doesn't appear on the "jual->nego->ajak nego" page
@@ -423,13 +418,9 @@ async function getSellNego(req, res) {
       negotiationType: {
         [Op.in]: [1, 2, 3, 5, 6]
       }
-      // ,
-      // expiredAt: {
-      //   [Op.gt]: moment().format()
-      // }
     });
 
-    // so that it doesn't appear on the "jual->nego->sedan nego" page
+    // so that it doesn't appear on the "jual->nego->sedang nego" page
     // when the data have 3/4/7/8 negotiationType
     Object.assign(where, {
       [Op.and]: [
@@ -745,7 +736,6 @@ async function getSellNego(req, res) {
           const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
 
           if (negotiationType == 0) {
-            // item.dataValues.statusNego = 'Ajak Nego';
             item.dataValues.statusNego = 'Tunggu Jawaban';
             item.dataValues.isRead = true;
 
@@ -764,9 +754,7 @@ async function getSellNego(req, res) {
             if(dataBargain.length && 
               moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
               [1,2,5,6].includes(dataBargain[0].negotiationType)
-            ) {
-              // item.dataValues.statusNego = 'Nego Gagal';
-              item.dataValues.statusNego = 'Waktu Habis';
+            ) {              item.dataValues.statusNego = 'Waktu Habis';
               item.dataValues.isRead = true;
             }
 
@@ -774,11 +762,6 @@ async function getSellNego(req, res) {
               item.dataValues.statusNego = 'Pembeli Keluar Nego';
               item.dataValues.isRead = true;
             }
-
-            // if(dataBargain.length && dataBargain[0].negotiationType == 4) {
-            //   item.dataValues.statusNego = 'Nego Berhasil';
-            //   item.dataValues.isRead = true;
-            // }
           }
         })
       );
@@ -844,10 +827,6 @@ async function getBuyNego(req, res) {
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
       [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
-      // ,
-      // expiredAt: {
-      //   [Op.gt]: moment().format()
-      // }
     });
 
     // so that it doesn't appear on the "beli->nego->diajak nego" page
@@ -868,13 +847,9 @@ async function getBuyNego(req, res) {
       negotiationType: {
         [Op.in]: [1, 2, 3, 4, 5, 6]
       }
-      // ,
-      // expiredAt: {
-      //   [Op.gt]: moment().format()
-      // }
     });
 
-    // so that it doesn't appear on the "jual->nego->sedan nego" page
+    // so that it doesn't appear on the "jual->nego->sedang nego" page
     // when the data have 3/4/7/8 negotiationType
     Object.assign(where, {
       [Op.and]: [
@@ -1202,7 +1177,6 @@ async function getBuyNego(req, res) {
           const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;  
 
           if (negotiationType == 0) {
-            // item.dataValues.statusNego = 'Diajak Nego';
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
             item.dataValues.isRead = false;
 
@@ -1222,7 +1196,6 @@ async function getBuyNego(req, res) {
               moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
               [0,1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
-              // item.dataValues.statusNego = 'Nego Gagal';
               item.dataValues.statusNego = 'Waktu Habis';
               item.dataValues.isRead = true;
             }
