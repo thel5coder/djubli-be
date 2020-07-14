@@ -201,7 +201,10 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
       }
     ],
     where: {
-      id
+      id,
+      isExtend: {
+        [Op.or]: [false, null]
+      }
     }
   });
 
@@ -213,7 +216,8 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
 
   return data
     .update({
-      expiredAt
+      expiredAt,
+      isExtend: true
     })
     .then(async data => {
       const userNotif = {
@@ -442,7 +446,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 
 router.delete('/failureNegotiation/:carId', passport.authenticate('user', { session: false }), async (req, res) => {
   const { carId } = req.params;
-  const { withBid } = req.body;
+  const { withBid } = req.query;
   const userId = req.user.id;
 
   const car = await models.Car.findOne({
