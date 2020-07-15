@@ -190,27 +190,63 @@ router.put('/extend/:id', passport.authenticate('user', { session: false }), asy
   if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid())
     return res.status(400).json({ success: false, errors: 'Invalid expired date' });
 
-  const data = await models.Bargain.findOne({
+  const data = await models.Bargain.findByPk(id, {
+    attributes: {
+      include: [
+        [
+          models.sequelize.literal(`(EXISTS(SELECT "r"."id" 
+            FROM "BargainReaders" r 
+            WHERE "r"."bargainId" = "Bargain"."id" 
+              AND "r"."carId" = "Bargain"."carId"
+              AND "r"."userId" != ${userId}
+              AND "r"."type" = 4
+              AND "r"."isRead" = TRUE
+              AND "r"."deletedAt" IS NULL))`
+          ), 
+          'isRead'
+        ]
+      ]
+    },
     include: [
       {
         model: models.Car,
         as: 'car',
-        // where: {
-        //   userId
-        // }
+        required: true,
+        include: [
+          {
+            model: models.Room,
+            as: 'room',
+            where: models.sequelize.where(
+              models.sequelize.literal(
+                `(SELECT COUNT( "RoomMembers"."id" ) 
+                  FROM "RoomMembers" 
+                  WHERE "RoomMembers"."roomId" = "car"."roomId" 
+                    AND "RoomMembers"."userId" = ${userId}
+                  )`
+              ),
+              { [Op.gt]: 0 }
+            )
+          }
+        ]
       }
-    ],
-    where: {
-      id,
-      isExtend: {
-        [Op.or]: [false, null]
-      }
-    }
+    ]
   });
 
   if (!data) {
     return res.status(400).json({ 
       success: false, errors: 'data not found or you are not the author of this data' 
+    });
+  }
+
+  if (data.isExtend) {
+    return res.status(400).json({ 
+      success: false, errors: 'You have already extended this data before' 
+    });
+  }
+
+  if (data.isRead) {
+    return res.status(400).json({ 
+      success: false, errors: 'The user reads the offer but is not replied' 
     });
   }
 
@@ -290,6 +326,16 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
       {
         model: models.Room,
         as: 'room',
+        where: models.sequelize.where(
+          models.sequelize.literal(
+            `(SELECT COUNT( "RoomMembers"."id" ) 
+                FROM "RoomMembers" 
+                WHERE "RoomMembers"."roomId" = "Car"."roomId" 
+                  AND "RoomMembers"."userId" = ${id}
+            )`
+          ),
+          { [Op.gt]: 0 }
+        ),
         include: [
           {
             required: false,
@@ -305,6 +351,7 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
       }
     ]
   });
+
   if (!carExists) return res.status(404).json({ success: false, errors: 'car not found' });
   if (!carExists.roomId) return res.status(422).json({ success: false, errors: 'room null' });
   // saat pembeli yang nego, dia masuk tab mana
