@@ -1702,21 +1702,15 @@ async function sellList(req, res) {
     });
 }
 
-router.get(
-  '/sell_list/status/:status',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    return sellList(req, res);
-  }
-);
+router.get('/sell_list/status/:status', passport.authenticate('user', { session: false }), async (req, res) => {
+  return sellList(req, res);
+});
 
-router.get(
-  '/sell/list/status/:status',
+router.get('/sell/list/status/:status',
   // passport.authenticate('user', { session: false }),
   async (req, res) => {
     return sellList(req, res);
-  }
-);
+});
 
 // Update Status
 router.put('/status/:id', passport.authenticate('user', { session: false }), async (req, res) => {
@@ -2941,27 +2935,22 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
   });
 });
 
-router.delete(
-  '/meet/schedules/:id',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    const { id } = req.params;
-    if (validator.isInt(id ? id.toString() : '') === false)
-      return res.status(400).json({ success: false, errors: 'Invalid Parameter' });
+router.delete('/meet/schedules/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+  if (validator.isInt(id ? id.toString() : '') === false)
+    return res.status(400).json({ success: false, errors: 'Invalid Parameter' });
 
-    const data = await models.MeetingSchedule.findByPk(id);
-    if (!data) return res.status(400).json({ success: false, errors: 'Schedule not found' });
+  const data = await models.MeetingSchedule.findByPk(id);
+  if (!data) return res.status(400).json({ success: false, errors: 'Schedule not found' });
 
-    return data
-      .destroy(id)
-      .then(async data => {
-        return apiResponse._success({ res, data });
-      })
-      .catch(err => {
-        return apiResponse._error({ res, errors: err });
-      });
-  }
-);
+  return data.destroy(id)
+    .then(async data => {
+      return apiResponse._success({ res, data });
+    })
+    .catch(err => {
+      return apiResponse._error({ res, errors: err });
+    });
+});
 
 async function viewLike(req, res) {
   const {
@@ -3237,295 +3226,13 @@ router.get('/views/like', async (req, res) => {
 });
 
 // router get list car by like(Login)
-router.get(
-  '/viewLikeLogon',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    let { condition, page, limit, sort } = req.query;
-    const userId = await req.user.id;
-    let offset = 0;
+router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), async (req, res) => {
+  return carsController.viewLikeLogon(req, res);
+});
 
-    if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-    if (limit > MAX_LIMIT) limit = MAX_LIMIT;
-    if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
-    else page = 1;
-
-    const order = [
-      // ['createdAt', 'desc'],
-      [
-        models.sequelize.literal(`(
-        SELECT COUNT("Likes"."carId") 
-        FROM "Likes" 
-        WHERE "Likes"."carId" = "Car"."id" 
-          AND "Likes"."status" IS TRUE
-          AND "Likes"."deletedAt" IS NULL
-      )`),
-        'DESC'
-      ]
-    ];
-
-    if (!sort) sort = 'asc';
-    else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
-
-    const where = {
-      [Op.and]: [
-        models.sequelize.literal(`(
-          (SELECT COUNT("Likes"."carId") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id"
-              AND "Likes"."status" IS TRUE
-              AND "Likes"."deletedAt" IS NULL
-          ) > 0 
-        )`)
-      ]
-    };
-
-    if (condition) {
-      Object.assign(where, {
-        condition: {
-          [Op.eq]: condition
-        }
-      });
-    }
-
-    return models.Car.findAll({
-      attributes: Object.keys(models.Car.attributes).concat([
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."userId" = ${userId} 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-          ),
-          'islike'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."userId" = ${userId} 
-              AND "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-          ),
-          'isBid'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT "Brands"."name" 
-            FROM "Brands" 
-            WHERE "Brands"."id" = "Car"."brandId" 
-              AND "Brands"."deletedAt" IS NULL
-          )`
-          ),
-          'Brands'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT "Models"."name" 
-            FROM "Models" 
-            WHERE "Models"."id" = "Car"."modelId" 
-              AND "Models"."deletedAt" IS NULL
-          )`
-          ),
-          'Model'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Likes"."carId") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-          ),
-          'jumlahLike'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Views"."carId") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
-          ),
-          'jumlahView'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-          ),
-          'highestBidder'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-          ),
-          'numberOfBidder'
-        ],
-        [
-          models.sequelize.literal(
-            `(SELECT MAX("Bargains"."bidAmount") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-              AND "Bargains"."userId" = ${userId}
-          )`
-          ),
-          'bidAmount'
-        ]
-      ]),
-      include: [
-        {
-          model: models.User,
-          as: 'user',
-          attributes: {
-            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-          },
-          include: [
-            {
-              model: models.File,
-              as: 'file',
-              attributes: {
-                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              }
-            },
-            {
-              model: models.Dealer,
-              as: 'dealer',
-              attributes: {
-                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              }
-            },
-            {
-              model: models.Company,
-              as: 'company',
-              attributes: {
-                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              }
-            },
-            {
-              model: models.Purchase,
-              as: 'purchase',
-              attributes: {
-                exclude: ['deletedAt']
-              },
-              order: [['id', 'desc']],
-              limit: 1
-            }
-          ]
-        },
-        {
-          model: models.Brand,
-          as: 'brand',
-          attributes: ['id', 'name', 'logo', 'status']
-        },
-        {
-          model: models.Model,
-          as: 'model',
-          attributes: ['id', 'name', 'groupModelId']
-        },
-        {
-          model: models.GroupModel,
-          as: 'groupModel',
-          attributes: ['id', 'name', 'brandId']
-        },
-        {
-          model: models.Color,
-          as: 'interiorColor',
-          attributes: ['id', 'name', 'hex']
-        },
-        {
-          model: models.Color,
-          as: 'exteriorColor',
-          attributes: ['id', 'name', 'hex']
-        },
-        {
-          model: models.MeetingSchedule,
-          as: 'meetingSchedule',
-          attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-        },
-        {
-          model: models.InteriorGalery,
-          as: 'interiorGalery',
-          attributes: ['id', 'fileId', 'carId'],
-          include: {
-            model: models.File,
-            as: 'file',
-            attributes: ['type', 'url']
-          }
-        },
-        {
-          model: models.ExteriorGalery,
-          as: 'exteriorGalery',
-          attributes: ['id', 'fileId', 'carId'],
-          include: {
-            model: models.File,
-            as: 'file',
-            attributes: ['type', 'url']
-          }
-        },
-        {
-          model: models.ModelYear,
-          as: 'modelYear',
-          attributes: {
-            exclude: ['createdAt', 'updatedAt', 'deletedAt']
-          }
-        },
-        {
-          required: false,
-          model: models.Bargain,
-          as: 'bargain',
-          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
-          limit: 1,
-          order: [['id', 'desc']]
-        }
-      ],
-      where,
-      order,
-      offset,
-      limit
-    })
-      .then(async data => {
-        const count = await models.Car.count({ where });
-        const pagination = paginator.paging(page, count, limit);
-
-        res.json({
-          success: true,
-          pagination,
-          data
-        });
-      })
-      .catch(err => {
-        res.status(422).json({
-          success: false,
-          errors: err.message
-        });
-      });
-  }
-);
-
-router.get(
-  '/categories',
+router.get('/categories',
   /*passport.authenticate('user', { session: false }),*/ async (req, res) => {
     return carsController.getCategory(req, res);
-  }
-);
+});
 
 module.exports = router;

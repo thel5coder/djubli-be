@@ -70,6 +70,7 @@ async function carsGet(req, res, auth = false) {
     'profile',
     'area'
   ];
+  
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [];
@@ -845,7 +846,629 @@ async function sell(req, res) {
   });
 }
 
+async function viewLikeLogon(req, res) {
+  const {
+    groupModelId,
+    modelId,
+    brandId,
+    condition,
+    modelYearId,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    radius,
+    cityId,
+    subdistrictId,
+    exteriorColorId,
+    interiorColorId,
+    minKm,
+    maxKm,
+    profileUser
+  } = req.query;
+  let { latitude, longitude } = req.query;
+  let { page, limit, by, sort } = req.query;
+  const userId = req.user.id;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'id';
+  const array = [
+    'id',
+    'userId',
+    'brandId',
+    'modelId',
+    'groupModelId',
+    'modelYearId',
+    'exteriorColorId',
+    'interiorColorId',
+    'price',
+    'condition',
+    'usedFrom',
+    'frameNumber',
+    'engineNumber',
+    'STNKnumber',
+    'STNKphoto',
+    'location',
+    'status',
+    'km',
+    'createdAt',
+    'view',
+    'like',
+    'profile',
+    'area'
+  ];
+
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'view':
+    case 'like':
+      order.push([Sequelize.col(by), sort]);
+      break;
+    case 'area':
+      order.push([Sequelize.col(`distance`), sort]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+
+  const addAttributes = {
+    fields: [
+      'like',
+      'islike',
+      'isBid',
+      'view',
+      'Brands',
+      'Model',
+      'jumlahLike',
+      'jumlahView',
+      'highestBidder',
+      'numberOfBidder',
+      'sumBargains',
+      'bidAmount'
+    ],
+    upperCase: true,
+    id: userId
+  };
+
+  const whereUser = {};
+  const where = {
+    [Op.and]: [
+      models.sequelize.literal(`(
+        (SELECT COUNT("Likes"."carId") 
+          FROM "Likes" 
+          WHERE "Likes"."carId" = "Car"."id"
+            AND "Likes"."status" IS TRUE
+            AND "Likes"."deletedAt" IS NULL
+        ) > 0 
+      )`)
+    ]
+  };
+
+  if (modelYearId) {
+    Object.assign(where, {
+      modelYearId
+    });
+  }
+
+  if (groupModelId) {
+    Object.assign(where, {
+      groupModelId
+    });
+  }
+
+  if (condition) {
+    Object.assign(where, {
+      condition
+    });
+  }
+
+  if (modelId) {
+    Object.assign(where, {
+      modelId
+    });
+  }
+
+  if (brandId) {
+    Object.assign(where, {
+      brandId
+    });
+  }
+
+  if (exteriorColorId) {
+    Object.assign(where, {
+      exteriorColorId
+    });
+  }
+
+  if (interiorColorId) {
+    Object.assign(where, {
+      interiorColorId
+    });
+  }
+
+  if (profileUser == 'End User') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 0, companyType: 0 },
+        { type: 0, companyType: 1 }
+      ]
+    });
+  }
+
+  if (profileUser == 'Dealer') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 1, companyType: 0 },
+        { type: 1, companyType: 1 }
+      ]
+    });
+  }
+
+  if (minKm && maxKm) {
+    Object.assign(where, {
+      km: {
+        [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
+      }
+    });
+  } else if (minKm) {
+    Object.assign(where, {
+      km: {
+        [Op.gte]: minKm
+      }
+    });
+  } else if (maxKm) {
+    Object.assign(where, {
+      km: {
+        [Op.lte]: maxKm
+      }
+    });
+  }
+
+  if (minPrice && maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+      }
+    });
+  } else if (minPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.gte]: minPrice
+      }
+    });
+  } else if (maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.lte]: maxPrice
+      }
+    });
+  }
+
+  const whereYear = {};
+  if (minYear && maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+      }
+    });
+  } else if (minYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.gte]: minYear
+      }
+    });
+  } else if (maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.lte]: maxYear
+      }
+    });
+  }
+
+  // Search By Location (Latitude, Longitude & Radius) (For Pin Map)
+  if (by === 'location') {
+    if (!latitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Latitude not found!'
+      });
+    }
+
+    if (!longitude) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Longitude not found!'
+      });
+    }
+
+    if (!radius) {
+      return res.status(400).json({
+        success: false,
+        errors: 'Radius not found!'
+      });
+    }
+
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = models.sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+    Object.assign(where, {
+      [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
+    });
+
+    addAttributes.fields.push('distance');
+    Object.assign(addAttributes, {
+      latitude,
+      longitude
+    });
+  }
+
+  if (by === 'area') {
+    if (cityId) {
+      const city = await models.City.findByPk(cityId);
+      if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+      if (subdistrictId) {
+        const subdistrict = await models.SubDistrict.findOne({
+          where: { id: subdistrictId, cityId }
+        });
+
+        if (!subdistrict)
+          return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+        if (city && subdistrict) {
+          latitude = subdistrict.latitude;
+          longitude = subdistrict.longitude;
+        }
+      } else if (city) {
+        latitude = city.latitude;
+        longitude = city.longitude;
+      }
+
+      await calculateDistance.CreateOrReplaceCalculateDistance();
+      const distances = Sequelize.literal(
+        `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+      );
+
+      if (radius) {
+        Object.assign(where, {
+          where: {
+            [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
+          }
+        });
+      } else if (cityId && subdistrictId) {
+        Object.assign(where, {
+          cityId,
+          subdistrictId
+        });
+      } else if (cityId) {
+        Object.assign(where, {
+          cityId
+        });
+      }
+
+      addAttributes.fields.push('distance');
+      Object.assign(addAttributes, {
+        latitude,
+        longitude
+      });
+    } else {
+      return res.status(400).json({ success: false, errors: 'Please Select City!' });
+    }
+  }
+
+  if (latitude && longitude && radius && by != 'area' && by != 'location') {
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+
+    Object.assign(where, {
+      where: {
+        [Op.and]: [Sequelize.where(distances, { [Op.lte]: Number(radius) })]
+      }
+    });
+
+    addAttributes.fields.push('distance');
+    Object.assign(addAttributes, {
+      latitude,
+      longitude
+    });
+  }
+
+  if (
+    cityId &&
+    subdistrictId &&
+    radius == '' &&
+    (latitude == '') & (longitude == '') &&
+    by != 'area' &&
+    by != 'location'
+  ) {
+    const city = await models.City.findByPk(cityId);
+    if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+
+    if (subdistrictId) {
+      const subdistrict = await models.SubDistrict.findOne({
+        where: { id: subdistrictId, cityId }
+      });
+
+      if (!subdistrict)
+        return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+
+      if (city && subdistrict) {
+        latitude = subdistrict.latitude;
+        longitude = subdistrict.longitude;
+      }
+    } else if (city) {
+      latitude = city.latitude;
+      longitude = city.longitude;
+    }
+
+    if (cityId && subdistrictId) {
+      Object.assign(where, {
+        cityId,
+        subdistrictId
+      });
+    } else if (cityId) {
+      Object.assign(where, {
+        cityId
+      });
+    }
+
+    addAttributes.fields.push('distance');
+    Object.assign(addAttributes, {
+      latitude,
+      longitude
+    });
+  }
+
+  const addAttribute = await carHelper.customFields(addAttributes);
+
+  return models.Car.findAll({
+    // attributes: Object.keys(models.Car.attributes).concat([
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT COUNT("Likes"."id") 
+    //         FROM "Likes" 
+    //         WHERE "Likes"."carId" = "Car"."id" 
+    //           AND "Likes"."status" IS TRUE 
+    //           AND "Likes"."userId" = ${userId} 
+    //           AND "Likes"."deletedAt" IS NULL
+    //       )`
+    //     ),
+    //     'islike'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT COUNT("Bargains"."id") 
+    //         FROM "Bargains" 
+    //         WHERE "Bargains"."userId" = ${userId} 
+    //           AND "Bargains"."carId" = "Car"."id" 
+    //           AND "Bargains"."expiredAt" >= (SELECT NOW()) 
+    //           AND "Bargains"."deletedAt" IS NULL
+    //           AND "Bargains"."bidType" = 0
+    //       )`
+    //     ),
+    //     'isBid'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT "Brands"."name" 
+    //         FROM "Brands" 
+    //         WHERE "Brands"."id" = "Car"."brandId" 
+    //           AND "Brands"."deletedAt" IS NULL
+    //       )`
+    //     ),
+    //     'Brands'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT "Models"."name" 
+    //         FROM "Models" 
+    //         WHERE "Models"."id" = "Car"."modelId" 
+    //           AND "Models"."deletedAt" IS NULL
+    //       )`
+    //     ),
+    //     'Model'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT COUNT("Likes"."carId") 
+    //         FROM "Likes" 
+    //         WHERE "Likes"."carId" = "Car"."id" 
+    //           AND "Likes"."status" IS TRUE 
+    //           AND "Likes"."deletedAt" IS NULL
+    //       )`
+    //     ),
+    //     'jumlahLike'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT COUNT("Views"."carId") 
+    //         FROM "Views" 
+    //         WHERE "Views"."carId" = "Car"."id" 
+    //           AND "Views"."deletedAt" IS NULL
+    //       )`
+    //     ),
+    //     'jumlahView'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT MAX("Bargains"."bidAmount") 
+    //         FROM "Bargains" 
+    //         WHERE "Bargains"."carId" = "Car"."id" 
+    //           AND "Bargains"."deletedAt" IS NULL
+    //           AND "Bargains"."bidType" = 0
+    //       )`
+    //     ),
+    //     'highestBidder'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT COUNT("Bargains"."id") 
+    //         FROM "Bargains" 
+    //         WHERE "Bargains"."carId" = "Car"."id" 
+    //           AND "Bargains"."deletedAt" IS NULL
+    //           AND "Bargains"."bidType" = 0
+    //       )`
+    //     ),
+    //     'numberOfBidder'
+    //   ],
+    //   [
+    //     models.sequelize.literal(
+    //       `(SELECT MAX("Bargains"."bidAmount") 
+    //         FROM "Bargains" 
+    //         WHERE "Bargains"."carId" = "Car"."id" 
+    //           AND "Bargains"."deletedAt" IS NULL
+    //           AND "Bargains"."bidType" = 0
+    //           AND "Bargains"."userId" = ${userId}
+    //       )`
+    //     ),
+    //     'bidAmount'
+    //   ]
+    // ]),
+    include: [
+      {
+        model: models.User,
+        as: 'user',
+        attributes: {
+          exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+        },
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Dealer,
+            as: 'dealer',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Company,
+            as: 'company',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          },
+          {
+            model: models.Purchase,
+            as: 'purchase',
+            attributes: {
+              exclude: ['deletedAt']
+            },
+            order: [['id', 'desc']],
+            limit: 1
+          }
+        ]
+      },
+      {
+        model: models.Brand,
+        as: 'brand',
+        attributes: ['id', 'name', 'logo', 'status']
+      },
+      {
+        model: models.Model,
+        as: 'model',
+        attributes: ['id', 'name', 'groupModelId']
+      },
+      {
+        model: models.GroupModel,
+        as: 'groupModel',
+        attributes: ['id', 'name', 'brandId']
+      },
+      {
+        model: models.Color,
+        as: 'interiorColor',
+        attributes: ['id', 'name', 'hex']
+      },
+      {
+        model: models.Color,
+        as: 'exteriorColor',
+        attributes: ['id', 'name', 'hex']
+      },
+      {
+        model: models.MeetingSchedule,
+        as: 'meetingSchedule',
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+      },
+      {
+        model: models.InteriorGalery,
+        as: 'interiorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: {
+          model: models.File,
+          as: 'file',
+          attributes: ['type', 'url']
+        }
+      },
+      {
+        model: models.ExteriorGalery,
+        as: 'exteriorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: {
+          model: models.File,
+          as: 'file',
+          attributes: ['type', 'url']
+        }
+      },
+      {
+        model: models.ModelYear,
+        as: 'modelYear',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        required: false,
+        model: models.Bargain,
+        as: 'bargain',
+        attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+        limit: 1,
+        order: [['id', 'desc']]
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Car.count({ where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
 module.exports = {
   carsGet,
-  sell
+  sell,
+  viewLikeLogon
 };
