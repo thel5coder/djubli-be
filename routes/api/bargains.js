@@ -438,6 +438,31 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
       trans.rollback();
       return res.status(422).json({ success: false, errors: err.message });
     });
+
+    await models.Room.destroy({
+      where: {
+        id: carExists.roomId
+      },
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ success: false, errors: err.message });
+    });
+
+    await models.RoomMember.destroy({
+      where: {
+        roomId: carExists.roomId
+      },
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ success: false, errors: err.message });
+    });
+
+    await carExists.update({ roomId: null }, { transaction: trans }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ success: false, errors: err.message });
+    });
   }
 
   const runQuery = async (query) => {
@@ -497,8 +522,6 @@ router.delete('/failureNegotiation/:carId', passport.authenticate('user', { sess
   const car = await models.Car.findOne({
     where: {
       id: carId
-      // ,
-      // userId
     }
   });
 
@@ -516,20 +539,43 @@ router.delete('/failureNegotiation/:carId', passport.authenticate('user', { sess
     });
   }
 
-  return models.Bargain.destroy({
-      where
-    })
-    .then(() => {
-      res.json({
-        success: true
-      });
-    })
-    .catch(err => {
-      res.status(422).json({
-        success: false,
-        errors: err.message
-      });
-    });
+  const trans = await models.sequelize.transaction();
+  await models.Bargain.destroy({
+      where,
+      transaction: trans
+  })
+  .catch(err => {
+    trans.rollback();
+    return res.status(422).json({ success: false, errors: err.message });
+  });
+
+  await models.Room.destroy({
+    where: {
+      id: car.roomId
+    },
+    transaction: trans
+  }).catch(err => {
+    trans.rollback();
+    return res.status(422).json({ success: false, errors: err.message });
+  });
+
+  await models.RoomMember.destroy({
+    where: {
+      roomId: car.roomId
+    },
+    transaction: trans
+  }).catch(err => {
+    trans.rollback();
+    return res.status(422).json({ success: false, errors: err.message });
+  });
+
+  await car.update({ roomId: null }, { transaction: trans }).catch(err => {
+    trans.rollback();
+    return res.status(422).json({ success: false, errors: err.message });
+  });
+
+  trans.commit();
+  return res.status(200).json({ success: true });
 });
 
 // Jual -> Nego -> Ajak Nego/Sedang Nego
