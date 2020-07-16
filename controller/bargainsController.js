@@ -109,8 +109,10 @@ async function bargainsList(req, res) {
       WHERE "b"."carId" = "Bargain"."carId"
         AND "b"."bidType" = 1
         AND ("b"."negotiationType" = 7 AND "b"."userId" = ${readerId}
-          OR "b"."negotiationType" IN (3,4))
-        )) > 0
+          OR "b"."negotiationType" IN (3,4)
+        )
+        AND "b"."deletedAt" IS NULL
+      )) > 0
     THEN true` : ``;
   const include = [
     [

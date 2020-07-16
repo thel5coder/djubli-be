@@ -354,8 +354,8 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 
   if (!carExists) return res.status(404).json({ success: false, errors: 'car not found' });
   if (!carExists.roomId) return res.status(422).json({ success: false, errors: 'room null' });
-  // saat pembeli yang nego, dia masuk tab mana
 
+  // saat pembeli yang nego, dia masuk tab mana
   const userNotifs = [];
   if (id === carExists.userId) {
     userNotifs.push({
@@ -428,6 +428,18 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
     });
   }
 
+  if(negotiationType == 7 || negotiationType == 8) {
+    await models.Bargain.destroy({
+      where: {
+        carId
+      },
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ success: false, errors: err.message });
+    });
+  }
+
   const runQuery = async (query) => {
     return await models.sequelize.query(query, { transaction: trans, type: models.sequelize.QueryTypes.SELECT });
   }
@@ -467,20 +479,6 @@ router.post('/negotiate', passport.authenticate('user', { session: false }), asy
 
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
-
-  // const userNotif = {
-  //   userId: carExists.room.members[0].userId,
-  //   collapseKey: null,
-  //   notificationTitle: `Notifikasi Jual`,
-  //   notificationBody: `penawaran baru`,
-  //   notificationClickAction: `carNegotiate`,
-  //   dataReferenceId: carId,
-  //   category: 1,
-  //   status: 3
-  // };
-  // const emit = await notification.insertNotification(userNotif);
-  // req.io.emit(`tabJual-${carExists.room.members[0].userId}`, emit);
-  // notification.userNotif(userNotif);
 
   userNotifs.map(async userNotif => {
     const emit = await notification.insertNotification(userNotif);
