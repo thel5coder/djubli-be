@@ -125,9 +125,7 @@ async function bargainsList(req, res) {
             WHERE "sb"."carId" = "Bargain"."carId"
               AND "sb"."bidType" = 1
               AND "sb"."negotiationType" IN (3,4,7)
-              AND "sb"."expiredAt" >= NOW()
               AND "sb"."deletedAt" IS NULL) = 0
-          AND "b"."expiredAt" >= NOW()
           AND "b"."deletedAt" IS NULL))`
       ), 
       'isNego'
@@ -281,9 +279,7 @@ async function bargainsList(req, res) {
                     WHERE "sb"."carId" = "Bargain"."carId"
                       AND "sb"."bidType" = 1
                       AND "sb"."negotiationType" IN (3,4,7)
-                      AND "sb"."expiredAt" >= NOW()
                       AND "sb"."deletedAt" IS NULL) = 0
-                  AND "b"."expiredAt" > (SELECT NOW())
                   AND "b"."deletedAt" IS NULL))`
               ), 
               'isNego'
