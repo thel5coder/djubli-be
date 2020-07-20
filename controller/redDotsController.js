@@ -14,129 +14,47 @@ const queryRedDotExpiredAt = (id, table = 'bargain') => `(EXISTS(SELECT "bs"."id
     	AND "bs"."userId" = ${id}
 ))`;
 
+const whereQueryBargain = customWhere => `(SELECT COUNT("bc"."id")
+	FROM (SELECT * 
+		FROM "Bargains"
+		WHERE "Bargains"."deletedAt" IS NULL
+		    AND "Bargains"."carId" = "Car"."id"
+		ORDER BY "Bargains"."createdAt" DESC
+		LIMIT 1) AS bc
+	WHERE "bc"."userId" <> ${id}
+		${customWhere}
+		AND (SELECT COUNT("BargainReaders"."id") 
+			FROM "BargainReaders" 
+			WHERE "BargainReaders"."carId" = "Car"."id"
+				AND "BargainReaders"."bargainId" = "bc"."id"
+				AND "BargainReaders"."userId" = ${id}
+				AND "BargainReaders"."deletedAt" IS NULL
+		) = 0
+) > 0`;
+
 // GET Read Dots
 async function getJual(req, res) {
 	const { id } = req.user;
-	const count = await models.Car.count({
-        distinct: true,
-        include: [
-          	{
-            	model: models.Room,
-            	as: 'room',
-            	where: models.sequelize.where(
-	              	models.sequelize.literal(
-	                	`(SELECT COUNT( "RoomMembers"."id" ) 
-	                		FROM "RoomMembers" 
-	                		WHERE "RoomMembers"."roomId" = "room"."id" 
-	                			AND "RoomMembers"."userId" <> ${id}
-	                	)`
-	              	),
-              		{ [Op.gt]: 0 }
-            	)
-          	}
-        ],
-        where: {
-		    userId: id,
-		    [Op.and]: models.sequelize.literal(`(SELECT COUNT("bc"."id")
-		    	FROM (SELECT * 
-		    		FROM "Bargains"
-		    		WHERE "Bargains"."deletedAt" IS NULL
-		    			AND "Bargains"."carId" = "Car"."id"
-		    			AND "Bargains"."bidType" = 1
-		    			AND (
-							(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "Bargains"."carId"
-					            AND "BargainReaders"."bargainId" = "Bargains"."id"
-				            	AND "BargainReaders"."type" = 1
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0 OR
-				            ${queryRedDotExpiredAt(id, "Bargains")}
-		    			)
-		    		ORDER BY "Bargains"."createdAt" DESC
-		    		LIMIT 1) AS bc
-		    	WHERE "bc"."userId" <> ${id}
-		    		AND ("bc"."negotiationType" IS NULL 
-		    			OR "bc"."negotiationType" BETWEEN 0 AND 6
-		    		)
-		    ) > 0`)
-		}
-    });
+	const { bidType } = req.query;
+	const where = {
+		userId: id,
+	}
 
-	return res.json({
-	    success: true,
-	    data: { count }
-	});
-}
+	if(typeof bidType === 'undefined') {
+		Object.assign(where, {
+			[Op.and]: models.sequelize.literal(whereQueryBargain(''))
+		});
+	}
 
-async function getJualNego(req, res) {
-	const { id } = req.user;
-	const count = await models.Car.count({
-        distinct: true,
-        include: [
-          	{
-            	model: models.Room,
-            	as: 'room',
-            	where: models.sequelize.where(
-	              	models.sequelize.literal(
-	                	`(SELECT COUNT( "RoomMembers"."id" ) 
-	                		FROM "RoomMembers" 
-	                		WHERE "RoomMembers"."roomId" = "room"."id" 
-	                			AND "RoomMembers"."userId" <> ${id}
-	                	)`
-	              	),
-              		{ [Op.gt]: 0 }
-            	)
-          	}
-        ],
-        where: {
-		    userId: id,
-		    [Op.and]: models.sequelize.literal(`(SELECT COUNT("bc"."id")
-		    	FROM (SELECT * 
-		    		FROM "Bargains"
-		    		WHERE "Bargains"."deletedAt" IS NULL
-		    			AND "Bargains"."carId" = "Car"."id"
-		    			AND "Bargains"."bidType" = 1
-		    			AND (
-							(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "Bargains"."carId"
-					            AND "BargainReaders"."bargainId" = "Bargains"."id"
-				            	AND "BargainReaders"."type" = 2
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0 OR
-				            ${queryRedDotExpiredAt(id, "Bargains")}
-		    			)
-		    		ORDER BY "Bargains"."createdAt" DESC
-		    		LIMIT 1) AS bc
-		    	WHERE "bc"."userId" <> ${id}
-		    		AND ("bc"."negotiationType" IS NULL 
-		    			OR "bc"."negotiationType" BETWEEN 0 AND 6
-		    		)
-		    ) > 0`)
-		}
-    });
-
-	return res.json({
-	    success: true,
-	    data: { count }
-	});
-}
-
-async function getJualNegoTab(req, res) {
-	const { id } = req.user;
-	const { negotiationType } = req.query;
-
-	let whereNegotiationType;
-	if (negotiationType == '0') {
-	    whereNegotiationType = ` AND ("bc"."negotiationType" IS NULL 
-		    OR "bc"."negotiationType" = 0
-		)`;
-  	} else if (negotiationType == '1') {
-	    whereNegotiationType = ` AND "bc"."negotiationType" BETWEEN 1 AND 6`;
-  	}
+	if(bidType == 0) {
+		Object.assign(where, {
+			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 0`))
+		});
+	} else if(bidType == 1) {
+		Object.assign(where, {
+			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 1`))
+		});
+	}
 
 	const count = await models.Car.count({
         distinct: true,
@@ -156,31 +74,7 @@ async function getJualNegoTab(req, res) {
             	)
           	}
         ],
-        where: {
-        	userId: id,
-        	[Op.and]: models.sequelize.literal(`(SELECT COUNT("bc"."id")
-		    	FROM (SELECT * 
-		    		FROM "Bargains"
-		    		WHERE "Bargains"."deletedAt" IS NULL
-		    			AND "Bargains"."carId" = "Car"."id"
-		    			AND "Bargains"."bidType" = 1
-		    			AND (
-							(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "Bargains"."carId"
-					            AND "BargainReaders"."bargainId" = "Bargains"."id"
-				            	AND "BargainReaders"."type" = 3
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0 OR
-				            ${queryRedDotExpiredAt(id, "Bargains")}
-		    			)
-		    		ORDER BY "Bargains"."createdAt" DESC
-		    		LIMIT 1) AS bc
-		    	WHERE "bc"."userId" <> ${id}
-		    		${whereNegotiationType}
-		    ) > 0`)
-        }
+        where
     });
 
 	return res.json({
@@ -191,6 +85,29 @@ async function getJualNegoTab(req, res) {
 
 async function getBeli(req, res) {
 	const { id } = req.user;
+	const { bidType } = req.query;
+	const where = {
+		userId: {
+		    [Op.ne]: id
+		}
+	};
+
+	if(typeof bidType === 'undefined') {
+		Object.assign(where, {
+			[Op.and]: models.sequelize.literal(whereQueryBargain(''))
+		});
+	}
+
+	if(bidType == 0) {
+		Object.assign(where, {
+			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 0`))
+		});
+	} else if(bidType == 1) {
+		Object.assign(where, {
+			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 1`))
+		});
+	}
+
 	const count = await models.Car.count({
         distinct: true,
         include: [
@@ -209,158 +126,7 @@ async function getBeli(req, res) {
 	            )
           	}
         ],
-        where:  {
-		    userId: {
-		      	[Op.ne]: id
-		    },
-		    [Op.and]: models.sequelize.literal(`(SELECT COUNT("bc"."id")
-		    	FROM (SELECT * 
-		    		FROM "Bargains"
-		    		WHERE "Bargains"."deletedAt" IS NULL
-		    			AND "Bargains"."carId" = "Car"."id"
-		    			AND "Bargains"."bidType" = 1
-		    			AND (
-							(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "Bargains"."carId"
-					            AND "BargainReaders"."bargainId" = "Bargains"."id"
-				            	AND "BargainReaders"."type" = 1
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0 OR
-				            ${queryRedDotExpiredAt(id, "Bargains")}
-		    			)
-		    		ORDER BY "Bargains"."createdAt" DESC
-		    		LIMIT 1) AS bc
-		    	WHERE "bc"."userId" <> ${id}
-		    		AND ("bc"."negotiationType" IS NULL 
-		    			OR "bc"."negotiationType" BETWEEN 0 AND 6
-		    		)
-		    ) > 0`)
-		}
-    });
-
-	return res.json({
-	    success: true,
-	    data: { count }
-	});
-}
-
-async function getBeliNego(req, res) {
-	const { id } = req.user;
-	const count = await models.Car.count({
-        distinct: true,
-        include: [
-          	{
-	            model: models.Room,
-	            as: 'room',
-	            where: models.sequelize.where(
-	              models.sequelize.literal(
-	                `(SELECT COUNT( "RoomMembers"."id" ) 
-	                	FROM "RoomMembers" 
-	                	WHERE "RoomMembers"."roomId" = "room"."id" 
-	                		AND "RoomMembers"."userId" = ${id}
-	                	)`
-	              ),
-	              { [Op.gt]: 0 }
-	            )
-          	}
-        ],
-        where:  {
-		    userId: {
-		      	[Op.ne]: id
-		    },
-		    [Op.and]: models.sequelize.literal(`(SELECT COUNT("bc"."id")
-		    	FROM (SELECT * 
-		    		FROM "Bargains"
-		    		WHERE "Bargains"."deletedAt" IS NULL
-		    			AND "Bargains"."carId" = "Car"."id"
-		    			AND "Bargains"."bidType" = 1
-		    			AND (
-							(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "Bargains"."carId"
-					            AND "BargainReaders"."bargainId" = "Bargains"."id"
-				            	AND "BargainReaders"."type" = 2
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0 OR
-				            ${queryRedDotExpiredAt(id, "Bargains")}
-		    			)
-		    		ORDER BY "Bargains"."createdAt" DESC
-		    		LIMIT 1) AS bc
-		    	WHERE "bc"."userId" <> ${id}
-		    		AND ("bc"."negotiationType" IS NULL 
-		    			OR "bc"."negotiationType" BETWEEN 0 AND 6
-		    		)
-		    ) > 0`)
-		}
-    });
-
-	return res.json({
-	    success: true,
-	    data: { count }
-	});
-}
-
-async function getBeliNegoTab(req, res) {
-	const { id } = req.user;
-	const { negotiationType } = req.query;
-
-	let whereNegotiationType;
-	if (negotiationType == '0') {
-	    whereNegotiationType = ` AND ("bc"."negotiationType" IS NULL 
-		    OR "bc"."negotiationType" = 0
-		)`;
-  	} else if (negotiationType == '1') {
-	    whereNegotiationType = ` AND "bc"."negotiationType" BETWEEN 1 AND 6`;
-  	}
-
-	const count = await models.Car.count({
-        distinct: true,
-        include: [
-          	{
-	            model: models.Room,
-	            as: 'room',
-	            where: models.sequelize.where(
-	              	models.sequelize.literal(
-	                	`(SELECT COUNT( "RoomMembers"."id" ) 
-	                		FROM "RoomMembers" 
-	                		WHERE "RoomMembers"."roomId" = "room"."id" 
-	                			AND "RoomMembers"."userId" = ${id}
-	                	)`
-	              	),
-	              	{ [Op.gt]: 0 }
-	            )
-          	}
-        ],
-        where: {
-        	userId: {
-		      	[Op.ne]: id
-		    },
-		    [Op.and]: models.sequelize.literal(`(SELECT COUNT("bc"."id")
-		    	FROM (SELECT * 
-		    		FROM "Bargains"
-		    		WHERE "Bargains"."deletedAt" IS NULL
-		    			AND "Bargains"."carId" = "Car"."id"
-		    			AND "Bargains"."bidType" = 1
-		    			AND (
-							(SELECT COUNT("BargainReaders"."id") 
-				            FROM "BargainReaders" 
-				            WHERE "BargainReaders"."carId" = "Bargains"."carId"
-					            AND "BargainReaders"."bargainId" = "Bargains"."id"
-				            	AND "BargainReaders"."type" = 3
-				            	AND "BargainReaders"."userId" = ${id}
-				            	AND "BargainReaders"."deletedAt" IS NULL
-				            ) = 0 OR
-				            ${queryRedDotExpiredAt(id, "Bargains")}
-		    			)
-		    		ORDER BY "Bargains"."createdAt" DESC
-		    		LIMIT 1) AS bc
-		    	WHERE "bc"."userId" <> ${id}
-		    		${whereNegotiationType}
-		    ) > 0`)
-        }
+        where
     });
 
 	return res.json({
@@ -977,11 +743,7 @@ async function readBeliNegoTab(req, res) {
 
 module.exports = {
   	getJual,
-  	getJualNego,
-  	getJualNegoTab,
   	getBeli,
-  	getBeliNego,
-  	getBeliNegoTab,
 
   	readJual,
   	readJualNego,
