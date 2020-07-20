@@ -6,6 +6,7 @@ const randomize = require('randomatic');
 const imageHelper = require('../helpers/s3');
 const paginator = require('../helpers/paginator');
 const calculateDistance = require('../helpers/calculateDistance');
+const apiResponse = require('../helpers/apiResponse');
 const carHelper = require('../helpers/car');
 const general = require('../helpers/general');
 const notification = require('../helpers/notification');
@@ -510,6 +511,352 @@ async function carsGet(req, res, auth = false) {
     });
 }
 
+async function bidList(req, res) {
+  const { id } = req.user;
+  const { status } = req.params;
+  const {
+    condition,
+    profile,
+    km,
+    price,
+    // djubleeReport,
+    radius,
+    year,
+    // kota,
+    // area,
+    latitude,
+    longitude,
+    groupModelId,
+    modelId,
+    brandId,
+    // condition,
+    modelYearId,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear
+  } = req.query;
+  let { page, limit, sort, by } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'id';
+  const array = [
+    'id',
+    'userId',
+    'carId',
+    'bidAmount',
+    'haveSeenCar',
+    'paymentMethod',
+    'expiredAt',
+    'comment',
+    'bidType',
+    'negotiationType',
+    'condition',
+    'price',
+    'km',
+    'createdAt',
+    'view',
+    'like',
+    'profile'
+  ];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'condition':
+    case 'price':
+    case 'km':
+    case 'view':
+    case 'like':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+
+  const where = {
+    userId: {
+      [Op.eq]: id
+    },
+    bidType: {
+      [Op.eq]: 0
+    },
+    [Op.and]: models.sequelize.literal(`(SELECT COUNT("Purchases"."id")
+      FROM "Purchases"
+      WHERE "Purchases"."deletedAt" IS NULL
+        AND "Purchases"."carId" = "Bargain"."carId"
+    ) = 0`),
+    [Op.and]: models.sequelize.literal(`(SELECT COUNT("b"."id") 
+      FROM "Bargains" b
+      WHERE "b"."carId" = "Bargain"."carId" 
+        AND "b"."negotiationType" = 8
+        AND "b"."deletedAt" IS NULL
+    ) = 0`)
+  };
+
+  if (modelYearId) {
+    Object.assign(where, {
+      modelYearId: {
+        [Op.eq]: modelYearId
+      }
+    });
+  }
+
+  if (groupModelId) {
+    Object.assign(where, {
+      groupModelId: {
+        [Op.eq]: groupModelId
+      }
+    });
+  }
+
+  if (modelId) {
+    Object.assign(where, {
+      modelId: {
+        [Op.eq]: modelId
+      }
+    });
+  }
+
+  if (brandId) {
+    Object.assign(where, {
+      brandId: {
+        [Op.eq]: brandId
+      }
+    });
+  }
+
+  if (minPrice && maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+      }
+    });
+  } else if (minPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.gte]: minPrice
+      }
+    });
+  } else if (maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.lte]: maxPrice
+      }
+    });
+  }
+
+  const whereYear = {};
+  if (minYear && maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+      }
+    });
+  } else if (minYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.gte]: minYear
+      }
+    });
+  } else if (maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.lte]: maxYear
+      }
+    });
+  }
+
+  const whereCar = {};
+  const whereModelYear = {};
+  const whereProfile = {};
+  const customFields = {
+    fields: ['highestBidder', 'numberOfBidder', 'like', 'view', 'islike', 'isBid'],
+    id
+  };
+
+  if (condition) {
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(whereCar, { condition: { [Op.eq]: condition } });
+  }
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(whereCar, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(whereCar, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
+  }
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+    // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(whereCar, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
+  }
+
+  const includes = [
+    {
+      model: models.Car,
+      as: 'car',
+      attributes: {
+        include: await carHelper.customFields(customFields),
+        exclude: ['deletedAt']
+      },
+      where: whereCar,
+      include: [
+        {
+          model: models.ModelYear,
+          as: 'modelYear',
+          attributes: ['id', 'year', 'modelId'],
+          where: whereModelYear
+        },
+        {
+          model: models.User,
+          as: 'user',
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+        },
+        {
+          model: models.User,
+          as: 'profile',
+          attributes: ['id', 'type', 'companyType'],
+          where: whereProfile
+        },
+        {
+          model: models.Brand,
+          as: 'brand',
+          attributes: ['id', 'name', 'logo', 'status']
+        },
+        {
+          model: models.Model,
+          as: 'model',
+          attributes: ['id', 'name', 'groupModelId']
+        },
+        {
+          model: models.GroupModel,
+          as: 'groupModel',
+          attributes: ['id', 'name', 'brandId']
+        },
+        {
+          model: models.Color,
+          as: 'interiorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.Color,
+          as: 'exteriorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.MeetingSchedule,
+          as: 'meetingSchedule',
+          attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+        },
+        {
+          model: models.InteriorGalery,
+          as: 'interiorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          model: models.ExteriorGalery,
+          as: 'exteriorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        }
+      ]
+    }
+  ];
+
+  return models.Bargain.findAll({
+    include: includes,
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Bargain.count({
+        include: includes,
+        where
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
 async function sell(req, res) {
   const {
     userId,
@@ -844,6 +1191,1131 @@ async function sell(req, res) {
     success: true,
     data
   });
+}
+
+async function sellList(req, res) {
+  // const { id } = req.user;
+  const id = req.user ? req.user.id : null;
+  const { status } = req.params;
+  const {
+    condition,
+    profile,
+    km,
+    price,
+    // djubleeReport,
+    radius,
+    year,
+    // kota,
+    // area,
+    latitude,
+    longitude
+  } = req.query;
+  const {
+    groupModelId,
+    modelId,
+    brandId,
+    modelYearId,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear
+  } = req.query;
+
+  let { page, limit, by, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'id';
+  const array = ['id', 'condition', 'price', 'km', 'createdAt', 'view', 'like', 'profile'];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'view':
+    case 'like':
+      order.push([Sequelize.col(by), sort]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+  const where = {};
+
+  // Object.assign(where, {
+  //   status: {
+  //     [Op.eq]: status
+  //   },
+  //   userId: {
+  //     [Op.eq]: id
+  //   }
+  // });
+
+  if (status) Object.assign(where, { status });
+  if (id) Object.assign(where, { userId: id });
+  if (modelYearId) Object.assign(where, { modelYearId });
+  if (groupModelId) Object.assign(where, { groupModelId });
+  if (modelId) Object.assign(where, { modelId });
+  if (brandId) Object.assign(where, { brandId });
+
+  if (minPrice && maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+      }
+    });
+  } else if (minPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.gte]: minPrice
+      }
+    });
+  } else if (maxPrice) {
+    Object.assign(where, {
+      price: {
+        [Op.lte]: maxPrice
+      }
+    });
+  }
+
+  const whereYear = {};
+  if (minYear && maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+      }
+    });
+  } else if (minYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.gte]: minYear
+      }
+    });
+  } else if (maxYear) {
+    Object.assign(whereYear, {
+      year: {
+        [Op.lte]: maxYear
+      }
+    });
+  }
+
+  const whereModelYear = {};
+  const whereProfile = {};
+  const customFields = {
+    fields: ['numberOfBidder', 'like', 'view', 'islike', 'isBid'],
+    id,
+    upperCase: true
+  };
+
+  if (condition) {
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(where, { condition: { [Op.eq]: condition } });
+  }
+
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(where, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(where, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
+  }
+
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+    // Object.assign(where, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(where, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
+  }
+
+  const includes = [
+    {
+      model: models.ModelYear,
+      as: 'modelYear',
+      attributes: ['id', 'year', 'modelId'],
+      where: whereModelYear
+    },
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
+    },
+    {
+      model: models.User,
+      as: 'profile',
+      attributes: ['id', 'type', 'companyType'],
+      where: whereProfile
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.Purchase,
+      as: 'purchase',
+      attributes: ['price', 'createdAt']
+    }
+  ];
+
+  return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat(
+      [
+        [
+          models.sequelize.literal(
+            `(SELECT "SubDistricts"."name" FROM "SubDistricts" where "SubDistricts".id = "Car"."subdistrictId")`
+          ),
+          'subdistrictName'
+        ],
+        [
+          models.sequelize.literal(
+            `(SELECT "Cities"."name" FROM "Cities" where "Cities".id = "Car"."cityId")`
+          ),
+          'cityName'
+        ]
+      ],
+      await carHelper.customFields(customFields)
+    ),
+    include: includes,
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Car.count({
+        distinct: true,
+        include: includes,
+        where
+      });
+
+      const pagination = paginator.paging(page, count, limit);
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
+async function like(req, res) {
+  const { id } = req.params;
+  const {
+    condition,
+    profile,
+    km,
+    price,
+    // djubleeReport,
+    radius,
+    year,
+    // kota,
+    // area,
+    latitude,
+    longitude
+  } = req.query;
+  let { page, limit, by, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'id';
+  const array = ['id', 'condition', 'price', 'km', 'createdAt', 'view', 'like', 'profile'];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'view':
+    case 'like':
+    case 'km':
+    case 'price':
+    case 'condition':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
+    case 'profile':
+      order.push([
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        'type',
+        'asc'
+      ]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+
+  const where = {
+    userId: id,
+    status: true
+  };
+
+  const whereCar = {};
+  const whereModelYear = {};
+  const whereProfile = {};
+  const customFields = {
+    fields: [
+      'islike',
+      'isBidFromLike',
+      'like',
+      'view',
+      'numberOfBidder',
+      'highestBidder',
+      'bidAmount'
+    ],
+    id
+  };
+
+  if (condition) {
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(whereCar, { condition: { [Op.eq]: condition } });
+  }
+
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(whereCar, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(whereCar, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
+  }
+
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+    // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(whereCar, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
+  }
+
+  const includes = [
+    {
+      model: models.Car,
+      as: 'car',
+      attributes: {
+        include: await carHelper.customFields(customFields),
+        exclude: ['deletedAt']
+      },
+      where: whereCar,
+      include: [
+        {
+          model: models.ModelYear,
+          as: 'modelYear',
+          attributes: ['id', 'year', 'modelId'],
+          where: whereModelYear
+        },
+        {
+          model: models.User,
+          as: 'user',
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+          include: [
+            {
+              model: models.Purchase,
+              as: 'purchase',
+              attributes: {
+                exclude: ['deletedAt']
+              },
+              order: [['id', 'desc']],
+              limit: 1
+            }
+          ]
+        },
+        {
+          model: models.User,
+          as: 'profile',
+          attributes: ['id', 'type', 'companyType'],
+          where: whereProfile
+        },
+        {
+          model: models.Brand,
+          as: 'brand',
+          attributes: ['id', 'name', 'logo', 'status']
+        },
+        {
+          model: models.Model,
+          as: 'model',
+          attributes: ['id', 'name', 'groupModelId']
+        },
+        {
+          model: models.GroupModel,
+          as: 'groupModel',
+          attributes: ['id', 'name', 'brandId']
+        },
+        {
+          model: models.Color,
+          as: 'interiorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.Color,
+          as: 'exteriorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.MeetingSchedule,
+          as: 'meetingSchedule',
+          attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+        },
+        {
+          model: models.InteriorGalery,
+          as: 'interiorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          model: models.ExteriorGalery,
+          as: 'exteriorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          required: false,
+          model: models.Bargain,
+          as: 'bargain',
+          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+          limit: 1,
+          order: [['id', 'desc']]
+        }
+      ]
+    }
+  ];
+
+  return models.Like.findAll({
+    attributes: {
+      exclude: ['deletedAt']
+    },
+    include: includes,
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Like.count({
+        where,
+        include: includes
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message,
+        backEnd: err
+      });
+    });
+}
+
+async function view(req, res) {
+  const { id } = req.params;
+  const {
+    condition,
+    profile,
+    km,
+    price,
+    // djubleeReport,
+    radius,
+    year,
+    // kota,
+    // area,
+    latitude,
+    longitude
+  } = req.query;
+  let { page, limit, by, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'id';
+  const array = ['id', 'condition', 'price', 'km', 'createdAt', 'view', 'like', 'profile'];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'view':
+    case 'like':
+    case 'km':
+    case 'price':
+    case 'condition':
+      order.push([Sequelize.literal(`"car.${by}" ${sort}`)]);
+      break;
+    case 'profile':
+      order.push([
+        { model: models.Car, as: 'car' },
+        { model: models.User, as: 'user' },
+        'type',
+        'asc'
+      ]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+
+  const where = {
+    userId: id,
+    id: {
+      [Op.in]: models.sequelize.literal(
+        `(SELECT "id" FROM (SELECT *, row_number() OVER (partition BY "carId" ORDER BY "id") AS row_number FROM "Views" WHERE "userId" = ${id} AND "deletedAt" IS NULL) AS rows WHERE row_number = 1)`
+      )
+    }
+  };
+
+  const whereCar = {};
+  const whereModelYear = {};
+  const whereProfile = {};
+  const customFields = {
+    fields: [
+      'islike',
+      'isBidFromLike',
+      'like',
+      'view',
+      'numberOfBidder',
+      'highestBidder',
+      'bidAmount'
+    ],
+    id
+  };
+
+  if (condition) {
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(whereCar, { condition: { [Op.eq]: condition } });
+  }
+
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(whereCar, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(whereCar, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
+  }
+
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+
+    // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(whereCar, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
+  }
+
+  const includes = [
+    {
+      model: models.Car,
+      as: 'car',
+      attributes: {
+        include: await carHelper.customFields(customFields),
+        exclude: ['deletedAt']
+      },
+      where: whereCar,
+      include: [
+        {
+          model: models.ModelYear,
+          as: 'modelYear',
+          attributes: ['id', 'year', 'modelId'],
+          where: whereModelYear
+        },
+        {
+          model: models.User,
+          as: 'user',
+          attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+          include: [
+            {
+              model: models.Purchase,
+              as: 'purchase',
+              attributes: {
+                exclude: ['deletedAt']
+              },
+              order: [['id', 'desc']],
+              limit: 1
+            }
+          ]
+        },
+        {
+          model: models.User,
+          as: 'profile',
+          attributes: ['id', 'type', 'companyType'],
+          where: whereProfile
+        },
+        {
+          model: models.Brand,
+          as: 'brand',
+          attributes: ['id', 'name', 'logo', 'status']
+        },
+        {
+          model: models.Model,
+          as: 'model',
+          attributes: ['id', 'name', 'groupModelId']
+        },
+        {
+          model: models.GroupModel,
+          as: 'groupModel',
+          attributes: ['id', 'name', 'brandId']
+        },
+        {
+          model: models.Color,
+          as: 'interiorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.Color,
+          as: 'exteriorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.MeetingSchedule,
+          as: 'meetingSchedule',
+          attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+        },
+        {
+          model: models.InteriorGalery,
+          as: 'interiorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          model: models.ExteriorGalery,
+          as: 'exteriorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          required: false,
+          model: models.Bargain,
+          as: 'bargain',
+          attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+          limit: 1,
+          order: [['id', 'desc']]
+        }
+      ]
+    }
+  ];
+
+  return models.View.findAll({
+    include: includes,
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.View.count({
+        where,
+        include: includes
+      });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
+async function viewLike(req, res) {
+  const {
+    condition,
+    profile,
+    km,
+    price,
+    // djubleeReport,
+    radius,
+    year,
+    // kota,
+    // area,
+    latitude,
+    longitude
+  } = req.query;
+  let { page, limit, by, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'jumlahLike';
+  const array = [
+    'id',
+    'condition',
+    'price',
+    'km',
+    'createdAt',
+    'jumlahView',
+    'jumlahLike',
+    'profile'
+  ];
+  if (array.indexOf(by) < 0) by = 'createdAt';
+  sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
+  const order = [];
+  switch (by) {
+    case 'jumlahView':
+    case 'jumlahLike':
+      order.push([Sequelize.col(by), sort]);
+      break;
+    case 'profile':
+      order.push([{ model: models.User, as: 'user' }, 'type', sort]);
+      break;
+    default:
+      order.push([by, sort]);
+      break;
+  }
+
+  const where = {
+    [Op.and]: [
+      models.sequelize.literal(
+        `((SELECT COUNT("Likes"."carId") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL) > 0)`
+      )
+    ]
+  };
+
+  const whereModelYear = {};
+  const whereProfile = {};
+  const customFields = {
+    fields: ['Brands', 'Model', 'jumlahLike', 'jumlahView', 'highestBidder', 'numberOfBidder'],
+    upperCase: true
+  };
+
+  if (condition) {
+    const arrCondition = [0, 1];
+    if (arrCondition.indexOf(Number(condition)) < 0)
+      return apiResponse._error({ res, errors: 'invalid condition' });
+    Object.assign(where, { condition: { [Op.eq]: condition } });
+  }
+
+  if (km) {
+    if (km.length < 2) return apiResponse._error({ res, errors: 'invalid km' });
+    if (validator.isInt(km[0] ? km[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[0]' });
+    if (validator.isInt(km[1] ? km[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid km[1]' });
+    Object.assign(where, { km: { [Op.between]: [Number(km[0]), Number(km[1])] } });
+  }
+
+  if (price) {
+    if (price.length < 2) return apiResponse._error({ res, errors: 'invalid price' });
+    if (validator.isInt(price[0] ? price[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[0]' });
+    if (validator.isInt(price[1] ? price[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid price[1]' });
+    Object.assign(where, { price: { [Op.between]: [Number(price[0]), Number(price[1])] } });
+  }
+
+  if (year) {
+    if (year.length < 2) return apiResponse._error({ res, errors: 'invalid year' });
+    if (validator.isInt(year[0] ? year[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[0]' });
+    if (validator.isInt(year[1] ? year[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid year[1]' });
+    Object.assign(whereModelYear, {
+      [Op.and]: [{ year: { [Op.gte]: year[0] } }, { year: { [Op.lte]: year[1] } }]
+    });
+  }
+
+  if (radius) {
+    if (radius.length < 2) return apiResponse._error({ res, errors: 'invalid radius' });
+    if (validator.isInt(radius[0] ? radius[0].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[0]' });
+    if (validator.isInt(radius[1] ? radius[1].toString() : '') === false)
+      return apiResponse._error({ res, errors: 'invalid radius[1]' });
+    if (!latitude) return apiResponse._error({ res, errors: 'invalid latitude' });
+    if (!longitude) return apiResponse._error({ res, errors: 'invalid longitude' });
+
+    customFields.fields.push('distance');
+    Object.assign(customFields, { latitude, longitude });
+    await calculateDistance.CreateOrReplaceCalculateDistance();
+    const distances = Sequelize.literal(
+      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
+    );
+
+    // Object.assign(where, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    Object.assign(where, {
+      where: {
+        [Op.and]: [
+          Sequelize.where(distances, { [Op.gte]: Number(radius[0]) }),
+          Sequelize.where(distances, { [Op.lte]: Number(radius[1]) })
+        ]
+      }
+    });
+  }
+
+  if (profile) {
+    const arrprofile = ['end user', 'dealer'];
+    if (arrprofile.indexOf(profile) < 0)
+      return apiResponse._error({ res, errors: 'invalid profile' });
+    Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
+  }
+
+  const includes = [
+    {
+      model: models.ModelYear,
+      as: 'modelYear',
+      attributes: ['id', 'year', 'modelId'],
+      where: whereModelYear
+    },
+    {
+      model: models.User,
+      as: 'user',
+      attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+      include: [
+        {
+          model: models.File,
+          as: 'file',
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          }
+        },
+        {
+          model: models.Dealer,
+          as: 'dealer',
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          }
+        },
+        {
+          model: models.Company,
+          as: 'company',
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          }
+        },
+        {
+          model: models.Purchase,
+          as: 'purchase',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']],
+          limit: 1
+        }
+      ]
+    },
+    {
+      model: models.User,
+      as: 'profile',
+      attributes: ['id', 'type', 'companyType'],
+      where: whereProfile
+    },
+    {
+      model: models.Brand,
+      as: 'brand',
+      attributes: ['id', 'name', 'logo', 'status']
+    },
+    {
+      model: models.Model,
+      as: 'model',
+      attributes: ['id', 'name', 'groupModelId']
+    },
+    {
+      model: models.GroupModel,
+      as: 'groupModel',
+      attributes: ['id', 'name', 'brandId']
+    },
+    {
+      model: models.Color,
+      as: 'interiorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.Color,
+      as: 'exteriorColor',
+      attributes: ['id', 'name', 'hex']
+    },
+    {
+      model: models.MeetingSchedule,
+      as: 'meetingSchedule',
+      attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+    },
+    {
+      model: models.InteriorGalery,
+      as: 'interiorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      model: models.ExteriorGalery,
+      as: 'exteriorGalery',
+      attributes: ['id', 'fileId', 'carId'],
+      include: {
+        model: models.File,
+        as: 'file',
+        attributes: ['type', 'url']
+      }
+    },
+    {
+      required: false,
+      model: models.Bargain,
+      as: 'bargain',
+      attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+      limit: 1,
+      order: [['id', 'desc']]
+    }
+  ];
+
+  return models.Car.findAll({
+    attributes: Object.keys(models.Car.attributes).concat(
+      await carHelper.customFields(customFields)
+    ),
+    include: includes,
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Car.count({ include: includes, where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 }
 
 async function viewLikeLogon(req, res) {
@@ -1236,108 +2708,7 @@ async function viewLikeLogon(req, res) {
   const addAttribute = await carHelper.customFields(addAttributes);
 
   return models.Car.findAll({
-    // attributes: Object.keys(models.Car.attributes).concat([
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT COUNT("Likes"."id") 
-    //         FROM "Likes" 
-    //         WHERE "Likes"."carId" = "Car"."id" 
-    //           AND "Likes"."status" IS TRUE 
-    //           AND "Likes"."userId" = ${userId} 
-    //           AND "Likes"."deletedAt" IS NULL
-    //       )`
-    //     ),
-    //     'islike'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT COUNT("Bargains"."id") 
-    //         FROM "Bargains" 
-    //         WHERE "Bargains"."userId" = ${userId} 
-    //           AND "Bargains"."carId" = "Car"."id" 
-    //           AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-    //           AND "Bargains"."deletedAt" IS NULL
-    //           AND "Bargains"."bidType" = 0
-    //       )`
-    //     ),
-    //     'isBid'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT "Brands"."name" 
-    //         FROM "Brands" 
-    //         WHERE "Brands"."id" = "Car"."brandId" 
-    //           AND "Brands"."deletedAt" IS NULL
-    //       )`
-    //     ),
-    //     'Brands'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT "Models"."name" 
-    //         FROM "Models" 
-    //         WHERE "Models"."id" = "Car"."modelId" 
-    //           AND "Models"."deletedAt" IS NULL
-    //       )`
-    //     ),
-    //     'Model'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT COUNT("Likes"."carId") 
-    //         FROM "Likes" 
-    //         WHERE "Likes"."carId" = "Car"."id" 
-    //           AND "Likes"."status" IS TRUE 
-    //           AND "Likes"."deletedAt" IS NULL
-    //       )`
-    //     ),
-    //     'jumlahLike'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT COUNT("Views"."carId") 
-    //         FROM "Views" 
-    //         WHERE "Views"."carId" = "Car"."id" 
-    //           AND "Views"."deletedAt" IS NULL
-    //       )`
-    //     ),
-    //     'jumlahView'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT MAX("Bargains"."bidAmount") 
-    //         FROM "Bargains" 
-    //         WHERE "Bargains"."carId" = "Car"."id" 
-    //           AND "Bargains"."deletedAt" IS NULL
-    //           AND "Bargains"."bidType" = 0
-    //       )`
-    //     ),
-    //     'highestBidder'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT COUNT("Bargains"."id") 
-    //         FROM "Bargains" 
-    //         WHERE "Bargains"."carId" = "Car"."id" 
-    //           AND "Bargains"."deletedAt" IS NULL
-    //           AND "Bargains"."bidType" = 0
-    //       )`
-    //     ),
-    //     'numberOfBidder'
-    //   ],
-    //   [
-    //     models.sequelize.literal(
-    //       `(SELECT MAX("Bargains"."bidAmount") 
-    //         FROM "Bargains" 
-    //         WHERE "Bargains"."carId" = "Car"."id" 
-    //           AND "Bargains"."deletedAt" IS NULL
-    //           AND "Bargains"."bidType" = 0
-    //           AND "Bargains"."userId" = ${userId}
-    //       )`
-    //     ),
-    //     'bidAmount'
-    //   ]
-    // ]),
+    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
         model: models.User,
@@ -1469,6 +2840,11 @@ async function viewLikeLogon(req, res) {
 
 module.exports = {
   carsGet,
+  bidList,
   sell,
+  sellList,
+  like,
+  view,
+  viewLike,
   viewLikeLogon
 };
