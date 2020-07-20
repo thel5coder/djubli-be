@@ -870,7 +870,7 @@ async function getBuyNego(req, res) {
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
-            AND ("Bargains"."negotiationType" IN (4,7,8) 
+            AND ("Bargains"."negotiationType" IN (7,8) 
               OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
             )
             AND "Bargains"."deletedAt" IS NULL
