@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const moment = require('moment');
 const axios = require('axios');
+const bcrypt = require('bcryptjs');
 const FB = require('fb');
 const keys = require('../../config/keys');
 
@@ -83,12 +84,51 @@ router.post('/login-google', async (req, res) => {
 
 // register by google
 router.post('/register-google', async (req, res) => {
-  const { token, phone, type, google_name, companyType } = req.body;
-  if (!token)
+  const { token, phone, type, google_name, companyType, cityId, subdistrictId } = req.body;
+  if (!token) {
     return res.status(422).json({
       success: false,
       errors: 'Error, Failed to login.'
     });
+  }
+
+  if (!cityId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'cityId is mandatory'
+    });
+  }
+
+  if (!subdistrictId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'subdistrictId is mandatory'
+    });
+  }
+
+  if(cityId && subdistrictId) {
+    const getCity = await models.City.findByPk(cityId);
+    if(!getCity) {
+      return res.status(400).json({
+        success: false,
+        errors: 'city not found'
+      });
+    } else {
+      const getSubdistrict = await models.SubDistrict.findOne({
+        where: {
+          id: subdistrictId,
+          cityId
+        }
+      });
+
+      if(!getSubdistrict) {
+        return res.status(400).json({
+          success: false,
+          errors: 'subdistrict not found'
+        });
+      }
+    }
+  }
 
   return axios
     .get(`${googleLoginUrl}/tokeninfo?access_token=${token}`)
@@ -118,18 +158,23 @@ router.post('/register-google', async (req, res) => {
       const trans = await models.sequelize.transaction();
       const errors = [];
 
+      const customPassword = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
+      const hashedPassword = await bcrypt.hashSync(customPassword, 10);
+
       const data = await models.User.create(
         {
           phone,
           email,
           emailValidAt: moment.now(),
           name,
-          password: '',
+          password: hashedPassword,
           type,
           companyType,
           profileImageId: 1,
           // address,
-          status: true
+          status: true,
+          subdistrictId,
+          cityId
         },
         {
           transaction: trans
@@ -250,12 +295,51 @@ router.post('/login-fb', async (req, res) => {
 
 // register by fb
 router.post('/register-fb', async (req, res) => {
-  const { token, phone, type, companyType } = req.body;
-  if (!token)
+  const { token, phone, type, companyType, cityId, subdistrictId } = req.body;
+  if (!token) {
     return res.status(422).json({
       success: false,
       errors: 'Error, Failed to login.'
     });
+  }
+
+  if (!cityId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'cityId is mandatory'
+    });
+  }
+
+  if (!subdistrictId) {
+    return res.status(400).json({
+      success: false,
+      errors: 'subdistrictId is mandatory'
+    });
+  }
+
+  if(cityId && subdistrictId) {
+    const getCity = await models.City.findByPk(cityId);
+    if(!getCity) {
+      return res.status(400).json({
+        success: false,
+        errors: 'city not found'
+      });
+    } else {
+      const getSubdistrict = await models.SubDistrict.findOne({
+        where: {
+          id: subdistrictId,
+          cityId
+        }
+      });
+
+      if(!getSubdistrict) {
+        return res.status(400).json({
+          success: false,
+          errors: 'subdistrict not found'
+        });
+      }
+    }
+  }
 
   FB.api(
     'me',
@@ -287,18 +371,23 @@ router.post('/register-fb', async (req, res) => {
       const trans = await models.sequelize.transaction();
       const errors = [];
 
+      const customPassword = (Date.now().toString(36) + Math.random().toString(36).substr(2, 5)).toUpperCase();
+      const hashedPassword = await bcrypt.hashSync(customPassword, 10);
+
       const data = await models.User.create(
         {
           phone,
           email: FBdata.email,
           emailValidAt: moment.now(),
           name: FBdata.name,
-          password: '',
+          password: hashedPassword,
           type,
           companyType,
           profileImageId: 1,
           // address,
-          status: true
+          status: true,
+          subdistrictId,
+          cityId
         },
         {
           transaction: trans
