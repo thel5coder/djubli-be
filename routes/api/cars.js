@@ -21,12 +21,14 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
+// Withot Login
 router.get('/', async (req, res) => {
-  return carsController.carsGet(req, res);
+  return await carsController.carsGet(req, res);
 });
 
+// With Login
 router.get('/logon', passport.authenticate('user', { session: false }), async (req, res) => {
-  return carsController.carsGet(req, res, true);
+  return await carsController.carsGet(req, res, true);
 });
 
 router.get('/user/:id', async (req, res) => {
