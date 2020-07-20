@@ -14,7 +14,7 @@ const queryRedDotExpiredAt = (id, table = 'bargain') => `(EXISTS(SELECT "bs"."id
     	AND "bs"."userId" = ${id}
 ))`;
 
-const whereQueryBargain = customWhere => `(SELECT COUNT("bc"."id")
+const whereQueryBargain = (id, customWhere) => `(SELECT COUNT("bc"."id")
 	FROM (SELECT * 
 		FROM "Bargains"
 		WHERE "Bargains"."deletedAt" IS NULL
@@ -42,17 +42,17 @@ async function getJual(req, res) {
 
 	if(typeof bidType === 'undefined') {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(''))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, ''))
 		});
 	}
 
 	if(bidType == 0) {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 0`))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 0`))
 		});
 	} else if(bidType == 1) {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 1`))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 1`))
 		});
 	}
 
@@ -94,17 +94,17 @@ async function getBeli(req, res) {
 
 	if(typeof bidType === 'undefined') {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(''))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, ''))
 		});
 	}
 
 	if(bidType == 0) {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 0`))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 0`))
 		});
 	} else if(bidType == 1) {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(`AND "bc"."bidType" = 1`))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 1`))
 		});
 	}
 
