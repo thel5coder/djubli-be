@@ -320,8 +320,7 @@ async function bargainsList(req, res) {
               const findBargainReader = await models.BargainReader.findOne({
                 where: {
                   userId: readerId,
-                  bargainId: item.id,
-                  type: 4
+                  bargainId: item.id
                 }
               });
 
@@ -330,7 +329,6 @@ async function bargainsList(req, res) {
                   userId: readerId,
                   bargainId: item.id,
                   carId: item.carId,
-                  type: 4,
                   isRead: true
                 })
                   .catch(err => {
