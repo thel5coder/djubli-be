@@ -2,6 +2,7 @@ const moment = require('moment');
 const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../db/models');
+const notification = require('../helpers/notification');
 const paginator = require('../helpers/paginator');
 
 const { Op } = Sequelize;
@@ -1242,8 +1243,336 @@ async function getBuyNego(req, res) {
     });
 }
 
+async function negotiate(req, res) {
+  const { id } = req.user;
+  const {
+    bidderId,
+    carId,
+    bidAmount,
+    haveSeenCar,
+    paymentMethod,
+    negotiationType,
+    comment,
+    carPrice,
+    expiredAt
+  } = req.body;
+
+  if (bidderId && validator.isInt(bidderId ? bidderId.toString() : '') === false) {
+    return res.status(406).json({ 
+      success: false, 
+      errors: 'type of bidderId must be int' 
+    });
+  }
+
+  if (validator.isInt(carId ? carId.toString() : '') === false) {
+    return res.status(406).json({ 
+      success: false, 
+      errors: 'type of carId must be int' 
+    });
+  }
+
+  if (validator.isInt(negotiationType ? negotiationType.toString() : '') === false) {
+    return res.status(406).json({ 
+      success: false, 
+      errors: 'type of negotiationType must be int' 
+    });
+  }
+    
+  if (validator.isBoolean(haveSeenCar ? haveSeenCar.toString() : '') === false) {
+    return res.status(406).json({ 
+      success: false, 
+      errors: 'type of haveSeenCar must be boolean' 
+    });
+  }
+    
+  if (!bidAmount) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: 'bidAmount must be filled' 
+    });
+  }
+
+  if (!paymentMethod) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: 'paymentMethod must be filled' 
+    });
+  }
+
+  if (!expiredAt) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: 'expiredAt must be filled' 
+    });
+  }
+
+  if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid()) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: 'Invalid expired date' 
+    });
+  }
+
+  if (!carPrice) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: 'carPrice must be filled' 
+    });
+  }
+
+  if (validator.isInt(carPrice ? carPrice.toString() : '') === false) {
+    return res.status(406).json({ 
+      success: false, 
+      errors: 'type of carPrice must be int' 
+    });
+  }
+
+  const findCarWithUserInRoom = await models.Car.findByPk(carId, {
+    include: [
+      {
+        model: models.Room,
+        as: 'room',
+        where: models.sequelize.where(
+          models.sequelize.literal(
+            `(SELECT COUNT( "RoomMembers"."id" ) 
+                FROM "RoomMembers" 
+                WHERE "RoomMembers"."roomId" = "Car"."roomId" 
+                  AND "RoomMembers"."userId" = ${id}
+            )`
+          ),
+          { [Op.gt]: 0 }
+        ),
+        include: [
+          {
+            required: false,
+            model: models.RoomMember,
+            as: 'members',
+            where: {
+              userId: {
+                [Op.ne]: id
+              }
+            }
+          }
+        ]
+      }
+    ]
+  });
+
+  let include = [];
+  let carExists;
+  if(negotiationType == 4) {
+    const checkHaveRoom = await models.Car.findByPk(carId);
+    if(checkHaveRoom.roomId) {
+      carExists = findCarWithUserInRoom;
+    } else {
+      carExists = checkHaveRoom;
+      if(!bidderId) {
+        return res.status(404).json({ 
+          success: false, 
+          errors: 'please input bidderId' 
+        });
+      }
+    }
+  } else if(negotiationType != 0) {
+    carExists = findCarWithUserInRoom;
+  }
+
+  if (!carExists) {
+    return res.status(404).json({ 
+      success: false, 
+      errors: 'car not found' 
+    });
+  }
+
+  // saat pembeli yang nego, dia masuk tab mana
+  const userNotifs = [];
+  const notifRecipient = bidderId ? bidderId : carExists.room.members[0].userId;
+  if (id === carExists.userId) {
+    userNotifs.push({
+      userId: notifRecipient,
+      collapseKey: null,
+      notificationTitle: `Notifikasi Nego Beli`,
+      notificationBody: `Diajak ke ruang nego`,
+      notificationClickAction: `carNegotiate`,
+      dataReferenceId: carId,
+      category: 4,
+      status: 2,
+      tab: `tabNego-${notifRecipient}`
+    });
+  } else {
+    userNotifs.push({
+      userId: notifRecipient,
+      collapseKey: null,
+      notificationTitle: `Notifikasi Nego Jual`,
+      notificationBody: `Pembeli menjawab`,
+      notificationClickAction: `carNegotiate`,
+      dataReferenceId: carId,
+      category: 4,
+      status: 1,
+      tab: `tabNego-${notifRecipient}`
+    });
+  }
+
+  const create = {
+    userId: id,
+    bidderId,
+    carId,
+    bidAmount,
+    haveSeenCar,
+    paymentMethod,
+    expiredAt,
+    bidType: 1,
+    negotiationType,
+    comment,
+    carPrice
+  };
+
+  const trans = await models.sequelize.transaction();
+  const data = await models.Bargain.create(create, {
+    transaction: trans
+  }).catch(err => {
+    trans.rollback();
+    return res.status(422).json({ 
+      success: false, 
+      errors: err.message 
+    });
+  });
+
+  if(negotiationType == 4) {
+    await carExists.update({ status: 2 }, { transaction: trans }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ 
+        success: false, 
+        errors: err.message 
+      });
+    });
+    
+    const expiredAtPurchase = moment().add(2, 'd').format('YYYY-MM-DD HH:mm:ss');
+    await models.Purchase.create({
+      userId: notifRecipient,
+      carId,
+      price: bidAmount,
+      paymentMethod,
+      bargainId: data.id,
+      expiredAt: expiredAtPurchase 
+    }, {
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ 
+        success: false, 
+        errors: err.message 
+      });
+    });
+  }
+
+  if(negotiationType == 7 || negotiationType == 8) {
+    await models.Bargain.destroy({
+      where: {
+        carId
+      },
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ 
+        success: false, 
+        errors: err.message 
+      });
+    });
+
+    await models.Room.destroy({
+      where: {
+        id: carExists.roomId
+      },
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ 
+        success: false, 
+        errors: err.message 
+      });
+    });
+
+    await models.RoomMember.destroy({
+      where: {
+        roomId: carExists.roomId
+      },
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ 
+        success: false, 
+        errors: err.message 
+      });
+    });
+
+    await carExists.update({ roomId: null }, { transaction: trans }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({ 
+        success: false, 
+        errors: err.message 
+      });
+    });
+  }
+
+  const runQuery = async (query) => {
+    return await models.sequelize.query(query, { 
+      transaction: trans, 
+      type: models.sequelize.QueryTypes.SELECT 
+    });
+  }
+
+  const getIsNego = await runQuery(`SELECT(EXISTS(SELECT "b"."id" 
+    FROM "Bargains" b 
+    WHERE "b"."carId" = ${data.carId} 
+      AND "b"."bidderId" = ${data.userId}
+      AND "b"."bidType" = 1
+      AND "b"."negotiationType" NOT IN (3, 4)
+      AND "b"."expiredAt" >= (SELECT NOW())
+      AND "b"."deletedAt" IS NULL)) AS isnego`
+  );
+
+  const getIsRead = await runQuery(`SELECT(EXISTS(SELECT "r"."id" 
+    FROM "BargainReaders" r 
+    WHERE "r"."bargainId" = ${data.id}
+      AND "r"."carId" = ${data.carId}
+      AND "r"."userId" = ${id}
+      AND "r"."type" = 4
+      AND "r"."isRead" = TRUE
+      AND "r"."deletedAt" IS NULL)) AS isread`
+  );
+
+  const getIsExpired = await runQuery(`SELECT(NOT EXISTS(SELECT "b"."id" 
+    FROM "Bargains" b 
+    WHERE "b"."carId" = ${data.carId}
+      AND "b"."bidType" = 1
+      AND "b"."negotiationType" NOT IN (3, 4)
+      AND "b"."expiredAt" > (SELECT NOW())
+      AND "b"."deletedAt" IS NULL)) AS isexpired`
+  );
+
+  data.dataValues.isNego = getIsNego[0].isnego
+  data.dataValues.isRead = getIsRead[0].isread
+  data.dataValues.isExpired = getIsExpired[0].isexpired
+
+  trans.commit();
+  req.io.emit(`negotiation-car${carId}`, data);
+
+  userNotifs.map(async userNotif => {
+    const emit = await notification.insertNotification(userNotif);
+    req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
+    notification.userNotif(userNotif);
+  });
+
+  return res.status(200).json({ 
+    success: true, 
+    data 
+  });
+}
+
 module.exports = {
   bargainsList,
   getSellNego,
-  getBuyNego
+  getBuyNego,
+  negotiate
 };
