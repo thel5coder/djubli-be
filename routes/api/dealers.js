@@ -14,7 +14,17 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 router.get('/', async (req, res) => {
-  let { page, limit, by, sort, brandId, condition, name } = req.query;
+  let { 
+    page, 
+    limit, 
+    by, 
+    sort, 
+    brandId, 
+    condition, 
+    name ,
+    cityId,
+    subdistrictId
+} = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -39,7 +49,6 @@ router.get('/', async (req, res) => {
     isPartner: true
   };
 
-  const whereUser = {};
   if (brandId) {
     Object.assign(where, {
       authorizedBrandId: brandId
@@ -71,6 +80,51 @@ router.get('/', async (req, res) => {
     });
 
     whereCondition = `AND "Cars"."condition" = ${condition}`;
+  }
+
+  if(cityId) {
+    const city = await models.City.findByPk(cityId);
+    if(!city) {
+        return res.status(400).json({ 
+            success: false, 
+            errors: 'City not found!' 
+        });
+    }
+
+    const queryWhereCity = `(SELECT "Users"."cityId" 
+        FROM "Users" 
+        WHERE "Users"."id" = "Dealer"."userId"
+            AND "Users"."deletedAt" IS NULL) = ${cityId}`;
+
+    if(subdistrictId) {
+        const subdistrict = await models.SubDistrict.findOne({
+            where: { id: subdistrictId, cityId }
+        });
+
+        if(!subdistrict) {
+            return res.status(400).json({ 
+                success: false, 
+                errors: 'Subdistrict not found!' 
+            });
+        }
+
+        Object.assign(where, {
+            [Op.and]: [
+                models.sequelize.literal(queryWhereCity),
+                models.sequelize.literal(`(SELECT "Users"."subdistrictId" 
+                    FROM "Users" 
+                    WHERE "Users"."id" = "Dealer"."userId"
+                        AND "Users"."deletedAt" IS NULL) = ${subdistrictId}
+                `)
+            ]
+        });
+    } else {
+        Object.assign(where, {
+            [Op.and]: [
+                models.sequelize.literal(queryWhereCity)
+            ]
+        });
+    }
   }
 
   return models.Dealer.findAll({
@@ -135,7 +189,6 @@ router.get('/', async (req, res) => {
         as: 'car',
         required: false,
         where: whereCar,
-        required: false,
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
