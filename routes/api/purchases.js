@@ -8,7 +8,6 @@ const moment = require('moment');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
 const purchaseController = require('../../controller/purchaseController');
-const calculateDistance = require('../../helpers/calculateDistance');
 const notification = require('../../helpers/notification');
 
 const router = express.Router();

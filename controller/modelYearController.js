@@ -150,16 +150,15 @@ async function listingAll(req, res) {
       });
     }
 
-    await calculateDistance.CreateOrReplaceCalculateDistance();
     const rawDistancesFunc = (tableName = 'Car') => {
-      const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+      const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+      const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+      const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
       rawDistances = calDistance;
       return calDistance;
     };
 
     distances = models.sequelize.literal(rawDistancesFunc('Car'));
-    rawDistancesFunc();
-
     Object.assign(carCustomFields, {
       latitude,
       longitude
@@ -203,9 +202,10 @@ async function listingAll(req, res) {
         }
 
         if (city && subdistrict) {
-          await calculateDistance.CreateOrReplaceCalculateDistance();
           const rawDistancesFunc = (tableName = 'Car') => {
-            const calDistance = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+            const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+            const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+            const calDistance = calculateDistance.CalculateDistance(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
             rawDistances = calDistance;
             return calDistance;
           };
@@ -216,13 +216,13 @@ async function listingAll(req, res) {
           });
 
           distances = models.sequelize.literal(rawDistancesFunc('Car'));
-          rawDistancesFunc();
         }
       } else {
         if (city) {
-          await calculateDistance.CreateOrReplaceCalculateDistance();
           const rawDistancesFunc = (tableName = 'Car') => {
-            const calDistance = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+            const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+            const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+            const calDistance = calculateDistance.CalculateDistance(city.latitude, city.longitude, queryLatitude, queryLongitude);
             rawDistances = calDistance;
             return calDistance;
           };
@@ -233,9 +233,9 @@ async function listingAll(req, res) {
           });
 
           distances = models.sequelize.literal(rawDistancesFunc('Car'));
-          rawDistancesFunc();
         }
       }
+
       carFields.push('distance');
       upperCase = true;
       order = [
@@ -777,16 +777,15 @@ async function listingAllNew(req, res, fromCallback = false) {
           errors: 'Radius not found!'
         });
 
-        await calculateDistance.CreateOrReplaceCalculateDistance();
         const rawDistancesFunc = (tableName = 'Car') => {
-          const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+          const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+          const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+          const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
           rawDistances = calDistance;
           return calDistance;
         };
 
         distances = models.sequelize.literal(rawDistancesFunc('Car'));
-        rawDistancesFunc();
-
         order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
       }
       break;
@@ -815,23 +814,26 @@ async function listingAllNew(req, res, fromCallback = false) {
           if (city && subdistrict) {
             await calculateDistance.CreateOrReplaceCalculateDistance();
             const rawDistancesFunc = (tableName = 'Car') => {
-              const calDistance = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+              const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+              const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+              const calDistance = calculateDistance.CalculateDistance(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
               rawDistances = calDistance;
               return calDistance;
             };
+
             latitude = subdistrict.latitude;
             longitude = subdistrict.longitude;
 
             distances = models.sequelize.literal(rawDistancesFunc(tableCarName));
-            rawDistancesFunc();
-
             order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
           }
         } else {
           if (city) {
             await calculateDistance.CreateOrReplaceCalculateDistance();
             const rawDistancesFunc = (tableName = 'Cars') => {
-              const calDistance = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+              const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+              const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+              const calDistance = calculateDistance.CalculateDistance(city.latitude, city.longitude, queryLatitude, queryLongitude);
               rawDistances = calDistance;
               return calDistance;
             };
@@ -839,8 +841,6 @@ async function listingAllNew(req, res, fromCallback = false) {
             longitude = city.longitude;
 
             distances = models.sequelize.literal(rawDistancesFunc(tableCarName));
-            rawDistancesFunc();
-
             order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
           }
         }
@@ -871,9 +871,10 @@ async function listingAllNew(req, res, fromCallback = false) {
       });
 
     if (radius[0] >= 0 && radius[1] > 0) {
-      await calculateDistance.CreateOrReplaceCalculateDistance();
       const rawDistancesFunc = (tableName = 'Car') => {
-        const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+        const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+        const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+        const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
         rawDistances = calDistance;
         return calDistance;
       };
@@ -1197,6 +1198,13 @@ async function listingAllNew(req, res, fromCallback = false) {
 
   if (latitude && longitude) {
     if (radius && radius[0] >= 0 && radius[1] > 0) {
+      Object.assign(whereCar, {
+        [Op.and]: [models.sequelize.where(distances, { [Op.and]: { 
+          [Op.gte]: radius[0], 
+          [Op.lte]: radius[1] 
+        } })]
+      });
+
       whereQuery += ` AND ${rawDistances} >= ${Number(radius[0])} AND ${rawDistances} <= ${Number(
         radius[1]
       )}`;
