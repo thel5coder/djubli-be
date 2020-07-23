@@ -152,7 +152,7 @@ async function bargainsList(req, res) {
 
   if(readerId) {
     include.push([
-      models.sequelize.literal(`(CASE WHEN "Bargain"."userId" <> ${readerId} THEN
+      models.sequelize.literal(`(CASE WHEN "Bargain"."userId" = ${readerId} THEN
         (EXISTS(SELECT "r"."id" 
           FROM "BargainReaders" r 
           WHERE "r"."bargainId" = "Bargain"."id" 
