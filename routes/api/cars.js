@@ -225,11 +225,10 @@ router.get('/user/:id', async (req, res) => {
 
     customFields.fields.push('distance');
     Object.assign(customFields, { latitude, longitude });
-    await calculateDistance.CreateOrReplaceCalculateDistance();
-    const distances = Sequelize.literal(
-      `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
-    );
-    // Object.assign(where, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
+    const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+    const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+    const distances = models.sequelize.literal(calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude));
+
     Object.assign(where, {
       where: {
         [Op.and]: [

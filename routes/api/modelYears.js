@@ -444,15 +444,15 @@ async function listingCar(req, res, auth = false) {
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
 
     if(radius[0] >= 0 && radius[1] > 0) {
-      await calculateDistance.CreateOrReplaceCalculateDistance();
       const rawDistancesFunc = (tableName = 'Car') => {
-        const calDistance = `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
+        const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+        const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+        const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
         rawDistances = calDistance;
         return calDistance;
       };
 
       distances = models.sequelize.literal(rawDistancesFunc('Car'));
-      rawDistancesFunc();
     }
   }
 
@@ -526,9 +526,10 @@ async function listingCar(req, res, auth = false) {
     const city = await models.City.findByPk(cityId);
     if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
 
-    await calculateDistance.CreateOrReplaceCalculateDistance();
-    const rawDistances = `(SELECT calculate_distance(${city.latitude}, ${city.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-    distances = models.sequelize.literal(rawDistances);
+    const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+    const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+    distances = models.sequelize.literal(calculateDistance.CalculateDistance(city.latitude, city.longitude, queryLatitude, queryLongitude));
+
     latitude = city.latitude;
     longitude = city.longitude;
   } else if(cityId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
@@ -555,9 +556,10 @@ async function listingCar(req, res, auth = false) {
     if (!subdistrict)
       return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
 
-    await calculateDistance.CreateOrReplaceCalculateDistance();
-    const rawDistances = `(SELECT calculate_distance(${subdistrict.latitude}, ${subdistrict.longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`;
-    distances = models.sequelize.literal(rawDistances);
+    const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+    const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+    distances = models.sequelize.literal(calculateDistance.CalculateDistance(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude));
+
     latitude = subdistrict.latitude;
     longitude = subdistrict.longitude;
   } else if (subdistrictId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
