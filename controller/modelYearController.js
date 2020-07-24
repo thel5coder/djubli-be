@@ -812,7 +812,6 @@ async function listingAllNew(req, res, fromCallback = false) {
             });
 
           if (city && subdistrict) {
-            await calculateDistance.CreateOrReplaceCalculateDistance();
             const rawDistancesFunc = (tableName = 'Car') => {
               const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
               const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
@@ -829,7 +828,6 @@ async function listingAllNew(req, res, fromCallback = false) {
           }
         } else {
           if (city) {
-            await calculateDistance.CreateOrReplaceCalculateDistance();
             const rawDistancesFunc = (tableName = 'Cars') => {
               const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
               const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
