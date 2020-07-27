@@ -76,6 +76,23 @@ router.get('/', passport.authenticate('user', { session: false }), async (req, r
   }
 
   return models.User.findAll({
+    include: [
+      {
+        model: models.File,
+        as: 'file',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
+      }
+    ],
     where,
     order,
     offset,
@@ -124,6 +141,14 @@ router.get('/id/:id', passport.authenticate('user', { session: false }), async (
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
       }
     ],
     where: {
@@ -168,7 +193,24 @@ router.get('/seller/:id', passport.authenticate('user', { session: false }), asy
           'sellerType'
         ]
       ]
-    }
+    },
+    include: [
+      {
+        model: models.File,
+        as: 'file',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        }
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
+      }
+    ]
   })
     .then(data => {
       res.json({
@@ -297,6 +339,14 @@ router.get('/token', passport.authenticate('user', { session: false }), async (r
         attributes: {
           exclude: ['createdAt', 'updatedAt', 'deletedAt']
         }
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
       }
     ],
     where: {

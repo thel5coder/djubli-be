@@ -4,6 +4,7 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
+const calculateDistance = require('../../helpers/calculateDistance');
 
 const {
     Op
@@ -23,7 +24,10 @@ router.get('/', async (req, res) => {
     condition, 
     name ,
     cityId,
-    subdistrictId
+    subdistrictId,
+    radius,
+    latitude,
+    longitude
 } = req.query;
   let offset = 0;
 
@@ -127,6 +131,28 @@ router.get('/', async (req, res) => {
     }
   }
 
+  const customAttributes = [];
+  if(radius && latitude && longitude) {
+    const queryLatLong = field => `(SELECT "s"."${field}" 
+        FROM "SubDistricts" s 
+        WHERE "s"."id" = (SELECT "Users"."subdistrictId" 
+            FROM "Users" 
+            WHERE "Users"."id" = "Dealer"."userId"
+                AND "Users"."deletedAt" IS NULL
+        )
+    )`;
+
+    const distances = models.sequelize.literal(calculateDistance.CalculateDistance(latitude, longitude, queryLatLong('latitude'), queryLatLong('longitude')));
+    Object.assign(where, {
+      [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
+    });
+
+    customAttributes.push([
+        distances,
+        'distancer'
+    ]);
+  }
+
   return models.Dealer.findAll({
     attributes: Object.keys(models.Dealer.attributes).concat([
       [
@@ -172,6 +198,7 @@ router.get('/', async (req, res) => {
         model: models.User,
         as: 'user',
         attributes: {
+          include: customAttributes,
           exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
         },
         include: [
@@ -181,6 +208,14 @@ router.get('/', async (req, res) => {
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             }
+          },
+          {
+            model: models.City,
+            as: 'city'
+          },
+          {
+            model: models.SubDistrict,
+            as: 'subdistrict'
           }
         ]
       },
@@ -240,13 +275,23 @@ router.get('/id/:id', async (req, res) => {
             attributes: {
                 exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
             },
-            include: [{
-                model: models.File,
-                as: 'file',
-                attributes: {
-                    exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            include: [
+                {
+                    model: models.File,
+                    as: 'file',
+                    attributes: {
+                        exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                    }
+                },
+                {
+                    model: models.City,
+                    as: 'city'
+                },
+                {
+                    model: models.SubDistrict,
+                    as: 'subdistrict'
                 }
-            }]
+            ]
         },
         {
             model: models.Brand,
@@ -669,6 +714,21 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
                                     attributes: {
                                         exclude: ['createdAt', 'updatedAt', 'deletedAt']
                                     }
+                                },
+                                {
+                                    model: models.File,
+                                    as: 'file',
+                                    attributes: {
+                                        exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                                    }
+                                },
+                                {
+                                    model: models.City,
+                                    as: 'city'
+                                },
+                                {
+                                    model: models.SubDistrict,
+                                    as: 'subdistrict'
                                 }
                             ]
                         },
@@ -789,6 +849,14 @@ router.get('/car/sellList/:id', async (req, res) => {
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             }
+          },
+          {
+            model: models.City,
+            as: 'city'
+          },
+          {
+            model: models.SubDistrict,
+            as: 'subdistrict'
           }
         ]
       }
@@ -1004,13 +1072,23 @@ router.get('/car/bidList/:id', async (req, res) => {
                     attributes: {
                         exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
                     },
-                    include: [{
-                        model: models.File,
-                        as: 'file',
-                        attributes: {
-                            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                    include: [
+                        {
+                            model: models.File,
+                            as: 'file',
+                            attributes: {
+                                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                            }
+                        },
+                        {
+                            model: models.City,
+                            as: 'city'
+                        },
+                        {
+                            model: models.SubDistrict,
+                            as: 'subdistrict'
                         }
-                    }]
+                    ]
                 }
             ]
         })
