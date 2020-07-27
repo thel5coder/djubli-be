@@ -1688,7 +1688,7 @@ async function negotiate(req, res) {
         });
       }
     }
-  } else if(negotiationType != 0) {
+  } else {
     carExists = findCarWithUserInRoom;
   }
 
