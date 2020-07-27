@@ -1311,6 +1311,13 @@ async function bid(req, res) {
     });
   }
 
+  if(carExists.userId == userId) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: "You can't bid the car you sell"
+    });
+  }
+
   if (carExists.roomId) {
     const checkIfCarUnderNegotiate = await models.Bargain.findOne({
       where: {

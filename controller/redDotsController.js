@@ -42,7 +42,7 @@ async function getJual(req, res) {
 
 	if(typeof bidType === 'undefined') {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(id, ''))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, 'AND "bc"."bidType" = 1'))
 		});
 	}
 
@@ -98,7 +98,7 @@ async function getBeli(req, res) {
 
 	if(typeof bidType === 'undefined') {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(id, ''))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, 'AND "bc"."bidType" = 1'))
 		});
 	}
 
