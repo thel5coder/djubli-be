@@ -1789,18 +1789,26 @@ async function negotiate(req, res) {
   }
 
   if(negotiationType == 7 || negotiationType == 8) {
-    await models.Bargain.destroy({
-      where: {
-        carId
-      },
-      transaction: trans
-    }).catch(err => {
-      trans.rollback();
-      return res.status(422).json({ 
-        success: false, 
-        errors: err.message 
+    const where = { carId };
+    if(negotiationType == 7) {
+      Object.assign(where, {
+        negotiationType: {
+          [Op.gt]: 0
+        },
+        bidType: 1
       });
-    });
+    }
+
+    await models.Bargain.destroy({
+        where,
+        transaction: trans
+      }).catch(err => {
+        trans.rollback();
+        return res.status(422).json({ 
+          success: false, 
+          errors: err.message 
+        });
+      });
 
     await models.Room.destroy({
       where: {
