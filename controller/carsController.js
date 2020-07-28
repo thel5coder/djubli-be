@@ -500,7 +500,6 @@ async function carsGet(req, res, auth = false) {
       });
     })
     .catch(err => {
-      console.log(err);
       res.status(422).json({
         success: false,
         errors: err.message
@@ -587,13 +586,6 @@ async function getById(req, res) {
       ]
     );
   }
-
-  console.log(attributes);
-  console.log();
-  console.log();
-  console.log();
-  console.log();
-  console.log();
 
   return models.Car.findOne({
     attributes: Object.keys(models.Car.attributes).concat(attributes),
@@ -2155,7 +2147,6 @@ async function sell(req, res) {
     const emit = await notification.insertNotification(userNotif);
     req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
     notification.userNotif(userNotif);
-    console.log(userNotif);
   });
 
   return res.json({
