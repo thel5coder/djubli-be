@@ -1836,13 +1836,15 @@ async function negotiate(req, res) {
       });
     });
 
-    await carExists.update({ roomId: null }, { transaction: trans }).catch(err => {
-      trans.rollback();
-      return res.status(422).json({ 
-        success: false, 
-        errors: err.message 
+    if(negotiationType == 8) {
+      await carExists.update({ roomId: null }, { transaction: trans }).catch(err => {
+        trans.rollback();
+        return res.status(422).json({ 
+          success: false, 
+          errors: err.message 
+        });
       });
-    });
+    }
   }
 
   const runQuery = async (query) => {
