@@ -673,7 +673,13 @@ async function bidList(req, res) {
     });
   }
 
-  const whereCar = {};
+  // If car not in transaction
+  const whereCar = {
+    status: {
+      [Op.lt]: 2
+    }
+  };
+
   const whereModelYear = {};
   const whereProfile = {};
   const customFields = {

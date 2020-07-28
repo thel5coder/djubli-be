@@ -42,7 +42,8 @@ async function getJual(req, res) {
 
 	if(typeof bidType === 'undefined') {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(id, 'AND "bc"."bidType" = 1'))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 1 
+				AND "bc"."negotiationType" NOT IN (4)`))
 		});
 	}
 
@@ -55,7 +56,7 @@ async function getJual(req, res) {
 	} else if(bidType == 1) {
 		Object.assign(where, {
 			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 1 
-				AND "bc"."negotiationType" > 0
+				AND "bc"."negotiationType" NOT IN (0,4)
 			`))
 		});
 	}
@@ -98,7 +99,8 @@ async function getBeli(req, res) {
 
 	if(typeof bidType === 'undefined') {
 		Object.assign(where, {
-			[Op.and]: models.sequelize.literal(whereQueryBargain(id, 'AND "bc"."bidType" = 1'))
+			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 1
+				AND "bc"."negotiationType" NOT IN (4)`))
 		});
 	}
 
@@ -111,7 +113,7 @@ async function getBeli(req, res) {
 	} else if(bidType == 1) {
 		Object.assign(where, {
 			[Op.and]: models.sequelize.literal(whereQueryBargain(id, `AND "bc"."bidType" = 1 
-				AND "bc"."negotiationType" > 0
+				AND "bc"."negotiationType" NOT IN (0,4)
 			`))
 		});
 	}
