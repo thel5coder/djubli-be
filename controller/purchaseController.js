@@ -96,13 +96,13 @@ async function get(req, res) {
 
   const where = {};
   if (tabType == 0) {
-    const whereBargainUser = Sequelize.literal(`(SELECT "Bargains"."userId" 
-      FROM "Bargains" 
-      WHERE "Bargains"."id" = "Purchase"."bargainId"
-        AND "Bargains"."deletedAt" IS null)`);
+    const whereSeller = Sequelize.literal(`(SELECT "Cars"."userId" 
+      FROM "Cars" 
+      WHERE "Cars"."id" = "Purchase"."carId"
+        AND "Cars"."deletedAt" IS null)`);
 
     Object.assign(where, [
-      Sequelize.where(whereBargainUser, {
+      Sequelize.where(whereSeller, {
         [Op.eq]: id
       })
     ]);
