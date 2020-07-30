@@ -11,6 +11,24 @@ const { Op } = Sequelize;
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
+const whereQueryBargain = (id, customWhere) => `(SELECT COUNT("bc"."id")
+  FROM (SELECT * 
+    FROM "Bargains"
+    WHERE "Bargains"."deletedAt" IS NULL
+        AND "Bargains"."carId" = "Car"."id"
+    ORDER BY "Bargains"."createdAt" DESC
+    LIMIT 1) AS bc
+  WHERE "bc"."userId" <> ${id}
+    ${customWhere}
+    AND (SELECT COUNT("BargainReaders"."id") 
+      FROM "BargainReaders" 
+      WHERE "BargainReaders"."carId" = "Car"."id"
+        AND "BargainReaders"."bargainId" = "bc"."id"
+        AND "BargainReaders"."userId" = ${id}
+        AND "BargainReaders"."deletedAt" IS NULL
+    ) = 0
+) > 0`;
+
 async function bargainsList(req, res) {
   let { page, limit, sort, by } = req.query;
   const { 
@@ -411,6 +429,7 @@ async function getSellNego(req, res) {
     }
   };
 
+  let customWhere = '';
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
       negotiationType
@@ -429,6 +448,8 @@ async function getSellNego(req, res) {
         )
       ]
     });
+
+    customWhere = 'AND "bc"."bidType" = 1 AND "bc"."negotiationType" = 0';
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
@@ -451,6 +472,8 @@ async function getSellNego(req, res) {
         )
       ]
     });
+
+    customWhere = 'AND "bc"."bidType" = 1 AND "bc"."negotiationType" NOT IN (0,4,7,8)';
   }
 
   if (modelYearId) {
@@ -557,6 +580,10 @@ async function getSellNego(req, res) {
             )`
           ),
           'view'
+        ],
+        [
+          models.sequelize.literal(whereQueryBargain(id, customWhere)), 
+          'isRead'
         ]
       ]
     },
@@ -753,7 +780,7 @@ async function getSellNego(req, res) {
 
           if (negotiationType == 0) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
-            item.dataValues.isRead = true;
+            // item.dataValues.isRead = true;
 
             if(dataBargain.length && 
               moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
@@ -763,10 +790,10 @@ async function getSellNego(req, res) {
           } else if (negotiationType == 1) {
             if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
-              item.dataValues.isRead = true;
+              // item.dataValues.isRead = true;
             } else if (dataBargain.length && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-              item.dataValues.isRead = false;
+              // item.dataValues.isRead = false;
             }
 
             if(dataBargain.length && 
@@ -774,12 +801,12 @@ async function getSellNego(req, res) {
               [1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {              
               item.dataValues.statusNego = 'Waktu Habis';
-              item.dataValues.isRead = true;
+              // item.dataValues.isRead = true;
             }
 
             if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
               item.dataValues.statusNego = 'Pembeli Keluar Nego';
-              item.dataValues.isRead = true;
+              // item.dataValues.isRead = true;
             }
           }
         })
@@ -843,6 +870,7 @@ async function getBuyNego(req, res) {
     }
   };
 
+  let customWhere = '';
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
       [Op.or]: [{ negotiationType: { [Op.is]: null } }, { negotiationType }]
@@ -861,6 +889,8 @@ async function getBuyNego(req, res) {
           )
       ]
     });
+
+    customWhere = 'AND "bc"."bidType" = 1 AND "bc"."negotiationType" = 0';
   } else if (negotiationType == '1') {
     Object.assign(whereBargain, {
       negotiationType: {
@@ -895,6 +925,8 @@ async function getBuyNego(req, res) {
         )   
       ]
     });
+
+    customWhere = 'AND "bc"."bidType" = 1 AND "bc"."negotiationType" NOT IN (0,4,7,8)';
   }
 
   if (modelYearId) {
@@ -1001,6 +1033,10 @@ async function getBuyNego(req, res) {
             )`
           ),
           'view'
+        ],
+        [
+          models.sequelize.literal(whereQueryBargain(id, customWhere)), 
+          'isRead'
         ]
       ]
     },
@@ -1197,7 +1233,7 @@ async function getBuyNego(req, res) {
 
           if (negotiationType == 0) {
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-            item.dataValues.isRead = false;
+            // item.dataValues.isRead = false;
 
             if(dataBargain.length && 
               moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
@@ -1207,10 +1243,10 @@ async function getBuyNego(req, res) {
           } else if (negotiationType == 1) {
             if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
-              item.dataValues.isRead = true;
+              // item.dataValues.isRead = true;
             } else if (dataBargain.length > 0 && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-              item.dataValues.isRead = false;
+              // item.dataValues.isRead = false;
             }
 
             if(dataBargain.length && 
@@ -1218,17 +1254,17 @@ async function getBuyNego(req, res) {
               [0,1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
               item.dataValues.statusNego = 'Waktu Habis';
-              item.dataValues.isRead = true;
+              // item.dataValues.isRead = true;
             }
 
             if(dataBargain.length && dataBargain[0].negotiationType == 4) {
               item.dataValues.statusNego = 'Nego Berhasil';
-              item.dataValues.isRead = true;
+              // item.dataValues.isRead = true;
             }
 
             if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
               item.dataValues.statusNego = 'Penjual Keluar Nego';
-              item.dataValues.isRead = true;
+              // item.dataValues.isRead = true;
             }
           }
         })
