@@ -772,7 +772,8 @@ async function getSellNego(req, res) {
             if(dataBargain.length && 
               moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
               [1,2,5,6].includes(dataBargain[0].negotiationType)
-            ) {              item.dataValues.statusNego = 'Waktu Habis';
+            ) {              
+              item.dataValues.statusNego = 'Waktu Habis';
               item.dataValues.isRead = true;
             }
 
@@ -1708,7 +1709,7 @@ async function negotiate(req, res) {
 
   // saat pembeli yang nego, dia masuk tab mana
   const userNotifs = [];
-  const customer = bidderId ? bidderId : carExists.room.members[1].userId;
+  const customer = bidderId ? bidderId : carExists.room.members[0].userId;
   if (id === carExists.userId) {
     userNotifs.push({
       userId: customer,
@@ -1723,7 +1724,7 @@ async function negotiate(req, res) {
     });
   } else {
     userNotifs.push({
-      userId: carExists.userId,
+      userId: customer,
       collapseKey: null,
       notificationTitle: `Notifikasi Nego Jual`,
       notificationBody: `Pembeli menjawab`,
@@ -1731,7 +1732,7 @@ async function negotiate(req, res) {
       dataReferenceId: carId,
       category: 4,
       status: 1,
-      tab: `tabNego-${carExists.userId}`
+      tab: `tabNego-${customer}`
     });
   }
 
