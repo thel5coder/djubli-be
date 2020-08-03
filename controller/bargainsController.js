@@ -1745,7 +1745,8 @@ async function negotiate(req, res) {
 
   // saat pembeli yang nego, dia masuk tab mana
   const userNotifs = [];
-  const customer = bidderId ? bidderId : carExists.room.members[0].userId;
+  const customerFromRoom = (carExists.room.members[0].userId == carExists.userId) ? id : carExists.room.members[0].userId;
+  const customer = bidderId || customerFromRoom;
   if (id === carExists.userId) {
     userNotifs.push({
       userId: customer,
