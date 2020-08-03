@@ -154,7 +154,7 @@ async function bargainsList(req, res) {
             FROM "Bargains" sb
             WHERE "sb"."carId" = "Bargain"."carId"
               AND "sb"."bidType" = 1
-              AND "sb"."negotiationType" IN (0,3,4,7)
+              AND "sb"."negotiationType" IN (3,4,7)
               AND "sb"."deletedAt" IS NULL) = 0
           AND "b"."deletedAt" IS NULL))`
       ), 
