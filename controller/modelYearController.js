@@ -267,7 +267,7 @@ async function listingAll(req, res) {
     });
   }
 
-  let whereQuery;
+  let whereQuery = '';
   const whereInclude = {};
 
   if(isMarket && JSON.parse(isMarket) == true) {
@@ -276,13 +276,14 @@ async function listingAll(req, res) {
     });
 
     whereQuery = ' AND "Car"."status" = 2 AND "Car"."deletedAt" IS NULL';
-  } else {
-    Object.assign(whereInclude, {
-      [Op.or]: [{ status: 0 }, { status: 1 }]
-    });
-
-    whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
   }
+  //  else {
+  //   Object.assign(whereInclude, {
+  //     [Op.or]: [{ status: 0 }, { status: 1 }]
+  //   });
+
+  //   whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
+  // }
 
   // Search by City, Subdistrict/Area without Radius
   if (by === 'area' && !radius) {
@@ -895,11 +896,11 @@ async function listingAllNew(req, res, fromCallback = false) {
     });
 
   const whereCar = {
-    [Op.or]: [{
-      status: 0
-    }, {
-      status: 1
-    }]
+    // [Op.or]: [{
+    //   status: 0
+    // }, {
+    //   status: 1
+    // }]
   };
 
   switch (by) {
