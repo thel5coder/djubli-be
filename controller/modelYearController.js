@@ -173,13 +173,6 @@ async function listingAll(req, res) {
 
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area' && radius) {
-    // if (!radius) {
-    //   return res.status(400).json({
-    //     success: false,
-    //     errors: 'Radius not found!'
-    //   });
-    // }
-
     if (cityId) {
       const city = await models.City.findByPk(cityId);
       if (!city) {
@@ -269,21 +262,6 @@ async function listingAll(req, res) {
 
   let whereQuery = '';
   const whereInclude = {};
-
-  if(isMarket && JSON.parse(isMarket) == true) {
-    Object.assign(whereInclude, {
-      status: 2
-    });
-
-    whereQuery = ' AND "Car"."status" = 2 AND "Car"."deletedAt" IS NULL';
-  }
-  //  else {
-  //   Object.assign(whereInclude, {
-  //     [Op.or]: [{ status: 0 }, { status: 1 }]
-  //   });
-
-  //   whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
-  // }
 
   // Search by City, Subdistrict/Area without Radius
   if (by === 'area' && !radius) {
@@ -465,16 +443,29 @@ async function listingAll(req, res) {
 
   const addAttribute = await carHelper.customFields({
     fields: [
+      'purchase',
       'numberOfCar',
       'maxPrice',
       'minPrice',
       'numberOfBidderModelYear',
       'highestBidderModelYear',
-      'highestBidderCarId',
-      'purchase'
+      'highestBidderCarId'
     ],
     whereQuery
   });
+
+  if(isMarket && JSON.parse(isMarket) == true) {
+    Object.assign(where, {
+      [Op.and]: models.sequelize.where(addAttribute[0][0], { [Op.gt]: 0 })
+    });
+
+    Object.assign(whereInclude, {
+      status: 2
+    });
+
+    whereQuery = ' AND "Car"."status" = 2 AND "Car"."deletedAt" IS NULL';
+  }
+
   const includeCar = [
     {
       model: models.User,
@@ -895,14 +886,7 @@ async function listingAllNew(req, res, fromCallback = false) {
       }
     });
 
-  const whereCar = {
-    // [Op.or]: [{
-    //   status: 0
-    // }, {
-    //   status: 1
-    // }]
-  };
-
+  const whereCar = {};
   switch (by) {
     case 'area':
       // Search by City, Subdistrict/Area without Radius
@@ -1044,8 +1028,6 @@ async function listingAllNew(req, res, fromCallback = false) {
     Object.assign(whereGroupModel, {
       typeId
     });
-
-    // whereQuery += ` AND ${groupModelExist('Car')}`;
   }
 
   const includeCar = [
@@ -1500,22 +1482,6 @@ async function luxuryCar(req, res) {
 
     whereQuery += ` AND "Cars"."condition" = ${condition}`;
   }
-
-  // Object.assign(whereInclude, {
-  //   id: {
-  //     [Op.eq]: models.sequelize.literal(
-  //       `(SELECT "Bargains"."carId" 
-  //         FROM "Bargains" 
-  //         LEFT JOIN "Cars" 
-  //           ON "Bargains"."carId" = "Cars"."id" 
-  //         WHERE "Cars"."modelYearId" = "ModelYear"."id" 
-  //           AND "Bargains"."deletedAt" IS NULL 
-  //         ORDER BY "Bargains"."bidAmount" DESC 
-  //         LIMIT 1
-  //       )`
-  //     )
-  //   }
-  // });
 
   const addAttribute = await carHelper.customFields({
     fields: [
