@@ -76,13 +76,11 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       notificationBody: `Mobil yang anda suka telah terjual`,
       notificationClickAction: `carPriceSold`,
       dataReferenceId: carData.id,
-      category: 3, // like
-      status: 2, // mobil terjual
+      // category: 3, // like
+      // status: 2, // mobil terjual
       typeNotif: 'tabLike'
     });
   });
-
-  // return res.status(200).json({ success: true, data: userNotifs });
 
   const trans = await models.sequelize.transaction();
   await carData.update({ status: 2 }, { transaction: trans }).catch(err => {
@@ -130,8 +128,9 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
         notificationBody: `mobil terjual`,
         notificationClickAction: `carPurchase`,
         dataReferenceId: carData.id,
-        category: 1,
-        status: 1,
+        category: 7,
+        // category: 1,
+        // status: 1,
         typeNotif: 'tabJual'
       });
 

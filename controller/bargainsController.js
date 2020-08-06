@@ -1399,8 +1399,8 @@ async function bid(req, res) {
         notificationBody: `penawaran baru`,
         notificationClickAction: `carNegotiate`,
         dataReferenceId: carId,
-        category: 1,
-        status: 3
+        category: 1
+        // status: 3
       };
 
       const emit = await notification.insertNotification(userNotif);
@@ -1468,8 +1468,8 @@ async function editBid(req, res) {
         notificationBody: `penawaran berubah`,
         notificationClickAction: `carOffer`,
         dataReferenceId: carId,
-        category: 1,
-        status: 4
+        category: 1
+        // status: 4
       };
 
       const emit = await notification.insertNotification(userNotif);
@@ -1574,6 +1574,13 @@ async function extend(req, res) {
       isExtend: true
     })
     .then(async data => {
+      let category;
+      if(data.car.userId == userId) {
+        category = 5;
+      } else {
+        category = 5;
+      }
+
       const userNotif = {
         userId: data.userId,
         collapseKey: null,
@@ -1581,8 +1588,9 @@ async function extend(req, res) {
         notificationBody: `Waktu penawaran diperpanjang sampai ${expiredAt}`,
         notificationClickAction: `carOffer`,
         dataReferenceId: data.carId,
-        category: 4,
-        status: 4
+        category
+        // category: 4,
+        // status: 4
       };
 
       const emit = await notification.insertNotification(userNotif);
@@ -1748,15 +1756,26 @@ async function negotiate(req, res) {
   const customerFromRoom = (carExists.room.members[0].userId == carExists.userId) ? id : carExists.room.members[0].userId;
   const customer = bidderId || customerFromRoom;
   if (id === carExists.userId) {
+    let notificationBody = '';
+    let category;
+    if(negotiationType == 0) {
+      notificationBody = 'Diajak ke ruang nego';
+      category = 2;
+    } else {
+      notificationBody = 'Penjual menjawab';
+      category = 3;
+    }
+
     userNotifs.push({
       userId: customer,
       collapseKey: null,
       notificationTitle: `Notifikasi Nego Beli`,
-      notificationBody: `Diajak ke ruang nego`,
+      notificationBody,
       notificationClickAction: `carNegotiate`,
       dataReferenceId: carId,
-      category: 4,
-      status: 2,
+      category,
+      // category: 4,
+      // status: 2,
       tab: `tabNego-${customer}`
     });
   } else {
@@ -1768,7 +1787,7 @@ async function negotiate(req, res) {
       notificationClickAction: `carNegotiate`,
       dataReferenceId: carId,
       category: 4,
-      status: 1,
+      // status: 1,
       tab: `tabNego-${customer}`
     });
   }
