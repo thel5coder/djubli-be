@@ -2020,8 +2020,8 @@ async function sell(req, res) {
       notificationBody: `mobil sejenis`,
       notificationClickAction: `similiarCarBeli`,
       dataReferenceId: 123,
-      category: 2,
-      status: 1,
+      // category: 2,
+      // status: 1,
       tab: `tabBeli`
     });
   });
@@ -2046,16 +2046,11 @@ async function sell(req, res) {
       notificationBody: `mobil sejenis`,
       notificationClickAction: `similiarCarSell`,
       dataReferenceId: 123,
-      category: 1,
-      status: 2,
+      // category: 1,
+      // status: 2,
       tab: `tabJual`
     });
   });
-  
-  // return apiResponse._success({
-  //   res,
-  //   data: {otherBidders, userNotifs}
-  // });
 
   const trans = await models.sequelize.transaction();
   const data = await models.Car.create(insert, {
@@ -2144,6 +2139,7 @@ async function sell(req, res) {
     Object.assign(userNotif, {
       dataReferenceId: data.id
     });
+
     const emit = await notification.insertNotification(userNotif);
     req.io.emit(`${userNotif.tab}-${userNotif.userId}`, emit);
     notification.userNotif(userNotif);
