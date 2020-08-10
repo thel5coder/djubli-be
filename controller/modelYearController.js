@@ -444,6 +444,7 @@ async function listingAll(req, res) {
   const addAttribute = await carHelper.customFields({
     fields: [
       'purchase',
+      'lastPurchaseAmount',
       'numberOfCar',
       'maxPrice',
       'minPrice',
