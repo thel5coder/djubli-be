@@ -1850,7 +1850,7 @@ async function negotiate(req, res) {
     if(negotiationType == 7) {
       Object.assign(where, {
         negotiationType: {
-          [Op.gt]: 0
+          [Op.notIn]: [0, 7]
         },
         bidType: 1
       });

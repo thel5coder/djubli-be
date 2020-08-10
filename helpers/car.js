@@ -222,13 +222,31 @@ async function customFields(params) {
               FROM "Purchases" as "Purchase" 
               LEFT JOIN "Cars" as "Car" 
                 ON "Purchase"."carId" = "Car"."id" 
-              WHERE "Car"."status"=2 
+              WHERE "Car"."status" = 2 
                 AND "Car"."modelYearId" = "ModelYear"."id" 
                 AND "Car"."deletedAt" IS NULL
                 ${params.whereQuery}
             )`
           ),
           'purchase'
+        ]);
+
+      case 'lastPurchaseAmount':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT "Purchase"."price" 
+              FROM "Purchases" as "Purchase" 
+              LEFT JOIN "Cars" as "Car" 
+                ON "Purchase"."carId" = "Car"."id" 
+              WHERE "Car"."status" = 2 
+                AND "Car"."modelYearId" = "ModelYear"."id" 
+                AND "Car"."deletedAt" IS NULL
+                ${params.whereQuery}
+              ORDER BY "Purchase"."id"
+              LIMIT 1
+            )`
+          ),
+          'lastPurchaseAmount'
         ]);
         break;
 
