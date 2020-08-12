@@ -161,9 +161,43 @@ async function getAll(req, res) {
             attributes: {
               exclude: ['deletedAt']
             },
-            // where: whereBargain,
             limit: 1,
             order: [['id', 'desc']]
+          },
+          {
+            model: models.Room,
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            as: 'room',
+            include: [
+              {
+                required: true,
+                model: models.RoomMember,
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                },
+                as: 'members',
+                include: [
+                  {
+                    model: models.User,
+                    attributes: {
+                      exclude: ['password', 'deletedAt']
+                    },
+                    as: 'member',
+                    include: [
+                      {
+                        model: models.File,
+                        as: 'file',
+                        attributes: {
+                          exclude: ['type', 'createdAt', 'updatedAt', 'deletedAt']
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
           }
         ]
       });
@@ -180,6 +214,7 @@ async function getAll(req, res) {
     attributes: {
       exclude: ['deletedAt']
     },
+    subQuery: false,
     include,
     where,
     order,
