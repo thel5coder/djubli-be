@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -92,7 +92,7 @@ router.get('/listingAll', async (req, res) => {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -168,7 +168,7 @@ router.get('/listingCar/:id', async (req, res) => {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 

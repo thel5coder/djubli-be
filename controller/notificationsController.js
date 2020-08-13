@@ -16,7 +16,7 @@ async function getAll(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -34,7 +34,8 @@ async function getAll(req, res) {
   ];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
-  const order = [[by, sort]];
+  // const order = [[by, sort]];
+  const order = [['id', 'asc']];
 
   const where = { userId };
   const whereCountUnRead = { userId, action: 0 };
@@ -51,42 +52,32 @@ async function getAll(req, res) {
     if (fullResponseArr.indexOf(fullResponse) < 0)
       return res.status(400).json({ success: false, errors: 'Invalid fullResponse' });
     if (fullResponse === 'true') {
-      const whereCar = {
-        [Op.and]: [
-          models.sequelize.where(
-            models.sequelize.literal(`(
-              SELECT COUNT("Bargains"."id")
-                FROM "Bargains" 
-                WHERE "Bargains"."carId" = "car"."id" 
-                  AND "Bargains"."negotiationType" IS NOT NULL
-                  AND ("Bargains"."negotiationType" IN (7,8) 
-                    OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${userId})
-                  )
-                  AND "Bargains"."deletedAt" IS NULL
-            )`), 
-            { [Op.eq]: 0 }
-          ),
-          models.sequelize.where(
-            models.sequelize.literal(`(
-              SELECT COUNT("Bargains"."id")
+      const customField = await carHelper.emitFieldCustomCar({ userId });
+      customField.push([
+        models.sequelize.literal(`(CASE WHEN ((SELECT COUNT("Bargains"."id")
+            FROM "Bargains" 
+            WHERE "Bargains"."carId" = "car"."id" 
+              AND "Bargains"."negotiationType" IS NOT NULL
+              AND ("Bargains"."negotiationType" IN (7,8) 
+                OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${userId})
+              )
+              AND "Bargains"."deletedAt" IS NULL) = 0 
+            AND (SELECT COUNT("Bargains"."id")
                 FROM "Bargains" 
                 WHERE "Bargains"."carId" = "car"."id" 
                   AND "Bargains"."negotiationType" IN (1,2,3,4,5,6)
-                  AND "Bargains"."deletedAt" IS NULL
-            )`), 
-            { [Op.gt]: 0 }
-          )
-        ]
-      };
+                  AND "Bargains"."deletedAt" IS NULL) > 0
+            )  THEN true
+          ELSE false END)`
+        ), 
+        'isOnNego'
+      ]);
 
       include.push({
         model: models.Car,
-        attributes: Object.keys(models.Car.attributes).concat(
-          await carHelper.emitFieldCustomCar({ userId })
-        ),
+        attributes: Object.keys(models.Car.attributes).concat(customField),
         required: false,
         as: 'car',
-        where: whereCar,
         include: [
           {
             model: models.User,
@@ -195,6 +186,7 @@ async function getAll(req, res) {
           },
           {
             model: models.Room,
+            subQuery: false,
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             },
@@ -243,7 +235,7 @@ async function getAll(req, res) {
     attributes: {
       exclude: ['deletedAt']
     },
-    subQuery: false,
+    subQuery: true,
     include,
     where,
     order,
@@ -254,6 +246,7 @@ async function getAll(req, res) {
       const unRead = await models.Notification.count({ where: whereCountUnRead });
       const seen = await models.Notification.count({ where: whereCountSee });
       const count = await models.Notification.count({ where });
+
       const notification = { unRead, seen };
       const pagination = paginator.paging(page, count, limit);
       res.json({
