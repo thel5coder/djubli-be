@@ -442,7 +442,7 @@ async function getSellNego(req, res) {
         models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
           FROM "Bargains" 
           WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."negotiationType" IN (1,2,4,5,6,7,8)
+            AND "Bargains"."negotiationType" > 0
             AND "Bargains"."deletedAt" IS NULL
           ) = 0`
         )
@@ -893,7 +893,7 @@ async function getBuyNego(req, res) {
            models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
             FROM "Bargains" 
             WHERE "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."negotiationType" IN (1,2,4,5,6,7,8)
+              AND "Bargains"."negotiationType" > 0
               AND "Bargains"."deletedAt" IS NULL
             ) = 0`
           )
@@ -1853,7 +1853,8 @@ async function negotiate(req, res) {
     if(negotiationType == 7) {
       Object.assign(where, {
         negotiationType: {
-          [Op.notIn]: [0, 7]
+          [Op.not]: null
+          // [Op.notIn]: [0, 7]
         },
         bidType: 1
       });
