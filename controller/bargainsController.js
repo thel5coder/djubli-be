@@ -1854,7 +1854,6 @@ async function negotiate(req, res) {
       Object.assign(where, {
         negotiationType: {
           [Op.not]: null
-          // [Op.notIn]: [0, 7]
         },
         bidType: 1
       });
