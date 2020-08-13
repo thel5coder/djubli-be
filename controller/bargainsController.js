@@ -792,8 +792,6 @@ async function getSellNego(req, res) {
 
           if (negotiationType == 0) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
-            // item.dataValues.isRead = true;
-
             if(dataBargain.length && 
               moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
             ) {
@@ -802,10 +800,8 @@ async function getSellNego(req, res) {
           } else if (negotiationType == 1) {
             if (dataBargain.length == 0 || (dataBargain.length && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
-              // item.dataValues.isRead = true;
             } else if (dataBargain.length && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-              // item.dataValues.isRead = false;
             }
 
             if(dataBargain.length && 
@@ -813,12 +809,14 @@ async function getSellNego(req, res) {
               [1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {              
               item.dataValues.statusNego = 'Waktu Habis';
-              // item.dataValues.isRead = true;
+            }
+
+            if(dataBargain.length && dataBargain[0].negotiationType == 4) {
+              item.dataValues.statusNego = 'Nego Berhasil';
             }
 
             if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
               item.dataValues.statusNego = 'Pembeli Keluar Nego';
-              // item.dataValues.isRead = true;
             }
           }
         })
@@ -1245,8 +1243,6 @@ async function getBuyNego(req, res) {
 
           if (negotiationType == 0) {
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-            // item.dataValues.isRead = false;
-
             if(dataBargain.length && 
               moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
             ) {
@@ -1255,10 +1251,8 @@ async function getBuyNego(req, res) {
           } else if (negotiationType == 1) {
             if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == id)) {
               item.dataValues.statusNego = 'Tunggu Jawaban';
-              // item.dataValues.isRead = true;
             } else if (dataBargain.length > 0 && userIdLastBargain != id) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-              // item.dataValues.isRead = false;
             }
 
             if(dataBargain.length && 
@@ -1266,17 +1260,14 @@ async function getBuyNego(req, res) {
               [0,1,2,5,6].includes(dataBargain[0].negotiationType)
             ) {
               item.dataValues.statusNego = 'Waktu Habis';
-              // item.dataValues.isRead = true;
             }
 
             if(dataBargain.length && dataBargain[0].negotiationType == 4) {
               item.dataValues.statusNego = 'Nego Berhasil';
-              // item.dataValues.isRead = true;
             }
 
             if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
               item.dataValues.statusNego = 'Penjual Keluar Nego';
-              // item.dataValues.isRead = true;
             }
           }
         })
