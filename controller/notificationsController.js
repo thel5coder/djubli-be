@@ -51,12 +51,42 @@ async function getAll(req, res) {
     if (fullResponseArr.indexOf(fullResponse) < 0)
       return res.status(400).json({ success: false, errors: 'Invalid fullResponse' });
     if (fullResponse === 'true') {
+      const whereCar = {
+        [Op.and]: [
+          models.sequelize.where(
+            models.sequelize.literal(`(
+              SELECT COUNT("Bargains"."id")
+                FROM "Bargains" 
+                WHERE "Bargains"."carId" = "car"."id" 
+                  AND "Bargains"."negotiationType" IS NOT NULL
+                  AND ("Bargains"."negotiationType" IN (7,8) 
+                    OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${userId})
+                  )
+                  AND "Bargains"."deletedAt" IS NULL
+            )`), 
+            { [Op.eq]: 0 }
+          ),
+          models.sequelize.where(
+            models.sequelize.literal(`(
+              SELECT COUNT("Bargains"."id")
+                FROM "Bargains" 
+                WHERE "Bargains"."carId" = "car"."id" 
+                  AND "Bargains"."negotiationType" IN (1,2,3,4,5,6)
+                  AND "Bargains"."deletedAt" IS NULL
+            )`), 
+            { [Op.gt]: 0 }
+          )
+        ]
+      };
+
       include.push({
         model: models.Car,
         attributes: Object.keys(models.Car.attributes).concat(
           await carHelper.emitFieldCustomCar({ userId })
         ),
+        required: false,
         as: 'car',
+        where: whereCar,
         include: [
           {
             model: models.User,
@@ -161,7 +191,6 @@ async function getAll(req, res) {
             attributes: {
               exclude: ['deletedAt']
             },
-            limit: 1,
             order: [['id', 'desc']]
           },
           {
