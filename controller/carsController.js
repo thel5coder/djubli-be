@@ -41,7 +41,7 @@ async function carsGet(req, res, auth = false) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -701,7 +701,7 @@ async function getByUserId(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -1026,7 +1026,7 @@ async function getByStatus(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -1258,7 +1258,7 @@ async function purchaseList(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -1498,7 +1498,7 @@ async function bidList(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -2183,7 +2183,7 @@ async function sellList(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -2479,7 +2479,7 @@ async function like(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -2749,7 +2749,7 @@ async function view(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -3018,7 +3018,7 @@ async function viewLike(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
@@ -3296,7 +3296,7 @@ async function viewLikeLogon(req, res) {
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
-  if (limit > MAX_LIMIT) limit = MAX_LIMIT;
+  if (parseInt(limit) > MAX_LIMIT) limit = MAX_LIMIT;
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
