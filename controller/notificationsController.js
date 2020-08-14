@@ -32,10 +32,10 @@ async function getAll(req, res) {
     'action',
     'createdAt'
   ];
+  
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
-  // const order = [[by, sort]];
-  const order = [['id', 'asc']];
+  const order = [[by, sort]];
 
   const where = { 
     userId,

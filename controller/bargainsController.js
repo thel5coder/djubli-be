@@ -1577,13 +1577,6 @@ async function extend(req, res) {
       isExtend: true
     })
     .then(async data => {
-      let category;
-      if(data.car.userId == userId) {
-        category = 5;
-      } else {
-        category = 5;
-      }
-
       const userNotif = {
         userId: data.userId,
         collapseKey: null,
@@ -1591,7 +1584,7 @@ async function extend(req, res) {
         notificationBody: `Waktu penawaran diperpanjang sampai ${expiredAt}`,
         notificationClickAction: `carOffer`,
         dataReferenceId: data.carId,
-        category
+        category: 5
         // category: 4,
         // status: 4
       };
