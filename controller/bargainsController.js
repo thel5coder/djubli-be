@@ -1399,7 +1399,7 @@ async function bid(req, res) {
         userId: carExists.userId,
         collapseKey: null,
         notificationTitle: `Notifikasi Jual`,
-        notificationBody: `penawaran baru`,
+        notificationBody: `Penawaran Baru`,
         notificationClickAction: `carNegotiate`,
         dataReferenceId: carId,
         category: 1
@@ -1468,7 +1468,7 @@ async function editBid(req, res) {
         userId: carExists.userId,
         collapseKey: null,
         notificationTitle: `Notifikasi Jual`,
-        notificationBody: `penawaran berubah`,
+        notificationBody: `Penawaran Berubah`,
         notificationClickAction: `carOffer`,
         dataReferenceId: carId,
         category: 1
@@ -1762,10 +1762,10 @@ async function negotiate(req, res) {
     let notificationBody = '';
     let category;
     if(negotiationType == 0) {
-      notificationBody = 'Diajak ke ruang nego';
+      notificationBody = 'Diajak ke Ruang Nego';
       category = 2;
     } else {
-      notificationBody = 'Penjual menjawab';
+      notificationBody = 'Penjual Menjawab';
       category = 3;
     }
 
@@ -1786,7 +1786,7 @@ async function negotiate(req, res) {
       userId: customer,
       collapseKey: null,
       notificationTitle: `Notifikasi Nego Jual`,
-      notificationBody: `Pembeli menjawab`,
+      notificationBody: `Pembeli Menjawab`,
       notificationClickAction: `carNegotiate`,
       dataReferenceId: carId,
       category: 4,

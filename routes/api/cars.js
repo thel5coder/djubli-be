@@ -251,7 +251,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
         userNotifs.push({
           userId: liker.DISTINCT,
           collapseKey: null,
-          notificationTitle: `Harga mobil turun`,
+          notificationTitle: `Harga Mobil Turun`,
           notificationBody: `Mobil yang anda suka menurunkan harga`,
           notificationClickAction: `carPriceDiskon`,
           dataReferenceId: id,
@@ -269,7 +269,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
         userNotifs.push({
           userId: bidder.DISTINCT,
           collapseKey: null,
-          notificationTitle: `Harga mobil turun`,
+          notificationTitle: `Harga Mobil Turun`,
           notificationBody: `Mobil yang anda tawar menurunkan harga`,
           notificationClickAction: `carPriceDiskon`,
           dataReferenceId: id,
