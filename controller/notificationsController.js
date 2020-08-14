@@ -32,7 +32,7 @@ async function getAll(req, res) {
     'action',
     'createdAt'
   ];
-  
+
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [[by, sort]];
@@ -48,9 +48,9 @@ async function getAll(req, res) {
       )
     ]
   };
+
   const whereCountUnRead = { userId, action: 0 };
   const whereCountSee = { userId, action: 1 };
-
   if (id) Object.assign(where, { id });
   if (category) {
     Object.assign(where, { category });
@@ -59,6 +59,8 @@ async function getAll(req, res) {
   }
 
   const include = [];
+  let includeAttribute = [];
+  
   if (fullResponse) {
     const fullResponseArr = ['true', 'false'];
     if (fullResponseArr.indexOf(fullResponse) < 0)
