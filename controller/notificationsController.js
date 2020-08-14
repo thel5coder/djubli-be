@@ -37,45 +37,60 @@ async function getAll(req, res) {
   // const order = [[by, sort]];
   const order = [['id', 'asc']];
 
-  const where = { userId };
+  const where = { 
+    userId,
+    [Op.and]: [
+      models.sequelize.literal(`(SELECT COUNT("Cars"."id") 
+        FROM "Cars" 
+        WHERE "Cars"."id" = "Notification"."referenceId" 
+            AND "Cars"."deletedAt" IS NULL
+        ) > 0`
+      )
+    ]
+  };
   const whereCountUnRead = { userId, action: 0 };
   const whereCountSee = { userId, action: 1 };
+
   if (id) Object.assign(where, { id });
   if (category) {
     Object.assign(where, { category });
     Object.assign(whereCountUnRead, { category });
     Object.assign(whereCountSee, { category });
   }
+
   const include = [];
   if (fullResponse) {
     const fullResponseArr = ['true', 'false'];
     if (fullResponseArr.indexOf(fullResponse) < 0)
       return res.status(400).json({ success: false, errors: 'Invalid fullResponse' });
     if (fullResponse === 'true') {
-      const customField = await carHelper.emitFieldCustomCar({ userId });
-      customField.push([
-        models.sequelize.literal(`(CASE WHEN ((SELECT COUNT("Bargains"."id")
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "car"."id" 
-              AND "Bargains"."negotiationType" IS NOT NULL
-              AND ("Bargains"."negotiationType" IN (7,8) 
-                OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${userId})
-              )
-              AND "Bargains"."deletedAt" IS NULL) = 0 
-            AND (SELECT COUNT("Bargains"."id")
-                FROM "Bargains" 
-                WHERE "Bargains"."carId" = "car"."id" 
-                  AND "Bargains"."negotiationType" IN (1,2,3,4,5,6)
-                  AND "Bargains"."deletedAt" IS NULL) > 0
-            )  THEN true
-          ELSE false END)`
-        ), 
-        'isOnNego'
-      ]);
+      includeAttribute = [
+        [
+          models.sequelize.literal(`(CASE WHEN ((SELECT COUNT("Bargains"."id")
+              FROM "Bargains" 
+              WHERE "Bargains"."carId" = "Notification"."referenceId" 
+                AND "Bargains"."negotiationType" IS NOT NULL
+                AND ("Bargains"."negotiationType" IN (7,8) 
+                  OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${userId})
+                )
+                AND "Bargains"."deletedAt" IS NULL) = 0 
+              AND (SELECT COUNT("Bargains"."id")
+                  FROM "Bargains" 
+                  WHERE "Bargains"."carId" = "Notification"."referenceId" 
+                    AND "Bargains"."negotiationType" IN (1,2,3,4,5,6)
+                    AND "Bargains"."deletedAt" IS NULL) > 0
+              )  THEN true
+            ELSE false END)`
+          ), 
+          'isOnNego'
+        ]
+      ];
 
       include.push({
         model: models.Car,
-        attributes: Object.keys(models.Car.attributes).concat(customField),
+        attributes: Object.keys(models.Car.attributes).concat(
+          await carHelper.emitFieldCustomCar({ userId })
+        ),
         required: false,
         as: 'car',
         include: [
@@ -233,7 +248,8 @@ async function getAll(req, res) {
 
   return models.Notification.findAll({
     attributes: {
-      exclude: ['deletedAt']
+      exclude: ['deletedAt'],
+      include: includeAttribute
     },
     subQuery: true,
     include,
