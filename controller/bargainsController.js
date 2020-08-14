@@ -1751,23 +1751,32 @@ async function negotiate(req, res) {
   const userNotifs = [];
   const customerFromRoom = (carExists.room.members[0].userId == carExists.userId) ? id : carExists.room.members[0].userId;
   const customer = bidderId || customerFromRoom;
+  const negotiationTypeString = [
+    'Mengajak ke Ruang Nego',
+    'Ulangi Tawaran',
+    'Naikan Tawaran',
+    'Keluar dari Ruang Nego',
+    'Terima Nego',
+    'Turunkan Tawaran',
+    'Ulangi Harga',
+    'Tetap Sebagai Penawar',
+    'Coret Sebagai Penawar'
+  ];
+
   if (id === carExists.userId) {
-    let notificationBody = '';
     let category;
     if(negotiationType == 0) {
-      notificationBody = 'Diajak ke Ruang Nego';
       category = 2;
     } else {
-      notificationBody = 'Penjual Menjawab';
       category = 3;
     }
 
     userNotifs.push({
       userId: customer,
       collapseKey: null,
-      notificationTitle: `Notifikasi Nego Beli`,
-      notificationBody,
-      notificationClickAction: `carNegotiate`,
+      notificationTitle: 'Notifikasi Nego Beli',
+      notificationBody: `Penjual ${negotiationTypeString[negotiationType]}`,
+      notificationClickAction: 'carNegotiate',
       dataReferenceId: carId,
       category,
       // category: 4,
@@ -1778,9 +1787,9 @@ async function negotiate(req, res) {
     userNotifs.push({
       userId: customer,
       collapseKey: null,
-      notificationTitle: `Notifikasi Nego Jual`,
-      notificationBody: `Pembeli Menjawab`,
-      notificationClickAction: `carNegotiate`,
+      notificationTitle: 'Notifikasi Nego Jual',
+      notificationBody: `Pembeli ${negotiationTypeString[negotiationType]}`,
+      notificationClickAction: 'carNegotiate',
       dataReferenceId: carId,
       category: 4,
       // status: 1,
