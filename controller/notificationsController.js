@@ -110,29 +110,29 @@ async function getAll(req, res) {
                   exclude: ['createdAt', 'updatedAt', 'deletedAt']
                 }
               },
-              {
-                model: models.Dealer,
-                as: 'dealer',
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                }
-              },
-              {
-                model: models.Company,
-                as: 'company',
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                }
-              },
-              {
-                model: models.Purchase,
-                as: 'purchase',
-                attributes: {
-                  exclude: ['deletedAt']
-                },
-                order: [['id', 'desc']],
-                limit: 1
-              }
+              // {
+              //   model: models.Dealer,
+              //   as: 'dealer',
+              //   attributes: {
+              //     exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              //   }
+              // },
+              // {
+              //   model: models.Company,
+              //   as: 'company',
+              //   attributes: {
+              //     exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              //   }
+              // },
+              // {
+              //   model: models.Purchase,
+              //   as: 'purchase',
+              //   attributes: {
+              //     exclude: ['deletedAt']
+              //   },
+              //   order: [['id', 'desc']],
+              //   limit: 1
+              // }
             ]
           },
           {
@@ -160,11 +160,11 @@ async function getAll(req, res) {
             as: 'exteriorColor',
             attributes: ['id', 'name', 'hex']
           },
-          {
-            model: models.MeetingSchedule,
-            as: 'meetingSchedule',
-            attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-          },
+          // {
+          //   model: models.MeetingSchedule,
+          //   as: 'meetingSchedule',
+          //   attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+          // },
           {
             model: models.InteriorGalery,
             as: 'interiorGalery',
