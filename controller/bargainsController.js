@@ -31,6 +31,7 @@ const whereQueryBargain = (id, customWhere) => `(SELECT COUNT("bc"."id")
 
 async function bargainsList(req, res) {
   let { page, limit, sort, by } = req.query;
+  const userLoginId = req.user.id;
   const { 
     userId, 
     carId, 
@@ -39,8 +40,7 @@ async function bargainsList(req, res) {
     expiredAt, 
     paymentMethod, 
     haveSeenCar, 
-    profileUser, 
-    readerId 
+    profileUser 
   } = req.query;
 
   let offset = 0;
@@ -134,11 +134,11 @@ async function bargainsList(req, res) {
     });
   }
 
-  let customWhen = readerId ? `WHEN ((SELECT COUNT("b"."id")
+  let customWhen = userLoginId ? `WHEN ((SELECT COUNT("b"."id")
       FROM "Bargains" b 
       WHERE "b"."carId" = "Bargain"."carId"
         AND "b"."bidType" = 1
-        AND ("b"."negotiationType" = 7 AND "b"."userId" = ${readerId}
+        AND ("b"."negotiationType" = 7 AND "b"."userId" = ${userLoginId}
           OR "b"."negotiationType" IN (3,4)
         )
         AND "b"."deletedAt" IS NULL
@@ -168,14 +168,14 @@ async function bargainsList(req, res) {
     ]
   ];
 
-  if(readerId) {
+  if(userLoginId) {
     include.push([
-      models.sequelize.literal(`(CASE WHEN "Bargain"."userId" = ${readerId} THEN
+      models.sequelize.literal(`(CASE WHEN "Bargain"."userId" = ${userLoginId} THEN
         (EXISTS(SELECT "r"."id" 
           FROM "BargainReaders" r 
           WHERE "r"."bargainId" = "Bargain"."id" 
             AND "r"."carId" = "Bargain"."carId"
-            AND "r"."userId" != ${readerId}
+            AND "r"."userId" != ${userLoginId}
             -- AND "r"."type" = 4
             AND "r"."isRead" = TRUE
             AND "r"."deletedAt" IS NULL))
@@ -230,6 +230,9 @@ async function bargainsList(req, res) {
         model: models.Car,
         as: 'car',
         attributes: Object.keys(models.Car.attributes).concat(addAttribute),
+        where: {
+          userId: userLoginId,
+        },
         include: [
           {
             model: models.User,
@@ -336,21 +339,21 @@ async function bargainsList(req, res) {
       const count = findAndCount.count;
       const pagination = paginator.paging(page, count, limit);
 
-      if(readerId && readerId !== '') {
+      if(userLoginId && userLoginId !== '') {
         await Promise.all(
           data.map(async item => {
 
-            if(item.userId != readerId) {
+            if(item.userId != userLoginId) {
               const findBargainReader = await models.BargainReader.findOne({
                 where: {
-                  userId: readerId,
+                  userId: userLoginId,
                   bargainId: item.id
                 }
               });
 
               if(!findBargainReader) {
                 await models.BargainReader.create({
-                  userId: readerId,
+                  userId: userLoginId,
                   bargainId: item.id,
                   carId: item.carId,
                   isRead: true
