@@ -228,6 +228,7 @@ async function bargainsList(req, res) {
       },
       {
         model: models.Car,
+        required: true,
         as: 'car',
         attributes: Object.keys(models.Car.attributes).concat(addAttribute),
         include: [
@@ -281,13 +282,13 @@ async function bargainsList(req, res) {
           },
           {
             model: models.Room,
+            required: true,
             attributes: {
               exclude: ['createdAt', 'updatedAt', 'deletedAt']
             },
             as: 'room',
             include: [
               {
-                required: true,
                 model: models.RoomMember,
                 attributes: {
                   exclude: ['createdAt', 'updatedAt', 'deletedAt']
