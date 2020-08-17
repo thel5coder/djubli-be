@@ -1805,8 +1805,9 @@ async function negotiate(req, res) {
       tab: `tabNego-${customer}`
     });
   } else {
+    console.log(carExists.userId)
     userNotifs.push({
-      userId: id,
+      userId: carExists.userId,
       collapseKey: null,
       notificationTitle: 'Notifikasi Nego Jual',
       notificationBody: `Pembeli ${negotiationTypeString[negotiationType]}`,
@@ -1814,7 +1815,7 @@ async function negotiate(req, res) {
       dataReferenceId: carId,
       category: 4,
       // status: 1,
-      tab: `tabNego-${id}`
+      tab: `tabNego-${carExists.userId}`
     });
   }
 
