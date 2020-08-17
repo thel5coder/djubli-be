@@ -1,3 +1,4 @@
+const moment = require('moment');
 const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../db/models');
@@ -9,22 +10,38 @@ const { Op } = Sequelize;
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-const whereQueryBargain = id => `(SELECT COUNT("bc"."id")
+const whereQueryBargain = userId => `(SELECT COUNT("bc"."id")
   FROM (SELECT * 
     FROM "Bargains"
     WHERE "Bargains"."deletedAt" IS NULL
         AND "Bargains"."carId" = "car"."id"
     ORDER BY "Bargains"."createdAt" DESC
     LIMIT 1) AS bc
-  WHERE "bc"."userId" <> ${id}
+  WHERE "bc"."userId" <> ${userId}
     AND (SELECT COUNT("BargainReaders"."id") 
       FROM "BargainReaders" 
       WHERE "BargainReaders"."carId" = "car"."id"
         AND "BargainReaders"."bargainId" = "bc"."id"
-        AND "BargainReaders"."userId" = ${id}
+        AND "BargainReaders"."userId" = ${userId}
         AND "BargainReaders"."deletedAt" IS NULL
     ) = 0
 ) > 0`;
+
+const isOnNego = userId => `(CASE WHEN ((SELECT COUNT("Bargains"."id")
+  FROM "Bargains" 
+  WHERE "Bargains"."carId" = "Notification"."referenceId" 
+    AND "Bargains"."negotiationType" IS NOT NULL
+    AND ("Bargains"."negotiationType" IN (7,8) 
+      OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${userId})
+    )
+    AND "Bargains"."deletedAt" IS NULL) = 0 
+  AND (SELECT COUNT("Bargains"."id")
+    FROM "Bargains" 
+    WHERE "Bargains"."carId" = "Notification"."referenceId" 
+      AND "Bargains"."negotiationType" IN (1,2,3,4,5,6)
+      AND "Bargains"."deletedAt" IS NULL) > 0
+  ) THEN true
+ELSE false END)`;
 
 async function getAll(req, res) {
   const { category, id, fullResponse, action } = req.query;
@@ -85,22 +102,7 @@ async function getAll(req, res) {
     if (fullResponse === 'true') {
       includeAttribute = [
         [
-          models.sequelize.literal(`(CASE WHEN ((SELECT COUNT("Bargains"."id")
-              FROM "Bargains" 
-              WHERE "Bargains"."carId" = "Notification"."referenceId" 
-                AND "Bargains"."negotiationType" IS NOT NULL
-                AND ("Bargains"."negotiationType" IN (7,8) 
-                  OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${userId})
-                )
-                AND "Bargains"."deletedAt" IS NULL) = 0 
-              AND (SELECT COUNT("Bargains"."id")
-                  FROM "Bargains" 
-                  WHERE "Bargains"."carId" = "Notification"."referenceId" 
-                    AND "Bargains"."negotiationType" IN (1,2,3,4,5,6)
-                    AND "Bargains"."deletedAt" IS NULL) > 0
-              )  THEN true
-            ELSE false END)`
-          ), 
+          models.sequelize.literal(isOnNego(userId)), 
           'isOnNego'
         ]
       ];
@@ -209,6 +211,7 @@ async function getAll(req, res) {
           },
           {
             required: false,
+            separate: true,
             model: models.Bargain,
             as: 'bargain',
             attributes: {
@@ -288,6 +291,15 @@ async function getAll(req, res) {
 
       const notification = { unRead, seen };
       const pagination = paginator.paging(page, count, limit);
+
+      await Promise.all(
+        data.map(async item => {
+          const dataBargain = item.dataValues.car.dataValues.bargain;
+          const sellerId = item.dataValues.car.dataValues.userId;
+          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
+          item.dataValues.car.dataValues.statusNego = generateStatusNego(dataBargain, sellerId, userIdLastBargain, userId);
+        })
+      );
 
       res.json({
         success: true,
@@ -430,6 +442,41 @@ async function countCategory(req, res) {
 
   await Promise.all(waitingPromise);
   return res.status(200).json({ success: true, total, data: notifications });
+}
+
+function generateStatusNego(dataBargain, sellerId, userIdLastBargain, userId) {
+  let negotiationType = [0,1,2,5,6];
+  let statusNego = '';
+
+  if (dataBargain.length == 0 || (dataBargain.length > 0 && userIdLastBargain == userId)) {
+    statusNego = 'Tunggu Jawaban';
+  } else if (dataBargain.length > 0 && userIdLastBargain != userId) {
+    statusNego = 'Jawaban Anda Ditunggu';
+  }
+
+  if(sellerId != userId) {
+    if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != userId) {
+      statusNego = 'Penjual Keluar Nego';
+    }
+  } else {
+    negotiationType.shift();
+    if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != userId) {
+      statusNego = 'Pembeli Keluar Nego';
+    }
+  }
+
+  if(dataBargain.length && 
+    moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
+    negotiationType.includes(dataBargain[0].negotiationType)
+  ) {
+    statusNego = 'Waktu Habis';
+  }
+
+  if(dataBargain.length && dataBargain[0].negotiationType == 4) {
+    statusNego = 'Nego Berhasil';
+  }
+
+  return statusNego;
 }
 
 module.exports = {
