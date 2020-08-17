@@ -3,7 +3,7 @@ const Sequelize = require('sequelize');
 const models = require('../db/models');
 const carHelper = require('../helpers/car');
 const paginator = require('../helpers/paginator');
-const calculateDistance = require('../helpers/calculateDistance');
+const distanceHelper = require('../helpers/distance');
 
 const { Op } = Sequelize;
 
@@ -262,7 +262,7 @@ async function get(req, res) {
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-    const distances = models.sequelize.literal(calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude));
+    const distances = models.sequelize.literal(distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude));
 
     // Object.assign(whereCar, { where: Sequelize.where(distances, { [Op.lte]: 10 }) });
     Object.assign(whereCar, {

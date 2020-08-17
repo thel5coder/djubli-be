@@ -7,7 +7,7 @@ const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
 const general = require('../../helpers/general');
-const calculateDistance = require('../../helpers/calculateDistance');
+const distanceHelper = require('../../helpers/distance');
 const modelYearController = require('../../controller/modelYearController');
 
 const { Op } = Sequelize;
@@ -447,7 +447,7 @@ async function listingCar(req, res, auth = false) {
       const rawDistancesFunc = (tableName = 'Car') => {
         const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
         const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-        const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
+        const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
         rawDistances = calDistance;
         return calDistance;
       };
@@ -528,7 +528,7 @@ async function listingCar(req, res, auth = false) {
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-    distances = models.sequelize.literal(calculateDistance.CalculateDistance(city.latitude, city.longitude, queryLatitude, queryLongitude));
+    distances = models.sequelize.literal(distanceHelper.calculate(city.latitude, city.longitude, queryLatitude, queryLongitude));
 
     latitude = city.latitude;
     longitude = city.longitude;
@@ -558,7 +558,7 @@ async function listingCar(req, res, auth = false) {
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-    distances = models.sequelize.literal(calculateDistance.CalculateDistance(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude));
+    distances = models.sequelize.literal(distanceHelper.calculate(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude));
 
     latitude = subdistrict.latitude;
     longitude = subdistrict.longitude;

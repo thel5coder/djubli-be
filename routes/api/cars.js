@@ -11,8 +11,6 @@ const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
 const carsController = require('../../controller/carsController');
 const apiResponse = require('../../helpers/apiResponse');
-const carHelper = require('../../helpers/car');
-const calculateDistance = require('../../helpers/calculateDistance');
 const notification = require('../../helpers/notification');
 
 const { Op } = Sequelize;

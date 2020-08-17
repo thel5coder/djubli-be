@@ -2,7 +2,7 @@
 
 const Sequelize = require('sequelize');
 const models = require('../db/models');
-const calculateDistance = require('./calculateDistance');
+const distanceHelper = require('./distance');
 const { Op } = Sequelize;
 
 async function customFields(params) {
@@ -361,7 +361,7 @@ async function customFields(params) {
       case 'distance':
         const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${car}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
         const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${car}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-        const distances = calculateDistance.CalculateDistance(params.latitude, params.longitude, queryLatitude, queryLongitude);
+        const distances = distanceHelper.calculate(params.latitude, params.longitude, queryLatitude, queryLongitude);
         fields.push([
           models.sequelize.literal(distances),
           'distance'
