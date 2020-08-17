@@ -4,7 +4,7 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
-const calculateDistance = require('../../helpers/calculateDistance');
+const distanceHelper = require('../helpers/distance');
 
 const {
     Op
@@ -142,7 +142,7 @@ router.get('/', async (req, res) => {
         )
     )`;
 
-    const distances = models.sequelize.literal(calculateDistance.CalculateDistance(latitude, longitude, queryLatLong('latitude'), queryLatLong('longitude')));
+    const distances = models.sequelize.literal(distanceHelper.calculate(latitude, longitude, queryLatLong('latitude'), queryLatLong('longitude')));
     Object.assign(where, {
       [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });

@@ -7,7 +7,7 @@ const models = require('../db/models');
 const paginator = require('../helpers/paginator');
 const carHelper = require('../helpers/car');
 const general = require('../helpers/general');
-const calculateDistance = require('../helpers/calculateDistance');
+const distanceHelper = require('../helpers/distance');
 
 const {
   Op
@@ -153,7 +153,7 @@ async function listingAll(req, res) {
     const rawDistancesFunc = (tableName = 'Car') => {
       const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
       const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-      const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
+      const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
       rawDistances = calDistance;
       return calDistance;
     };
@@ -198,7 +198,7 @@ async function listingAll(req, res) {
           const rawDistancesFunc = (tableName = 'Car') => {
             const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
             const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-            const calDistance = calculateDistance.CalculateDistance(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
+            const calDistance = distanceHelper.calculate(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
             rawDistances = calDistance;
             return calDistance;
           };
@@ -215,7 +215,7 @@ async function listingAll(req, res) {
           const rawDistancesFunc = (tableName = 'Car') => {
             const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
             const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-            const calDistance = calculateDistance.CalculateDistance(city.latitude, city.longitude, queryLatitude, queryLongitude);
+            const calDistance = distanceHelper.calculate(city.latitude, city.longitude, queryLatitude, queryLongitude);
             rawDistances = calDistance;
             return calDistance;
           };
@@ -773,7 +773,7 @@ async function listingAllNew(req, res, fromCallback = false) {
         const rawDistancesFunc = (tableName = 'Car') => {
           const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
           const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-          const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
+          const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
           rawDistances = calDistance;
           return calDistance;
         };
@@ -808,7 +808,7 @@ async function listingAllNew(req, res, fromCallback = false) {
             const rawDistancesFunc = (tableName = 'Car') => {
               const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
               const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-              const calDistance = calculateDistance.CalculateDistance(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
+              const calDistance = distanceHelper.calculate(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
               rawDistances = calDistance;
               return calDistance;
             };
@@ -824,7 +824,7 @@ async function listingAllNew(req, res, fromCallback = false) {
             const rawDistancesFunc = (tableName = 'Cars') => {
               const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
               const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-              const calDistance = calculateDistance.CalculateDistance(city.latitude, city.longitude, queryLatitude, queryLongitude);
+              const calDistance = distanceHelper.calculate(city.latitude, city.longitude, queryLatitude, queryLongitude);
               rawDistances = calDistance;
               return calDistance;
             };
@@ -865,7 +865,7 @@ async function listingAllNew(req, res, fromCallback = false) {
       const rawDistancesFunc = (tableName = 'Car') => {
         const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
         const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-        const calDistance = calculateDistance.CalculateDistance(latitude, longitude, queryLatitude, queryLongitude);
+        const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
         rawDistances = calDistance;
         return calDistance;
       };
@@ -1192,10 +1192,10 @@ async function listingAllNew(req, res, fromCallback = false) {
       )}`;
     }
 
+    const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+    const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
     attributeCar.push([
-      models.sequelize.literal(
-        `(SELECT calculate_distance(${latitude}, ${longitude}, (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude"), (SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude"), 'K'))`
-      ),
+      models.sequelize.literal(distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude)),
       'distance'
     ]);
   }
