@@ -230,9 +230,6 @@ async function bargainsList(req, res) {
         model: models.Car,
         as: 'car',
         attributes: Object.keys(models.Car.attributes).concat(addAttribute),
-        where: {
-          userId: userLoginId,
-        },
         include: [
           {
             model: models.User,
@@ -278,6 +275,26 @@ async function bargainsList(req, res) {
                 as: 'file',
                 attributes: {
                   exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          },
+          {
+            model: models.Room,
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            as: 'room',
+            include: [
+              {
+                required: true,
+                model: models.RoomMember,
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                },
+                as: 'members',
+                where: {
+                  userId: userLoginId
                 }
               }
             ]
