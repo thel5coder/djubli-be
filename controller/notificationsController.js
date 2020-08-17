@@ -9,6 +9,23 @@ const { Op } = Sequelize;
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
+const whereQueryBargain = id => `(SELECT COUNT("bc"."id")
+  FROM (SELECT * 
+    FROM "Bargains"
+    WHERE "Bargains"."deletedAt" IS NULL
+        AND "Bargains"."carId" = "car"."id"
+    ORDER BY "Bargains"."createdAt" DESC
+    LIMIT 1) AS bc
+  WHERE "bc"."userId" <> ${id}
+    AND (SELECT COUNT("BargainReaders"."id") 
+      FROM "BargainReaders" 
+      WHERE "BargainReaders"."carId" = "car"."id"
+        AND "BargainReaders"."bargainId" = "bc"."id"
+        AND "BargainReaders"."userId" = ${id}
+        AND "BargainReaders"."deletedAt" IS NULL
+    ) = 0
+) > 0`;
+
 async function getAll(req, res) {
   const { category, id, fullResponse, action } = req.query;
   const userId = req.user.id;
@@ -91,7 +108,33 @@ async function getAll(req, res) {
       include.push({
         model: models.Car,
         attributes: Object.keys(models.Car.attributes).concat(
-          await carHelper.emitFieldCustomCar({ userId })
+          [
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Likes"."id") 
+                  FROM "Likes" 
+                  WHERE "Likes"."carId" = "car"."id" 
+                    AND "Likes"."status" IS TRUE 
+                    AND "Likes"."deletedAt" IS NULL
+                )`
+              ),
+              'like'
+            ],
+            [
+              models.sequelize.literal(
+                `(SELECT COUNT("Views"."id") 
+                  FROM "Views" 
+                  WHERE "Views"."carId" = "car"."id" 
+                    AND "Views"."deletedAt" IS NULL
+                )`
+              ),
+              'view'
+            ],
+            [
+              models.sequelize.literal(whereQueryBargain(userId)), 
+              'isRead'
+            ]
+          ]
         ),
         required: false,
         as: 'car',
@@ -109,30 +152,7 @@ async function getAll(req, res) {
                 attributes: {
                   exclude: ['createdAt', 'updatedAt', 'deletedAt']
                 }
-              },
-              // {
-              //   model: models.Dealer,
-              //   as: 'dealer',
-              //   attributes: {
-              //     exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              //   }
-              // },
-              // {
-              //   model: models.Company,
-              //   as: 'company',
-              //   attributes: {
-              //     exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              //   }
-              // },
-              // {
-              //   model: models.Purchase,
-              //   as: 'purchase',
-              //   attributes: {
-              //     exclude: ['deletedAt']
-              //   },
-              //   order: [['id', 'desc']],
-              //   limit: 1
-              // }
+              }
             ]
           },
           {
@@ -160,11 +180,6 @@ async function getAll(req, res) {
             as: 'exteriorColor',
             attributes: ['id', 'name', 'hex']
           },
-          // {
-          //   model: models.MeetingSchedule,
-          //   as: 'meetingSchedule',
-          //   attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-          // },
           {
             model: models.InteriorGalery,
             as: 'interiorGalery',
@@ -241,10 +256,16 @@ async function getAll(req, res) {
       });
     }
   }
-  if (action) {
+
+  if(action) {
     const actionArr = [0, 1, 2];
-    if (actionArr.indexOf(Number(action)) < 0)
-      return res.status(400).json({ success: false, errors: 'Invalid action' });
+    if (actionArr.indexOf(Number(action)) < 0) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Invalid action' 
+      });
+    }
+
     Object.assign(where, { action });
   }
 
@@ -267,6 +288,7 @@ async function getAll(req, res) {
 
       const notification = { unRead, seen };
       const pagination = paginator.paging(page, count, limit);
+
       res.json({
         success: true,
         notification,
@@ -287,16 +309,23 @@ async function read(req, res) {
   const update = { action: 1 };
   const where = { action: 0 };
 
-  if (id) {
+  if(id) {
     const notifExists = await models.Notification.findByPk(id);
-    if (notifExists.action == 1)
-      return res.status(200).json({ success: true, message: 'changed', data: notifExists });
+    if(notifExists.action == 1) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'changed', 
+        data: notifExists 
+      });
+    }
 
     Object.assign(where, { id });
   }
-  if (category) Object.assign(where, { category });
 
-  // return res.status(200).json({ success: true, message: 'changed', data: { update, where } });
+  if(category) {
+    Object.assign(where, { category });
+  } 
+
   return models.Notification.update(update, { where })
     .then(async data => {
       return res.status(200).json({ success: true, message: 'success update', data });
@@ -310,9 +339,11 @@ async function unRead(req, res) {
   const { category } = req.body;
   const update = { action: 0 };
   const where = { action: 1 };
-  if (category) Object.assign(where, { category });
 
-  // return responseBase._success({ res, message: 'Parameter Oke', data: { update, where } });
+  if(category) {
+    Object.assign(where, { category });
+  } 
+
   return models.Notification.update(update, {
     where
   })
@@ -329,16 +360,23 @@ async function click(req, res) {
   const update = { action: 2 };
   const where = { action: 1 };
 
-  if (id) {
+  if(id) {
     const notifExists = await models.Notification.findByPk(id);
-    if (notifExists.action == 2)
-      return res.status(200).json({ success: true, message: 'has been seen', data: notifExists });
+    if(notifExists.action == 2) {
+      return res.status(200).json({ 
+        success: true, 
+        message: 'has been seen', 
+        data: notifExists 
+      });
+    }
 
     Object.assign(where, { id });
   }
-  if (category) Object.assign(where, { category });
 
-  // return res.status(200).json({ success: true, message: 'changed', data: { update, where } });
+  if(category) {
+    Object.assign(where, { category });
+  }
+
   return models.Notification.update(update, { where })
     .then(async data => {
       return res.status(200).json({ success: true, message: 'success update', data });
@@ -352,9 +390,11 @@ async function unClick(req, res) {
   const { category } = req.body;
   const update = { action: 1 };
   const where = { action: 2 };
-  if (category) Object.assign(where, { category });
 
-  // return responseBase._success({ res, message: 'Parameter Oke', data: { update, where } });
+  if(category) {
+    Object.assign(where, { category });
+  }
+
   return models.Notification.update(update, {
     where
   })
@@ -379,6 +419,7 @@ async function countCategory(req, res) {
     const unRead = await models.Notification.count({
       where: { userId, action: 0, category: category.DISTINCT }
     });
+
     const seen = await models.Notification.count({
       where: { userId, action: 1, category: category.DISTINCT }
     });
@@ -386,9 +427,8 @@ async function countCategory(req, res) {
     notifications.push({ category: category.DISTINCT, unRead, seen });
     Object.assign(total, { unRead: total.unRead + unRead, seen: total.seen + seen });
   });
-  await Promise.all(waitingPromise);
-  // console.log(notifications);
 
+  await Promise.all(waitingPromise);
   return res.status(200).json({ success: true, total, data: notifications });
 }
 
