@@ -4,7 +4,7 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
-const distanceHelper = require('../helpers/distance');
+const distanceHelper = require('../../helpers/distance');
 
 const {
     Op

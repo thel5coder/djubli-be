@@ -7,7 +7,7 @@ const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
 const general = require('../../helpers/general');
-const distanceHelper = require('../helpers/distance');
+const distanceHelper = require('../../helpers/distance');
 const modelYearController = require('../../controller/modelYearController');
 
 const { Op } = Sequelize;
