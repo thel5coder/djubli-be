@@ -1806,7 +1806,7 @@ async function negotiate(req, res) {
     });
   } else {
     userNotifs.push({
-      userId: customer,
+      userId: id,
       collapseKey: null,
       notificationTitle: 'Notifikasi Nego Jual',
       notificationBody: `Pembeli ${negotiationTypeString[negotiationType]}`,
@@ -1814,7 +1814,7 @@ async function negotiate(req, res) {
       dataReferenceId: carId,
       category: 4,
       // status: 1,
-      tab: `tabNego-${customer}`
+      tab: `tabNego-${id}`
     });
   }
 
