@@ -55,6 +55,13 @@ module.exports = (sequelize, DataTypes) => {
           const stsActions = ['unread', 'seen', 'clicked'];
           return stsActions[this.action];
         }
+      },
+      isRead: {
+        type: DataTypes.VIRTUAL,
+        get() {
+          const stsActions = [false, true];
+          return stsActions[this.action];
+        }
       }
     },
     {

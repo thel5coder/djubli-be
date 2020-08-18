@@ -95,169 +95,161 @@ async function getAll(req, res) {
   const include = [];
   let includeAttribute = [];
   
-  if (fullResponse) {
-    const fullResponseArr = ['true', 'false'];
-    if (fullResponseArr.indexOf(fullResponse) < 0)
-      return res.status(400).json({ success: false, errors: 'Invalid fullResponse' });
-    if (fullResponse === 'true') {
-      includeAttribute = [
-        [
-          models.sequelize.literal(isOnNego(userId)), 
-          'isOnNego'
-        ]
-      ];
+  if (fullResponse && JSON.parse(fullResponse) == true) {
+    includeAttribute = [
+      [ models.sequelize.literal(isOnNego(userId)), 'isOnNego' ]
+    ];
 
-      include.push({
-        model: models.Car,
-        attributes: Object.keys(models.Car.attributes).concat(
+    include.push({
+      model: models.Car,
+      attributes: Object.keys(models.Car.attributes).concat(
+        [
           [
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Likes"."id") 
-                  FROM "Likes" 
-                  WHERE "Likes"."carId" = "car"."id" 
-                    AND "Likes"."status" IS TRUE 
-                    AND "Likes"."deletedAt" IS NULL
-                )`
-              ),
-              'like'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Views"."id") 
-                  FROM "Views" 
-                  WHERE "Views"."carId" = "car"."id" 
-                    AND "Views"."deletedAt" IS NULL
-                )`
-              ),
-              'view'
-            ],
-            [
-              models.sequelize.literal(whereQueryBargain(userId)), 
-              'isRead'
-            ]
+            models.sequelize.literal(
+              `(SELECT COUNT("Likes"."id") 
+                FROM "Likes" 
+                WHERE "Likes"."carId" = "car"."id" 
+                  AND "Likes"."status" IS TRUE 
+                  AND "Likes"."deletedAt" IS NULL
+              )`
+            ),
+            'like'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT COUNT("Views"."id") 
+                FROM "Views" 
+                WHERE "Views"."carId" = "car"."id" 
+                  AND "Views"."deletedAt" IS NULL
+              )`
+            ),
+            'view'
+          ],
+          [
+            models.sequelize.literal(whereQueryBargain(userId)), 
+            'isRead'
           ]
-        ),
-        required: false,
-        as: 'car',
-        include: [
-          {
-            model: models.User,
-            as: 'user',
-            attributes: {
-              exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
-            },
-            include: [
-              {
-                model: models.File,
-                as: 'file',
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                }
-              }
-            ]
-          },
-          {
-            model: models.Brand,
-            as: 'brand',
-            attributes: ['id', 'name', 'logo']
-          },
-          {
-            model: models.Model,
-            as: 'model',
-            attributes: ['id', 'name', 'groupModelId']
-          },
-          {
-            model: models.GroupModel,
-            as: 'groupModel',
-            attributes: ['id', 'name', 'brandId']
-          },
-          {
-            model: models.Color,
-            as: 'interiorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.Color,
-            as: 'exteriorColor',
-            attributes: ['id', 'name', 'hex']
-          },
-          {
-            model: models.InteriorGalery,
-            as: 'interiorGalery',
-            attributes: ['id', 'fileId', 'carId'],
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.ExteriorGalery,
-            as: 'exteriorGalery',
-            attributes: ['id', 'fileId', 'carId'],
-            include: {
-              model: models.File,
-              as: 'file',
-              attributes: ['type', 'url']
-            }
-          },
-          {
-            model: models.ModelYear,
-            as: 'modelYear',
-            attributes: {
-              exclude: ['picture', 'pictureUrl', 'createdAt', 'updatedAt', 'deletedAt']
-            }
-          },
-          {
-            required: false,
-            separate: true,
-            model: models.Bargain,
-            as: 'bargain',
-            attributes: {
-              exclude: ['deletedAt']
-            },
-            order: [['id', 'desc']]
-          },
-          {
-            model: models.Room,
-            subQuery: false,
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            as: 'room',
-            include: [
-              {
-                required: true,
-                model: models.RoomMember,
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                },
-                as: 'members',
-                include: [
-                  {
-                    model: models.User,
-                    attributes: {
-                      exclude: ['password', 'deletedAt']
-                    },
-                    as: 'member',
-                    include: [
-                      {
-                        model: models.File,
-                        as: 'file',
-                        attributes: {
-                          exclude: ['type', 'createdAt', 'updatedAt', 'deletedAt']
-                        }
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
         ]
-      });
-    }
+      ),
+      required: false,
+      as: 'car',
+      include: [
+        {
+          model: models.User,
+          as: 'user',
+          attributes: {
+            exclude: ['password', 'createdAt', 'updatedAt', 'deletedAt']
+          },
+          include: [
+            {
+              model: models.File,
+              as: 'file',
+              attributes: {
+                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              }
+            }
+          ]
+        },
+        {
+          model: models.Brand,
+          as: 'brand',
+          attributes: ['id', 'name', 'logo']
+        },
+        {
+          model: models.Model,
+          as: 'model',
+          attributes: ['id', 'name', 'groupModelId']
+        },
+        {
+          model: models.GroupModel,
+          as: 'groupModel',
+          attributes: ['id', 'name', 'brandId']
+        },
+        {
+          model: models.Color,
+          as: 'interiorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.Color,
+          as: 'exteriorColor',
+          attributes: ['id', 'name', 'hex']
+        },
+        {
+          model: models.InteriorGalery,
+          as: 'interiorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          model: models.ExteriorGalery,
+          as: 'exteriorGalery',
+          attributes: ['id', 'fileId', 'carId'],
+          include: {
+            model: models.File,
+            as: 'file',
+            attributes: ['type', 'url']
+          }
+        },
+        {
+          model: models.ModelYear,
+          as: 'modelYear',
+          attributes: {
+            exclude: ['picture', 'pictureUrl', 'createdAt', 'updatedAt', 'deletedAt']
+          }
+        },
+        {
+          required: false,
+          separate: true,
+          model: models.Bargain,
+          as: 'bargain',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']]
+        },
+        {
+          model: models.Room,
+          subQuery: false,
+          attributes: {
+            exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          },
+          as: 'room',
+          include: [
+            {
+              required: true,
+              model: models.RoomMember,
+              attributes: {
+                exclude: ['createdAt', 'updatedAt', 'deletedAt']
+              },
+              as: 'members',
+              include: [
+                {
+                  model: models.User,
+                  attributes: {
+                    exclude: ['password', 'deletedAt']
+                  },
+                  as: 'member',
+                  include: [
+                    {
+                      model: models.File,
+                      as: 'file',
+                      attributes: {
+                        exclude: ['type', 'createdAt', 'updatedAt', 'deletedAt']
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    });
   }
 
   if(action) {
@@ -292,14 +284,16 @@ async function getAll(req, res) {
       const notification = { unRead, seen };
       const pagination = paginator.paging(page, count, limit);
 
-      await Promise.all(
-        data.map(async item => {
-          const dataBargain = item.dataValues.car.dataValues.bargain;
-          const sellerId = item.dataValues.car.dataValues.userId;
-          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
-          item.dataValues.car.dataValues.statusNego = generateStatusNego(dataBargain, sellerId, userIdLastBargain, userId);
-        })
-      );
+      if(fullResponse && JSON.parse(fullResponse) == true) {
+        await Promise.all(
+          data.map(async item => {
+            const dataBargain = item.dataValues.car.dataValues.bargain;
+            const sellerId = item.dataValues.car.dataValues.userId;
+            const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
+            item.dataValues.car.dataValues.statusNego = generateStatusNego(dataBargain, sellerId, userIdLastBargain, userId);
+          })
+        );
+      }
 
       res.json({
         success: true,
