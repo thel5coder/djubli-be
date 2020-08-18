@@ -2277,7 +2277,8 @@ async function sellList(req, res) {
       'isBid'
     ],
     id,
-    upperCase: true
+    upperCase: true,
+    modelYearId: '"Car"."modelYearId"'
   };
 
   if (condition) {
@@ -2348,12 +2349,12 @@ async function sellList(req, res) {
     Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
   }
 
-  customFields = await carHelper.customFields(customFields)
-  // if(isMarket && JSON.parse(isMarket) == true) {
-  //   Object.assign(where, {
-  //     [Op.and]: models.sequelize.where(customFields[0][0], { [Op.gt]: 0 })
-  //   });
-  // }
+  const customFieldCar = await carHelper.customFields(customFields);
+  if(isMarket && JSON.parse(isMarket) == true) {
+    Object.assign(where, {
+      [Op.and]: models.sequelize.where(customFieldCar[0][0], { [Op.gt]: 0 })
+    });
+  }
 
   const includes = [
     {
@@ -2447,7 +2448,7 @@ async function sellList(req, res) {
           'cityName'
         ]
       ],
-      customFields
+      customFieldCar
     ),
     include: includes,
     where,
