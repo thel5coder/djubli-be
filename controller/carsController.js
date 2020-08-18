@@ -2176,7 +2176,8 @@ async function sellList(req, res) {
     minPrice,
     maxPrice,
     minYear,
-    maxYear
+    maxYear,
+    isMarket
   } = req.query;
 
   let { page, limit, by, sort } = req.query;
@@ -2265,8 +2266,16 @@ async function sellList(req, res) {
 
   const whereModelYear = {};
   const whereProfile = {};
-  const customFields = {
-    fields: ['numberOfBidder', 'like', 'view', 'islike', 'isBid'],
+  let customFields = {
+    fields: [
+      'purchase',
+      'lastPurchaseAmount',
+      'numberOfBidder', 
+      'like', 
+      'view', 
+      'islike', 
+      'isBid'
+    ],
     id,
     upperCase: true
   };
@@ -2339,6 +2348,13 @@ async function sellList(req, res) {
     Object.assign(whereProfile, { type: profile === 'dealer' ? 1 : 0 });
   }
 
+  customFields = await carHelper.customFields(customFields)
+  // if(isMarket && JSON.parse(isMarket) == true) {
+  //   Object.assign(where, {
+  //     [Op.and]: models.sequelize.where(customFields[0][0], { [Op.gt]: 0 })
+  //   });
+  // }
+
   const includes = [
     {
       model: models.ModelYear,
@@ -2406,12 +2422,13 @@ async function sellList(req, res) {
         as: 'file',
         attributes: ['type', 'url']
       }
-    },
-    {
-      model: models.Purchase,
-      as: 'purchase',
-      attributes: ['price', 'createdAt']
     }
+    // ,
+    // {
+    //   model: models.Purchase,
+    //   as: 'purchase',
+    //   attributes: ['price', 'createdAt']
+    // }
   ];
 
   return models.Car.findAll({
@@ -2430,7 +2447,7 @@ async function sellList(req, res) {
           'cityName'
         ]
       ],
-      await carHelper.customFields(customFields)
+      customFields
     ),
     include: includes,
     where,
