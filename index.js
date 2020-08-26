@@ -73,6 +73,7 @@ app.use(passport.initialize());
 require('./config/passport')(passport);
 
 const client = redis.createClient(process.env.REDIS_HOST);
+// const client = redis.createClient(6379, 'localhost');
 client.on('error', err => {
   console.log(`Error ${err}`);
 });

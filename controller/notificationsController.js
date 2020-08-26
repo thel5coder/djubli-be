@@ -435,7 +435,11 @@ async function countCategory(req, res) {
   });
 
   await Promise.all(waitingPromise);
-  return res.status(200).json({ success: true, total, data: notifications });
+  const data = { total, notifications };
+  return res.status(200).json({ 
+    success: true, 
+    data 
+  });
 }
 
 function generateStatusNego(dataBargain, sellerId, userIdLastBargain, userId) {
