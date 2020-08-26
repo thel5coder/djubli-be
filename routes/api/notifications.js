@@ -27,12 +27,8 @@ router.put('/unClick', passport.authenticate('user', { session: false }), async 
   return notificationsController.unClick(req, res);
 });
 
-router.get(
-  '/categories/count',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    return notificationsController.countCategory(req, res);
-  }
-);
+router.get('/categories/count', passport.authenticate('user', { session: false }), async (req, res) => {
+  return notificationsController.countCategory(req, res);
+});
 
 module.exports = router;
