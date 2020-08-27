@@ -3808,7 +3808,10 @@ async function viewLikeLogon(req, res) {
 
 module.exports = {
   carsGet,
+  getById,
   getByUserId,
+  getByStatus,
+  purchaseList,
   bidList,
   sell,
   sellList,
