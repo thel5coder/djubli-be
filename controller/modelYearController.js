@@ -1958,95 +1958,95 @@ async function listingCar(req, res, auth = false) {
         model: models.ModelYear,
         as: 'modelYear',
         where: whereModelYear,
-        // include: [
-        //   {
-        //     model: models.Model,
-        //     as: 'model',
-        //     attributes: ['name'],
-        //     include: [
-        //       {
-        //         model: models.GroupModel,
-        //         as: 'groupModel',
-        //         attributes: ['name'],
-        //         include: [
-        //           {
-        //             model: models.Brand,
-        //             as: 'brand',
-        //             attributes: ['name']
-        //           }
-        //         ]
-        //       }
-        //     ]
-        //   }
-        // ]
+        include: [
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['name'],
+            include: [
+              {
+                model: models.GroupModel,
+                as: 'groupModel',
+                attributes: ['name'],
+                include: [
+                  {
+                    model: models.Brand,
+                    as: 'brand',
+                    attributes: ['name']
+                  }
+                ]
+              }
+            ]
+          }
+        ]
       },
-      // {
-      //   model: models.User,
-      //   as: 'user',
-      //   attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
-      //   include: [
-      //     {
-      //       model: models.Purchase,
-      //       as: 'purchase',
-      //       attributes: {
-      //         exclude: ['deletedAt']
-      //       },
-      //       order: [['id', 'desc']],
-      //       limit: 1
-      //     }
-      //   ]
-      // },
-      // {
-      //   model: models.Color,
-      //   as: 'interiorColor',
-      //   attributes: ['name']
-      // },
-      // {
-      //   model: models.Color,
-      //   as: 'exteriorColor',
-      //   attributes: ['name']
-      // },
-      // {
-      //   model: models.MeetingSchedule,
-      //   as: 'meetingSchedule',
-      //   attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
-      // },
-      // {
-      //   model: models.InteriorGalery,
-      //   as: 'interiorGalery',
-      //   attributes: ['id', 'fileId', 'carId'],
-      //   include: [
-      //     {
-      //       model: models.File,
-      //       as: 'file',
-      //       attributes: {
-      //         exclude: ['createdAt', 'updatedAt', 'deletedAt']
-      //       }
-      //     }
-      //   ]
-      // },
-      // {
-      //   model: models.ExteriorGalery,
-      //   as: 'exteriorGalery',
-      //   attributes: ['id', 'fileId', 'carId'],
-      //   include: [
-      //     {
-      //       model: models.File,
-      //       as: 'file',
-      //       attributes: {
-      //         exclude: ['createdAt', 'updatedAt', 'deletedAt']
-      //       }
-      //     }
-      //   ]
-      // },
-      // {
-      //   required: false,
-      //   model: models.Bargain,
-      //   as: 'bargain',
-      //   attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
-      //   limit: 1,
-      //   order: [['id', 'desc']]
-      // }
+      {
+        model: models.User,
+        as: 'user',
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
+        include: [
+          {
+            model: models.Purchase,
+            as: 'purchase',
+            attributes: {
+              exclude: ['deletedAt']
+            },
+            order: [['id', 'desc']],
+            limit: 1
+          }
+        ]
+      },
+      {
+        model: models.Color,
+        as: 'interiorColor',
+        attributes: ['name']
+      },
+      {
+        model: models.Color,
+        as: 'exteriorColor',
+        attributes: ['name']
+      },
+      {
+        model: models.MeetingSchedule,
+        as: 'meetingSchedule',
+        attributes: ['id', 'carId', 'day', 'startTime', 'endTime']
+      },
+      {
+        model: models.InteriorGalery,
+        as: 'interiorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        model: models.ExteriorGalery,
+        as: 'exteriorGalery',
+        attributes: ['id', 'fileId', 'carId'],
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        required: false,
+        model: models.Bargain,
+        as: 'bargain',
+        attributes: ['id', 'userId', 'carId', 'haveSeenCar', 'paymentMethod', 'expiredAt'],
+        limit: 1,
+        order: [['id', 'desc']]
+      }
     ],
     where,
     order,

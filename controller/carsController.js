@@ -256,7 +256,7 @@ async function carsGet(req, res, auth = false) {
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-    const distances = models.sequelize.literalHelper(distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude));
+    const distances = models.sequelize.literal(distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude));
     Object.assign(where, {
       [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });
