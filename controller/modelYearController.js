@@ -443,7 +443,7 @@ async function listingAll(req, res) {
 
   const addAttribute = await carHelper.customFields({
     fields: [
-      'purchase',
+      'numberOfPurchase',
       'lastPurchaseAmount',
       'numberOfCar',
       'maxPrice',
@@ -1492,7 +1492,7 @@ async function luxuryCar(req, res) {
       'maxPrice',
       'minPrice',
       'highestBidderCarId',
-      'purchase'
+      'numberOfPurchase'
     ],
     upperCase: true,
     whereQuery: general.customReplace(whereQuery, `Cars`, `Car`)

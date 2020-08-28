@@ -2268,7 +2268,7 @@ async function sellList(req, res) {
   const whereProfile = {};
   let customFields = {
     fields: [
-      'purchase',
+      'numberOfPurchase',
       'lastPurchaseAmount',
       'numberOfBidder', 
       'like', 
@@ -2423,13 +2423,12 @@ async function sellList(req, res) {
         as: 'file',
         attributes: ['type', 'url']
       }
+    },
+    {
+      model: models.Purchase,
+      as: 'purchase',
+      attributes: ['price', 'createdAt']
     }
-    // ,
-    // {
-    //   model: models.Purchase,
-    //   as: 'purchase',
-    //   attributes: ['price', 'createdAt']
-    // }
   ];
 
   return models.Car.findAll({
