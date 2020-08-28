@@ -234,7 +234,7 @@ async function customFields(params) {
         ]);
         break;
 
-      case 'purchase':
+      case 'numberOfPurchase':
         fields.push([
           models.sequelize.literal(
             `(SELECT COUNT("Purchase"."id") 
@@ -246,7 +246,7 @@ async function customFields(params) {
                 AND "c"."deletedAt" IS NULL ${params.whereQuery}
             )`
           ),
-          'purchase'
+          'numberOfPurchase'
         ]);
         break;
 
