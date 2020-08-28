@@ -455,6 +455,12 @@ async function listingAll(req, res) {
     whereQuery
   });
 
+  if (by === 'numberOfCar') {
+    Object.assign(whereInclude, {
+      [Op.and]: models.sequelize.where(addAttribute[2][0], { [Op.gt]: 0 })
+    });
+  }
+
   if(isMarket && JSON.parse(isMarket) == true) {
     Object.assign(where, {
       [Op.and]: models.sequelize.where(addAttribute[0][0], { [Op.gt]: 0 })
