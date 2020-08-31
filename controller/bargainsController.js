@@ -407,6 +407,331 @@ async function bargainsList(req, res) {
     });
 }
 
+async function bargainsListBidder(req, res) {
+  let { page, limit, sort, by } = req.query;
+  const { 
+    userId, 
+    carId, 
+    bidType, 
+    negotiationType, 
+    expiredAt, 
+    paymentMethod, 
+    haveSeenCar, 
+    profileUser 
+  } = req.query;
+
+  let offset = 0;
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (!by) by = 'createdAt';
+  const array = [
+    'id',
+    'userId',
+    'carId',
+    'bidAmount',
+    'haveSeenCar',
+    'paymentMethod',
+    'expiredAt',
+    'comment',
+    'bidType',
+    'negotiationType',
+    'createdAt',
+    'updatedAt'
+  ];
+
+  if (array.indexOf(by) < 0) by = 'id';
+  if (sort !== 'desc') sort = 'asc';
+  else sort = 'desc';
+
+  const order = [[by, sort]];
+  const where = {};
+  const whereUser = {};
+
+  if (carId) {
+    Object.assign(where, {
+      carId
+    });
+  }
+
+  if (userId) {
+    Object.assign(where, {
+      userId
+    });
+  }
+
+  if (bidType) {
+    Object.assign(where, {
+      bidType
+    });
+  }
+
+  if (expiredAt) {
+    Object.assign(where, {
+      expiredAt: {
+        [Op.lte]: expiredAt
+      }
+    });
+  }
+
+  if (negotiationType) {
+    Object.assign(where, {
+      negotiationType
+    });
+  }
+
+  if (paymentMethod) {
+    Object.assign(where, {
+      paymentMethod
+    });
+  }
+
+  if (haveSeenCar) {
+    Object.assign(where, {
+      haveSeenCar
+    });
+  }
+
+  if (profileUser == 'End User') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 0, companyType: 0 },
+        { type: 0, companyType: 1 }
+      ]
+    });
+  }
+
+  if (profileUser == 'Dealer') {
+    Object.assign(whereUser, {
+      [Op.or]: [
+        { type: 1, companyType: 0 },
+        { type: 1, companyType: 1 }
+      ]
+    });
+  }
+
+  let customWhen = `WHEN ((SELECT COUNT("b"."id")
+      FROM "Bargains" b 
+      WHERE "b"."carId" = "Bargain"."carId"
+        AND "b"."bidType" = 1
+        AND ("b"."negotiationType" = 7
+          OR "b"."negotiationType" IN (3,4)
+        )
+        AND "b"."deletedAt" IS NULL
+      )) > 0
+    THEN true`;
+  const include = [
+    [
+      models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
+        FROM "Bargains" b 
+        WHERE "b"."carId" = "Bargain"."carId"
+          AND "b"."bidType" = 1
+          AND (SELECT COUNT("sb"."id")
+            FROM "Bargains" sb
+            WHERE "sb"."carId" = "Bargain"."carId"
+              AND "sb"."bidType" = 1
+              AND "sb"."negotiationType" IN (3,4,7)
+              AND "sb"."deletedAt" IS NULL) = 0
+          AND "b"."deletedAt" IS NULL))`
+      ), 
+      'isNego'
+    ],
+    [
+      models.sequelize.literal(`(CASE ${customWhen} WHEN "expiredAt" >= now() THEN false
+        ELSE true END)`
+      ), 
+      'isExpired'
+    ]
+  ];
+
+  if(bidType == 0) {
+    Object.assign(where, {
+      [Op.and]: [
+        models.sequelize.literal(`(SELECT COUNT("b"."id") 
+          FROM "Bargains" b
+          WHERE "b"."carId" = "Bargain"."carId" 
+            AND "b"."negotiationType" = 8
+            AND "b"."deletedAt" IS NULL
+          ) = 0`
+        )
+      ]
+    });
+  }
+
+  const addAttribute = await carHelper.customFields({
+    fields: [
+      'like',
+      'view'
+    ]
+  });
+
+  return models.Bargain.findAll({
+    attributes: {
+      include
+    },
+    include: [
+      {
+        model: models.User,
+        as: 'user',
+        attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType', 'address'],
+        where: whereUser,
+        include: [
+          {
+            model: models.File,
+            as: 'file',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        model: models.Car,
+        required: true,
+        as: 'car',
+        attributes: Object.keys(models.Car.attributes).concat(addAttribute),
+        include: [
+          {
+            model: models.User,
+            as: 'user',
+            attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType', 'address'],
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          },
+          {
+            model: models.ModelYear,
+            as: 'modelYear',
+            attributes: ['id', 'year', 'modelId']
+          },
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: ['id', 'name', 'logo', 'status']
+          },
+          {
+            model: models.Model,
+            as: 'model',
+            attributes: ['id', 'name', 'groupModelId']
+          },
+          {
+            model: models.GroupModel,
+            as: 'groupModel',
+            attributes: ['id', 'name', 'brandId']
+          },
+          {
+            model: models.ExteriorGalery,
+            as: 'exteriorGalery',
+            attributes: ['id', 'fileId', 'carId'],
+            include: [
+              {
+                model: models.File,
+                as: 'file',
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                }
+              }
+            ]
+          },
+          {
+            model: models.Room,
+            required: true,
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            as: 'room',
+            include: [
+              {
+                model: models.RoomMember,
+                attributes: {
+                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
+                },
+                as: 'members'
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    subQuery: false,
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const findAndCount = await models.Bargain.findAndCountAll({ 
+        attributes: {
+          include: [
+            [
+              models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
+                FROM "Bargains" b 
+                WHERE "b"."carId" = "Bargain"."carId" 
+                  AND "b"."bidderId" = "Bargain"."userId"
+                  AND "b"."bidType" = 1
+                  AND (SELECT COUNT("sb"."id")
+                    FROM "Bargains" sb
+                    WHERE "sb"."carId" = "Bargain"."carId"
+                      AND "sb"."bidType" = 1
+                      AND "sb"."negotiationType" IN (3,4,7)
+                      AND "sb"."deletedAt" IS NULL) = 0
+                  AND "b"."deletedAt" IS NULL))`
+              ), 
+              'isNego'
+            ]
+          ]
+        },
+        include: [
+          {
+            model: models.User,
+            as: 'user',
+            where: whereUser
+          },
+          {
+            model: models.Car,
+            as: 'car'
+          }
+        ],
+        where
+      });
+
+      let isNego = false;
+      let bidderName = '';
+      findAndCount.rows.map(item => {
+        if(item.dataValues.isNego) {
+          isNego = true;
+          bidderName = item.dataValues.user.name;
+        }
+      });
+
+      const count = findAndCount.count;
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data: {
+          isNego,
+          bidderName,
+          bidderList: data
+        }
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+}
+
 async function getSellNego(req, res) {
   const { id } = req.user;
   const {
@@ -2066,6 +2391,7 @@ async function failureNegotiation(req, res) {
 
 module.exports = {
   bargainsList,
+  bargainsListBidder,
   getSellNego,
   getBuyNego,
   bid,

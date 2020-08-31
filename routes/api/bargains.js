@@ -15,8 +15,14 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
+// With Login
 router.get('/', passport.authenticate('user', { session: false }), async (req, res) => {
   return await bargainsController.bargainsList(req, res);
+});
+
+// No Login
+router.get('/bidder', async (req, res) => {
+  return await bargainsController.bargainsListBidder(req, res);
 });
 
 router.get('/id/:id', async (req, res) => {
