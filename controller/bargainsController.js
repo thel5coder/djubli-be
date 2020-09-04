@@ -339,7 +339,24 @@ async function bargainsList(req, res) {
           },
           {
             model: models.Car,
-            as: 'car'
+            required: true,
+            as: 'car',
+            include: [
+              {
+                model: models.Room,
+                required: true,
+                as: 'room',
+                include: [
+                  {
+                    model: models.RoomMember,
+                    as: 'members',
+                    where: {
+                      userId: userLoginId
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ],
         where

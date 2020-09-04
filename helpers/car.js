@@ -116,7 +116,7 @@ async function customFields(params) {
                 AND (SELECT COUNT("b"."id")
                   FROM "Bargains" b
                   WHERE "b"."deletedAt" IS NULL
-                    AND "b"."negotiationType" = 8
+                    AND "b"."negotiationType" IN (4,7,8)
                     AND "b"."carId" = "Bargains"."carId") = 0
             )`
           ),
