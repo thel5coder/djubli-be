@@ -116,7 +116,7 @@ async function customFields(params) {
                 AND (SELECT COUNT("b"."id")
                   FROM "Bargains" b
                   WHERE "b"."deletedAt" IS NULL
-                    AND "b"."negotiationType" = 8
+                    AND "b"."negotiationType" IN (4,7,8)
                     AND "b"."carId" = "Bargains"."carId") = 0
             )`
           ),
@@ -139,6 +139,11 @@ async function customFields(params) {
         break;
 
       case 'bidAmount':
+        let whereUserId = ``;
+        if(params.id) {
+          whereUserId = ` AND "Bargains"."userId" = ${params.id}`
+        }
+
         fields.push([
           models.sequelize.literal(
             `(SELECT MAX("Bargains"."bidAmount") 
@@ -146,7 +151,7 @@ async function customFields(params) {
               WHERE "Bargains"."carId" = "${car}"."id" 
                 AND "Bargains"."deletedAt" IS NULL 
                 AND "Bargains"."bidType" = 0 
-                AND "Bargains"."userId" = ${params.id}
+                ${whereUserId}
             )`
           ),
           'bidAmount'
