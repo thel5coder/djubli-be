@@ -139,6 +139,11 @@ async function customFields(params) {
         break;
 
       case 'bidAmount':
+        let whereUserId = ``;
+        if(params.id) {
+          whereUserId = ` AND "Bargains"."userId" = ${params.id}`
+        }
+
         fields.push([
           models.sequelize.literal(
             `(SELECT MAX("Bargains"."bidAmount") 
@@ -146,7 +151,7 @@ async function customFields(params) {
               WHERE "Bargains"."carId" = "${car}"."id" 
                 AND "Bargains"."deletedAt" IS NULL 
                 AND "Bargains"."bidType" = 0 
-                AND "Bargains"."userId" = ${params.id}
+                ${whereUserId}
             )`
           ),
           'bidAmount'
