@@ -568,7 +568,7 @@ async function bargainsListBidder(req, res) {
         models.sequelize.literal(`(SELECT COUNT("b"."id") 
           FROM "Bargains" b
           WHERE "b"."carId" = "Bargain"."carId" 
-            AND "b"."negotiationType" = 8
+            AND "b"."negotiationType" IN (4,7,8)
             AND "b"."deletedAt" IS NULL
           ) = 0`
         )
