@@ -441,6 +441,22 @@ async function listingAll(req, res) {
     [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 0 })]
   });
 
+  if(isMarket && JSON.parse(isMarket) == true) {
+    Object.assign(whereInclude, {
+      status: 2
+    });
+
+    whereQuery += ' AND "Car"."status" = 2 AND "Car"."deletedAt" IS NULL';
+  } else {
+    Object.assign(whereInclude, {
+      status: {
+        [Op.in]: [0,1]
+      }
+    });
+
+    whereQuery += ' AND "Car"."status" IN (0,1) ';
+  }
+
   const addAttribute = await carHelper.customFields({
     fields: [
       'numberOfPurchase',
@@ -465,12 +481,6 @@ async function listingAll(req, res) {
     Object.assign(where, {
       [Op.and]: models.sequelize.where(addAttribute[0][0], { [Op.gt]: 0 })
     });
-
-    Object.assign(whereInclude, {
-      status: 2
-    });
-
-    whereQuery = ' AND "Car"."status" = 2 AND "Car"."deletedAt" IS NULL';
   }
 
   const includeCar = [
