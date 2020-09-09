@@ -40,7 +40,8 @@ async function bargainsList(req, res) {
     expiredAt, 
     paymentMethod, 
     haveSeenCar, 
-    profileUser 
+    profileUser,
+    condition
   } = req.query;
 
   let offset = 0;
@@ -71,6 +72,13 @@ async function bargainsList(req, res) {
   const order = [[by, sort]];
   const where = {};
   const whereUser = {};
+  const whereCar = {};
+
+  if (condition) {
+    Object.assign(whereCar, {
+      condition
+    });
+  }
 
   if (carId) {
     Object.assign(where, {
@@ -230,6 +238,7 @@ async function bargainsList(req, res) {
         model: models.Car,
         required: true,
         as: 'car',
+        where: whereCar,
         attributes: Object.keys(models.Car.attributes).concat(addAttribute),
         include: [
           {
@@ -341,6 +350,7 @@ async function bargainsList(req, res) {
             model: models.Car,
             required: true,
             as: 'car',
+            where: whereCar,
             include: [
               {
                 model: models.Room,
@@ -434,7 +444,8 @@ async function bargainsListBidder(req, res) {
     expiredAt, 
     paymentMethod, 
     haveSeenCar, 
-    profileUser 
+    profileUser,
+    condition
   } = req.query;
 
   let offset = 0;
@@ -465,6 +476,13 @@ async function bargainsListBidder(req, res) {
   const order = [[by, sort]];
   const where = {};
   const whereUser = {};
+  const whereCar = {};
+
+  if (condition) {
+    Object.assign(whereCar, {
+      condition
+    });
+  }
 
   if (carId) {
     Object.assign(where, {
@@ -607,6 +625,7 @@ async function bargainsListBidder(req, res) {
         model: models.Car,
         required: true,
         as: 'car',
+        where: whereCar,
         attributes: Object.keys(models.Car.attributes).concat(addAttribute),
         include: [
           {
@@ -713,7 +732,8 @@ async function bargainsListBidder(req, res) {
           },
           {
             model: models.Car,
-            as: 'car'
+            as: 'car',
+            where: whereCar
           }
         ],
         where
