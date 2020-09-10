@@ -72,7 +72,6 @@ async function get(req, res) {
           getCountResult.map(itemResult => {
             itemResult.modelYears.map(subItemResult => {
               if(subItemResult.dataValues.numberOfCar) {
-                console.log(subItemResult.dataValues.numberOfCar)
                 count += subItemResult.dataValues.numberOfCar;
               }
             });

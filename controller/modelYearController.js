@@ -866,7 +866,7 @@ async function listingAllNew(req, res, fromCallback = false) {
 
   let required = false;
   const where = {};
-  let whereQuery = ' AND ("Car"."status" = 0 OR "Car"."status" = 1) AND "Car"."deletedAt" IS NULL';
+  let whereQuery = ' AND "Car"."deletedAt" IS NULL';
   if (id) Object.assign(where, {
     id
   });
@@ -1061,6 +1061,20 @@ async function listingAllNew(req, res, fromCallback = false) {
         ) > 0
       `)
     });
+
+    Object.assign(whereCar, {
+      status: 2
+    });
+
+    whereQuery += ' AND "Car"."status" = 2';
+  } else {
+    Object.assign(whereCar, {
+      status: {
+        [Op.in]: [0,1]
+      }
+    });
+    
+    whereQuery += ` AND "Car"."status" IN (0,1)`
   }
 
   const includeCar = [
