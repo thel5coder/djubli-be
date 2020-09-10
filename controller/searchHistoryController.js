@@ -11,7 +11,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 async function get(req, res) {
-  let { page, limit, by, sort } = req.query;
+  let { page, limit, by, sort, isMarket } = req.query;
   let offset = 0;
 
   if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
@@ -61,6 +61,10 @@ async function get(req, res) {
 
           if(typeof newParams['radius[0]'] !== 'undefined' && typeof newParams['radius[1]'] !== 'undefined') {
             newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
+          }
+
+          if(isMarket && JSON.parse(isMarket) == true) {
+            newParams.isMarket = JSON.parse(isMarket);
           }
 
           const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
