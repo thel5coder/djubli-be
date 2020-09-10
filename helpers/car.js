@@ -274,13 +274,15 @@ async function customFields(params) {
         break;
 
       case 'numberOfCar':
+        const statusQuery = ` AND "c"."status" IN (0,1)`;
+        const defaultQuery = params.whereQuery.includes('"c"."status"') ? params.whereQuery : statusQuery;
         fields.push([
           models.sequelize.literal(
             `(SELECT COUNT("c"."id") 
               FROM "Cars" as "c" 
               WHERE "c"."modelYearId" = "ModelYear"."id" 
                 AND "c"."deletedAt" IS NULL
-                AND "c"."status" IN (0,1) ${params.whereQuery}
+                ${defaultQuery}
             )`
           ),
           'numberOfCar'

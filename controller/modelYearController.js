@@ -643,7 +643,8 @@ async function listingAllNew(req, res, fromCallback = false) {
     cityId,
     subdistrictId,
     exteriorColorId,
-    interiorColorId
+    interiorColorId,
+    isMarket
   } = req.query;
 
   let {
@@ -1047,6 +1048,21 @@ async function listingAllNew(req, res, fromCallback = false) {
     });
   }
 
+  if(isMarket && JSON.parse(isMarket) == true) {
+    Object.assign(whereModelYear, {
+      [Op.and]: models.sequelize.literal(`
+        (SELECT COUNT("Purchase"."id") 
+          FROM "Purchases" as "Purchase" 
+          LEFT JOIN "Cars" as "Car" 
+            ON "Purchase"."carId" = "Car"."id" 
+          WHERE "Car"."status" = 2 
+            AND "Car"."modelYearId" = "modelYears"."id" 
+            AND "Car"."deletedAt" IS NULL
+        ) > 0
+      `)
+    });
+  }
+
   const includeCar = [
     {
       model: models.User,
@@ -1349,7 +1365,7 @@ async function listingAllNew(req, res, fromCallback = false) {
                   FROM "Purchases" as "Purchase" 
                   LEFT JOIN "Cars" as "Car" 
                     ON "Purchase"."carId" = "Car"."id" 
-                  WHERE "Car"."status"=2 
+                  WHERE "Car"."status" = 2 
                     AND "Car"."modelYearId" = "modelYears"."id" 
                     AND "Car"."deletedAt" IS NULL
                 )`
