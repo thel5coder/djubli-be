@@ -813,6 +813,9 @@ async function getSellNego(req, res) {
   };
 
   let customWhere = '';
+  const whereBargainCheckNegotiationType = {};
+  const whereBargainCheckPurchase = {};
+  let having;
   if (negotiationType == '0') {
     Object.assign(whereBargain, {
       negotiationType
@@ -820,17 +823,25 @@ async function getSellNego(req, res) {
 
     // so that it doesn't appear on the "jual->nego->ajak nego" page
     // when the data is already on the "jual->nego->sedang nego" page
-    Object.assign(where, {
-      [Op.and]: [
-        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."negotiationType" > 0
-            AND "Bargains"."deletedAt" IS NULL
-          ) = 0`
-        )
-      ]
+    Object.assign(whereBargainCheckNegotiationType, {
+      negotiationType: {
+        [Op.gt]: 0
+      }
     });
+
+    having = models.sequelize.literal('COUNT("bargainCheckNegotiationType"."id") = 0');
+
+    // Object.assign(where, {
+    //   [Op.and]: [
+        // models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+        //   FROM "Bargains" 
+        //   WHERE "Bargains"."carId" = "Car"."id" 
+        //     AND "Bargains"."negotiationType" > 0
+        //     AND "Bargains"."deletedAt" IS NULL
+        //   ) = 0`
+        // )
+    //   ]
+    // });
 
     customWhere = 'AND "bc"."bidType" = 1 AND "bc"."negotiationType" = 0';
   } else if (negotiationType == '1') {
@@ -841,32 +852,56 @@ async function getSellNego(req, res) {
     });
 
     // so that it doesn't appear on the "jual->nego->sedang nego" page
-    // when the data have 3/4/7/8 negotiationType
-    Object.assign(where, {
-      [Op.and]: [
-        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "Car"."id" 
-            AND ("Bargains"."negotiationType" IN (7,8) 
-              OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
-            )
-            AND "Bargains"."deletedAt" IS NULL
-          ) = 0`
-        ),
-        models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."negotiationType" = 4
-            AND (SELECT COUNT("Purchases"."id") 
-              FROM "Purchases"
-              WHERE "Purchases"."bargainId" = "Bargains"."id"
-                AND "Purchases"."isAccept" = true
-                AND "Purchases"."deletedAt" IS NULL) > 0
-            AND "Bargains"."deletedAt" IS NULL
-          ) = 0`
-        )
-      ]
+    // // when the data have 3/4/7/8 negotiationType
+    Object.assign(whereBargainCheckNegotiationType, {
+      [Op.and]: {
+        [Op.or]: {
+          negotiationType: {
+            [Op.in]: [7,8]
+          },
+          [Op.and]: [
+            {
+              negotiationType: 3,
+              userId: id
+            }
+          ]
+        }
+      }
     });
+
+    Object.assign(whereBargainCheckPurchase, {
+      [Op.and]: {
+        negotiationType: 4
+      }
+    });
+
+    having = models.sequelize.literal('COUNT("bargainCheckNegotiationType"."id") = 0 AND COUNT("bargainCheckPurchase"."id") = 0');
+
+    // Object.assign(where, {
+    //   [Op.and]: [
+    //     models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+    //       FROM "Bargains" 
+    //       WHERE "Bargains"."carId" = "Car"."id" 
+    //         AND ("Bargains"."negotiationType" IN (7,8) 
+    //           OR ("Bargains"."negotiationType" = 3 AND "Bargains"."userId" = ${id})
+    //         )
+    //         AND "Bargains"."deletedAt" IS NULL
+    //       ) = 0`
+    //     ),
+    //     models.sequelize.literal(`(SELECT COUNT("Bargains"."id") 
+    //       FROM "Bargains" 
+    //       WHERE "Bargains"."carId" = "Car"."id" 
+    //         AND "Bargains"."negotiationType" = 4
+    //         AND (SELECT COUNT("Purchases"."id") 
+    //           FROM "Purchases"
+    //           WHERE "Purchases"."bargainId" = "Bargains"."id"
+    //             AND "Purchases"."isAccept" = true
+    //             AND "Purchases"."deletedAt" IS NULL) > 0
+    //         AND "Bargains"."deletedAt" IS NULL
+    //       ) = 0`
+    //     )
+    //   ]
+    // });
 
     customWhere = 'AND "bc"."bidType" = 1 AND "bc"."negotiationType" NOT IN (0,4,7,8)';
   }
@@ -979,7 +1014,9 @@ async function getSellNego(req, res) {
         [
           models.sequelize.literal(whereQueryBargain(id, customWhere)), 
           'isRead'
-        ]
+        ],
+        [Sequelize.fn("COUNT", models.sequelize.col("bargainCheckNegotiationType.id")), "bargainCheckNegotiationTypeCount"],
+        [Sequelize.fn("COUNT", models.sequelize.col("bargainCheckPurchase.id")), "bargainCheckPurchaseCount"]
       ]
     },
     include: [
@@ -1065,6 +1102,30 @@ async function getSellNego(req, res) {
       },
       {
         model: models.Bargain,
+        as: 'bargainCheckNegotiationType',
+        where: whereBargainCheckNegotiationType,
+        required: false,
+        attributes: []
+      },
+      {
+        model: models.Bargain,
+        as: 'bargainCheckPurchase',
+        where: whereBargainCheckPurchase,
+        required: false,
+        attributes: [],
+        includes: [
+          {
+            model: models.Purchase,
+            as: 'purchase',
+            required: true,
+            where: {
+              isAccept: true
+            }
+          }
+        ]
+      },
+      {
+        model: models.Bargain,
         as: 'bargain',
         where: whereBargain,
         attributes: {
@@ -1130,10 +1191,36 @@ async function getSellNego(req, res) {
         ]
       }
     ],
+    subQuery: false,
+    group: [
+      'Car.id', 
+      'bargainCheckNegotiationType.id',
+      'modelYear.id',
+      'brand.id',
+      'model.id',
+      'groupModel.id',
+      'interiorColor.id',
+      'exteriorColor.id',
+      'meetingSchedule.id',
+      'interiorGalery.id',
+      'interiorGalery->file.id',
+      'exteriorGalery.id',
+      'exteriorGalery->file.id',
+      'user.id',
+      'user->file.id',
+      'bargain.id',
+      'bargain->user.id',
+      'bargain->user->file.id',
+      'room.id',
+      'room->members.id',
+      'room->members->member.id',
+      'room->members->member->file.id',
+    ],
     where,
     order,
     offset,
-    limit
+    limit,
+    having
   })
     .then(async data => {
       const count = await models.Car.count({
@@ -1143,6 +1230,30 @@ async function getSellNego(req, res) {
             model: models.ModelYear,
             as: 'modelYear',
             where: whereYear
+          },
+          {
+            model: models.Bargain,
+            as: 'bargainCheckNegotiationType',
+            where: whereBargainCheckNegotiationType,
+            required: false,
+            attributes: []
+          },
+          {
+            model: models.Bargain,
+            as: 'bargainCheckPurchase',
+            where: whereBargainCheckPurchase,
+            required: true,
+            attributes: [],
+            includes: [
+              {
+                model: models.Purchase,
+                as: 'purchase',
+                required: true,
+                where: {
+                  isAccept: true
+                }
+              }
+            ]
           },
           {
             model: models.Bargain,
