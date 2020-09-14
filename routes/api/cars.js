@@ -89,6 +89,10 @@ router.get('/categories', async (req, res) => {
   return await carsController.getCategory(req, res);
 });
 
+router.get('/checkBid/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  return await carsController.checkBid(req, res);
+});
+
 // Update Status
 router.put('/status/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;

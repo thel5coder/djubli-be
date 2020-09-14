@@ -386,7 +386,6 @@ async function carsGet(req, res, auth = false) {
   }
 
   const addAttribute = await carHelper.customFields(addAttributes);
-
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
@@ -3805,6 +3804,25 @@ async function viewLikeLogon(req, res) {
     });
 }
 
+async function checkBid(req, res) {
+  const userId = req.user.id;
+  const { id } = req.params;
+  const checkBid = await models.sequelize.query(`SELECT CASE WHEN (SELECT COUNT("Bargains"."id")
+    FROM "Bargains"
+    WHERE "Bargains"."userId" = ${userId}
+      AND "Bargains"."carId" = ${id}
+      AND "Bargains"."deletedAt" IS NULL 
+      AND "Bargains"."expiredAt" >= (SELECT NOW()) 
+      AND "Bargains"."bidType" = 0) > 0 THEN true
+    ELSE false
+    END AS isBid;`, { type:  models.sequelize.QueryTypes.SELECT });
+
+  res.json({
+    success: true,
+    data: checkBid[0].isbid
+  });
+}
+
 module.exports = {
   carsGet,
   getById,
@@ -3817,5 +3835,6 @@ module.exports = {
   like,
   view,
   viewLike,
-  viewLikeLogon
+  viewLikeLogon,
+  checkBid
 };
