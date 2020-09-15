@@ -639,8 +639,8 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     interiorColorId,
     cityId,
     subdistrictId,
-    latitude = 0,
-    longitude = 0,
+    latitude,
+    longitude,
     minRadius,
     maxRadius,
     condition,
@@ -691,7 +691,15 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     Object.assign(replacements, { subdistrictId });
   }
   // eslint-disable-next-line no-restricted-globals
-  if (!isNaN(latitude) && !isNaN(longitude) && !cityId && !subdistrictId) {
+  if (
+    !isNaN(latitude) &&
+    !isNaN(longitude) &&
+    !isNaN(minRadius) &&
+    !isNaN(maxRadius) &&
+    !cityId &&
+    !subdistrictId
+  ) {
+    console.log('RADIUS');
     carDistance = `, car_distance AS (
     select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
         CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
@@ -702,7 +710,7 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
       ) ) ) ) * 0.8 * 1.60934 AS distance
     from "Cars" where "deletedAt" IS NULL ${carConditionString})`;
     distanceJoin = ` LEFT JOIN car_distance cd ON cd.id = c.id `;
-    conditionString = ` AND cd.distance >= :minRadius AND cd.distance <= :maxRadius`;
+    conditionString += ` AND cd.distance >= :minRadius AND cd.distance <= :maxRadius`;
     Object.assign(replacements, { minRadius, maxRadius });
   }
   if (condition) {
@@ -734,8 +742,9 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     Object.assign(replacements, { maxKm });
   }
 
-  const data = await models.sequelize.query(
-    `with purchase as (
+  const data = await models.sequelize
+    .query(
+      `with purchase as (
       SELECT c."modelYearId", MAX(p1."id") AS id
       FROM "Purchases" p1
       LEFT JOIN "Cars" c ON c."id" = p1."carId" AND c."deletedAt" IS NULL
@@ -743,9 +752,9 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
       GROUP BY c."modelYearId"
     ) ${carDistance}
     
-    select my.*, m."name", m."groupModelId", gm."name",
-    gm."brandId", b."name", pur."price", count(c."id") as listing,
-    count(b2."id" ) as count_bid, max(b2."bidAmount" ) as highest_bid
+    select my.*, m."name" AS "modelName", m."groupModelId", gm."name" AS "groupModelName",
+    gm."brandId", b."name" AS "brandName", pur."price", count(c."id") as "listing",
+    count(b2."id" ) as "countBid", max(b2."bidAmount" ) as "highestBid"
     from "ModelYears" my
     left join "Models" m on m."id" = my."modelId"
     left join "GroupModels" gm on gm."id" = m."groupModelId"
@@ -759,11 +768,17 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", pur.price
     order by m."name", my."year";
     `,
-    {
-      replacements,
-      type: QueryTypes.SELECT
-    }
-  );
+      {
+        replacements,
+        type: QueryTypes.SELECT
+      }
+    )
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 
   res.json({
     success: true,
