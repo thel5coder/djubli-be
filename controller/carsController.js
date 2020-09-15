@@ -3817,9 +3817,29 @@ async function checkBid(req, res) {
     ELSE false
     END AS isBid;`, { type:  models.sequelize.QueryTypes.SELECT });
 
+  const bid = await models.Bargain.findAll({
+    include: [
+      {
+        model: models.Car,
+        as: 'car'
+      }
+    ],
+    where: {
+      userId,
+      carId: id,
+      bidType: 0
+    }
+  })
+    .then(async data => {
+      return data;
+    });
+
   res.json({
     success: true,
-    data: checkBid[0].isbid
+    data: {
+      isBid: checkBid[0].isbid,
+      bid
+    }
   });
 }
 
