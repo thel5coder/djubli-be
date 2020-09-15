@@ -2,6 +2,7 @@
 const express = require('express');
 const validator = require('validator');
 const Sequelize = require('sequelize');
+const { QueryTypes } = require('sequelize');
 const passport = require('passport');
 const models = require('../db/models');
 const paginator = require('../helpers/paginator');
@@ -9,9 +10,7 @@ const carHelper = require('../helpers/car');
 const general = require('../helpers/general');
 const distanceHelper = require('../helpers/distance');
 
-const {
-  Op
-} = Sequelize;
+const { Op } = Sequelize;
 
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
@@ -153,7 +152,12 @@ async function listingAll(req, res) {
     const rawDistancesFunc = (tableName = 'Car') => {
       const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
       const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-      const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
+      const calDistance = distanceHelper.calculate(
+        latitude,
+        longitude,
+        queryLatitude,
+        queryLongitude
+      );
       rawDistances = calDistance;
       return calDistance;
     };
@@ -198,7 +202,12 @@ async function listingAll(req, res) {
           const rawDistancesFunc = (tableName = 'Car') => {
             const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
             const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-            const calDistance = distanceHelper.calculate(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
+            const calDistance = distanceHelper.calculate(
+              subdistrict.latitude,
+              subdistrict.longitude,
+              queryLatitude,
+              queryLongitude
+            );
             rawDistances = calDistance;
             return calDistance;
           };
@@ -210,23 +219,26 @@ async function listingAll(req, res) {
 
           distances = models.sequelize.literal(rawDistancesFunc('Car'));
         }
-      } else {
-        if (city) {
-          const rawDistancesFunc = (tableName = 'Car') => {
-            const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
-            const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-            const calDistance = distanceHelper.calculate(city.latitude, city.longitude, queryLatitude, queryLongitude);
-            rawDistances = calDistance;
-            return calDistance;
-          };
+      } else if (city) {
+        const rawDistancesFunc = (tableName = 'Car') => {
+          const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+          const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+          const calDistance = distanceHelper.calculate(
+            city.latitude,
+            city.longitude,
+            queryLatitude,
+            queryLongitude
+          );
+          rawDistances = calDistance;
+          return calDistance;
+        };
 
-          Object.assign(carCustomFields, {
-            latitude: city.latitude,
-            longitude: city.longitude
-          });
+        Object.assign(carCustomFields, {
+          latitude: city.latitude,
+          longitude: city.longitude
+        });
 
-          distances = models.sequelize.literal(rawDistancesFunc('Car'));
-        }
+        distances = models.sequelize.literal(rawDistancesFunc('Car'));
       }
 
       carFields.push('distance');
@@ -299,19 +311,17 @@ async function listingAll(req, res) {
             longitude: subdistrict.longitude
           });
         }
-      } else {
-        if (city) {
-          Object.assign(whereInclude, {
-            cityId
-          });
+      } else if (city) {
+        Object.assign(whereInclude, {
+          cityId
+        });
 
-          whereQuery += ` AND "Car"."cityId" = ${cityId}`;
+        whereQuery += ` AND "Car"."cityId" = ${cityId}`;
 
-          Object.assign(carCustomFields, {
-            latitude: city.latitude,
-            longitude: city.longitude
-          });
-        }
+        Object.assign(carCustomFields, {
+          latitude: city.latitude,
+          longitude: city.longitude
+        });
       }
       carFields.push('distance');
       upperCase = true;
@@ -407,7 +417,7 @@ async function listingAll(req, res) {
     whereQuery += ` AND ("Car"."id" = ${highestBidder})`;
   }
 
-  if (by === 'location' || by === 'area' && radius) {
+  if (by === 'location' || (by === 'area' && radius)) {
     Object.assign(whereInclude, {
       [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
     });
@@ -416,9 +426,8 @@ async function listingAll(req, res) {
   }
 
   if (typeId) {
-    const groupModelExist = tableName => {
-      return `EXISTS(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "${tableName}"."groupModelId" AND "GroupModels"."typeId" = ${typeId} AND "GroupModels"."deletedAt" IS NULL)`;
-    };
+    const groupModelExist = tableName =>
+      `EXISTS(SELECT "GroupModels"."typeId" FROM "GroupModels" WHERE "GroupModels"."id" = "${tableName}"."groupModelId" AND "GroupModels"."typeId" = ${typeId} AND "GroupModels"."deletedAt" IS NULL)`;
 
     Object.assign(whereInclude, {
       [Op.and]: models.sequelize.literal(groupModelExist('car'))
@@ -441,7 +450,7 @@ async function listingAll(req, res) {
     [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 0 })]
   });
 
-  if(isMarket && JSON.parse(isMarket) == true) {
+  if (isMarket && JSON.parse(isMarket) == true) {
     Object.assign(whereInclude, {
       status: 2
     });
@@ -450,7 +459,7 @@ async function listingAll(req, res) {
   } else {
     Object.assign(whereInclude, {
       status: {
-        [Op.in]: [0,1]
+        [Op.in]: [0, 1]
       }
     });
 
@@ -477,7 +486,7 @@ async function listingAll(req, res) {
     });
   }
 
-  if(isMarket && JSON.parse(isMarket) == true) {
+  if (isMarket && JSON.parse(isMarket) == true) {
     Object.assign(where, {
       [Op.and]: models.sequelize.where(addAttribute[0][0], { [Op.gt]: 0 })
     });
@@ -611,7 +620,7 @@ async function listingAll(req, res) {
       });
     })
     .catch(err => {
-      console.log(err)
+      console.log(err);
       res.status(422).json({
         success: false,
         errors: err.message
@@ -619,13 +628,152 @@ async function listingAll(req, res) {
     });
 }
 
-async function listingAllNew(req, res, fromCallback = false) {
-  let {
-    page,
-    limit,
-    by,
-    sort
+async function listingAllNewRefactor(req, res, fromCallback = false) {
+  const { page, limit } = req.query;
+
+  const {
+    brandId,
+    groupModelId,
+    modelId,
+    exteriorColorId,
+    interiorColorId,
+    cityId,
+    subdistrictId,
+    latitude = 0,
+    longitude = 0,
+    minRadius,
+    maxRadius,
+    condition,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    minKm,
+    maxKm
   } = req.query;
+
+  const replacements = { bidType: 0 };
+  let conditionString = ``;
+  let carDistance = ``;
+  let carConditionString = ``;
+  let distanceJoin = ``;
+  if (brandId) {
+    conditionString += ` AND b."id" = :brandId`;
+    Object.assign(replacements, { brandId });
+    carConditionString += ` AND "brandId" = ${brandId}`;
+  }
+  if (groupModelId) {
+    conditionString += ` AND gm."id" = :groupModelId`;
+    Object.assign(replacements, { groupModelId });
+    carConditionString += ` AND "groupModelId" = ${groupModelId}`;
+  }
+  if (modelId) {
+    conditionString += ` AND m."id" = :modelId`;
+    Object.assign(replacements, { modelId });
+    carConditionString += ` AND "modelId" = ${modelId}`;
+  }
+  if (exteriorColorId) {
+    conditionString += ` AND c."exteriorColorId" = :exteriorColorId`;
+    Object.assign(replacements, { exteriorColorId });
+    carConditionString += ` AND "exteriorColorId" = ${exteriorColorId}`;
+  }
+  if (interiorColorId) {
+    conditionString += ` AND c."interiorColorId" = :interiorColorId`;
+    Object.assign(replacements, { interiorColorId });
+    carConditionString += ` AND "interiorColorId" = ${interiorColorId}`;
+  }
+  if (cityId) {
+    conditionString += ` AND c."cityId" = :cityId`;
+    Object.assign(replacements, { cityId });
+  }
+  if (subdistrictId) {
+    conditionString += ` AND c."subdistrictId" = :subdistrictId`;
+    Object.assign(replacements, { subdistrictId });
+  }
+  // eslint-disable-next-line no-restricted-globals
+  if (!isNaN(latitude) && !isNaN(longitude) && !cityId && !subdistrictId) {
+    carDistance = `, car_distance AS (
+    select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
+        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
+      ) ) * cos( radians(
+        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 2) AS DOUBLE PRECISION) END
+      ) - radians(${longitude}) ) + sin( radians(${latitude}) ) * sin( radians(
+        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
+      ) ) ) ) * 0.8 * 1.60934 AS distance
+    from "Cars" where "deletedAt" IS NULL ${carConditionString})`;
+    distanceJoin = ` LEFT JOIN car_distance cd ON cd.id = c.id `;
+    conditionString = ` AND cd.distance >= :minRadius AND cd.distance <= :maxRadius`;
+    Object.assign(replacements, { minRadius, maxRadius });
+  }
+  if (condition) {
+    conditionString += ` AND c."condition" = :condition`;
+    Object.assign(replacements, { condition });
+  }
+  if (minPrice) {
+    conditionString += ` AND c."price" >= :minPrice`;
+    Object.assign(replacements, { minPrice });
+  }
+  if (maxPrice) {
+    conditionString += ` AND c."price" <= :maxPrice`;
+    Object.assign(replacements, { maxPrice });
+  }
+  if (minYear) {
+    conditionString += ` AND my."year" >= :minYear`;
+    Object.assign(replacements, { minYear });
+  }
+  if (maxYear) {
+    conditionString += ` AND my."year" <= :maxYear`;
+    Object.assign(replacements, { maxYear });
+  }
+  if (minKm) {
+    conditionString += ` AND c."km" >= :minKm`;
+    Object.assign(replacements, { minKm });
+  }
+  if (maxKm) {
+    conditionString += ` AND c."km" <= :maxKm`;
+    Object.assign(replacements, { maxKm });
+  }
+
+  const data = await models.sequelize.query(
+    `with purchase as (
+      SELECT c."modelYearId", MAX(p1."id") AS id
+      FROM "Purchases" p1
+      LEFT JOIN "Cars" c ON c."id" = p1."carId" AND c."deletedAt" IS NULL
+      WHERE p1."deletedAt" IS NULL
+      GROUP BY c."modelYearId"
+    ) ${carDistance}
+    
+    select my.*, m."name", m."groupModelId", gm."name",
+    gm."brandId", b."name", pur."price", count(c."id") as listing,
+    count(b2."id" ) as count_bid, max(b2."bidAmount" ) as highest_bid
+    from "ModelYears" my
+    left join "Models" m on m."id" = my."modelId"
+    left join "GroupModels" gm on gm."id" = m."groupModelId"
+    left join "Brands" b on b."id" = gm."brandId"
+    left join "Cars" c on c."modelYearId" = my."id" AND c."deletedAt" IS NULL
+    left join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
+    LEFT JOIN purchase p ON p."modelYearId" = my."id"
+    LEFT JOIN "Purchases" pur ON pur.id = p.id AND pur."deletedAt" IS NULL
+    ${distanceJoin}
+    WHERE my."deletedAt" IS NULL ${conditionString}
+    group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", pur.price
+    order by m."name", my."year";
+    `,
+    {
+      replacements,
+      type: QueryTypes.SELECT
+    }
+  );
+
+  res.json({
+    success: true,
+    meta: req.query,
+    data
+  });
+}
+
+async function listingAllNew(req, res, fromCallback = false) {
+  let { page, limit, by, sort } = req.query;
 
   const {
     id,
@@ -647,11 +795,7 @@ async function listingAllNew(req, res, fromCallback = false) {
     isMarket
   } = req.query;
 
-  let {
-    radius,
-    latitude,
-    longitude
-  } = req.query;
+  let { radius, latitude, longitude } = req.query;
 
   let offset = 0;
   let distances = {};
@@ -666,7 +810,7 @@ async function listingAllNew(req, res, fromCallback = false) {
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
-  let tableCarName = 'modelYears->cars'
+  let tableCarName = 'modelYears->cars';
 
   const array = [
     'id',
@@ -687,7 +831,7 @@ async function listingAllNew(req, res, fromCallback = false) {
 
   let separate = false;
   const order = [];
-  let orderCar = [];
+  const orderCar = [];
   const orderModelYear = [];
 
   switch (by) {
@@ -703,18 +847,23 @@ async function listingAllNew(req, res, fromCallback = false) {
       orderCar.push([Sequelize.literal(`"modelYears.cars.condition" ${sort}`)]);
       break;
     case 'brand':
-      order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}, "groupModel.name" ${sort}, "name" ${sort}`)]);
+      order.push([
+        Sequelize.literal(
+          `"groupModel.brand.name" ${sort}, "groupModel.name" ${sort}, "name" ${sort}`
+        )
+      ]);
       order.push([
         {
           model: models.ModelYear,
           as: 'modelYears'
-        }, 
-        'year', 
+        },
+        'year',
         'DESC'
       ]);
       break;
     case 'km':
-      order.push([{
+      order.push([
+        {
           model: models.ModelYear,
           as: 'modelYears'
         },
@@ -727,18 +876,23 @@ async function listingAllNew(req, res, fromCallback = false) {
       ]);
       break;
     case 'profile':
-      order.push([{
-        model: models.User,
-        as: 'user'
-      }, 'type', sort]);
+      order.push([
+        {
+          model: models.User,
+          as: 'user'
+        },
+        'type',
+        sort
+      ]);
       break;
     case 'distance':
       if (cityId) {
         const city = await models.City.findByPk(cityId);
-        if (!city) return res.status(400).json({
-          success: false,
-          errors: 'City not found!'
-        });
+        if (!city)
+          return res.status(400).json({
+            success: false,
+            errors: 'City not found!'
+          });
 
         if (subdistrictId) {
           const subdistrict = await models.SubDistrict.findOne({
@@ -757,17 +911,15 @@ async function listingAllNew(req, res, fromCallback = false) {
             latitude = subdistrict.latitude;
             longitude = subdistrict.longitude;
           }
-        } else {
-          if (city) {
-            latitude = city.latitude;
-            longitude = city.longitude;
-          }
+        } else if (city) {
+          latitude = city.latitude;
+          longitude = city.longitude;
         }
       }
 
       separate = true;
       orderCar.push([Sequelize.literal(`"distance" ${sort}`)]);
-      tableCarName = 'Car'
+      tableCarName = 'Car';
       break;
     case 'location':
       // Search By Location (Latitude, Longitude & Radius)
@@ -782,15 +934,21 @@ async function listingAllNew(req, res, fromCallback = false) {
             success: false,
             errors: 'Longitude not found!'
           });
-        if (!radius) return res.status(400).json({
-          success: false,
-          errors: 'Radius not found!'
-        });
+        if (!radius)
+          return res.status(400).json({
+            success: false,
+            errors: 'Radius not found!'
+          });
 
         const rawDistancesFunc = (tableName = 'Car') => {
           const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
           const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-          const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
+          const calDistance = distanceHelper.calculate(
+            latitude,
+            longitude,
+            queryLatitude,
+            queryLongitude
+          );
           rawDistances = calDistance;
           return calDistance;
         };
@@ -801,12 +959,13 @@ async function listingAllNew(req, res, fromCallback = false) {
       break;
     case 'area':
       // Search by City, Subdistrict/Area & Radius
-      if (cityId && (radius && radius[0] >= 0 && radius[1] > 0)) {
+      if (cityId && radius && radius[0] >= 0 && radius[1] > 0) {
         const city = await models.City.findByPk(cityId);
-        if (!city) return res.status(400).json({
-          success: false,
-          errors: 'City not found!'
-        });
+        if (!city)
+          return res.status(400).json({
+            success: false,
+            errors: 'City not found!'
+          });
 
         if (subdistrictId) {
           const subdistrict = await models.SubDistrict.findOne({
@@ -825,7 +984,12 @@ async function listingAllNew(req, res, fromCallback = false) {
             const rawDistancesFunc = (tableName = 'Car') => {
               const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
               const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-              const calDistance = distanceHelper.calculate(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude);
+              const calDistance = distanceHelper.calculate(
+                subdistrict.latitude,
+                subdistrict.longitude,
+                queryLatitude,
+                queryLongitude
+              );
               rawDistances = calDistance;
               return calDistance;
             };
@@ -836,21 +1000,24 @@ async function listingAllNew(req, res, fromCallback = false) {
             distances = models.sequelize.literal(rawDistancesFunc(tableCarName));
             order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
           }
-        } else {
-          if (city) {
-            const rawDistancesFunc = (tableName = 'Cars') => {
-              const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
-              const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-              const calDistance = distanceHelper.calculate(city.latitude, city.longitude, queryLatitude, queryLongitude);
-              rawDistances = calDistance;
-              return calDistance;
-            };
-            latitude = city.latitude;
-            longitude = city.longitude;
+        } else if (city) {
+          const rawDistancesFunc = (tableName = 'Cars') => {
+            const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
+            const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
+            const calDistance = distanceHelper.calculate(
+              city.latitude,
+              city.longitude,
+              queryLatitude,
+              queryLongitude
+            );
+            rawDistances = calDistance;
+            return calDistance;
+          };
+          latitude = city.latitude;
+          longitude = city.longitude;
 
-            distances = models.sequelize.literal(rawDistancesFunc(tableCarName));
-            order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
-          }
+          distances = models.sequelize.literal(rawDistancesFunc(tableCarName));
+          order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
         }
       } else if (!cityId) {
         return res.status(400).json({
@@ -867,9 +1034,10 @@ async function listingAllNew(req, res, fromCallback = false) {
   let required = false;
   const where = {};
   let whereQuery = ' AND "Car"."deletedAt" IS NULL';
-  if (id) Object.assign(where, {
-    id
-  });
+  if (id)
+    Object.assign(where, {
+      id
+    });
 
   if (radius) {
     if (radius.length < 2)
@@ -882,7 +1050,12 @@ async function listingAllNew(req, res, fromCallback = false) {
       const rawDistancesFunc = (tableName = 'Car') => {
         const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
         const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-        const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
+        const calDistance = distanceHelper.calculate(
+          latitude,
+          longitude,
+          queryLatitude,
+          queryLongitude
+        );
         rawDistances = calDistance;
         return calDistance;
       };
@@ -896,11 +1069,14 @@ async function listingAllNew(req, res, fromCallback = false) {
   if (minYear && maxYear)
     Object.assign(whereModelYear, {
       year: {
-        [Op.and]: [{
-          [Op.gte]: minYear
-        }, {
-          [Op.lte]: maxYear
-        }]
+        [Op.and]: [
+          {
+            [Op.gte]: minYear
+          },
+          {
+            [Op.lte]: maxYear
+          }
+        ]
       }
     });
 
@@ -910,10 +1086,11 @@ async function listingAllNew(req, res, fromCallback = false) {
       // Search by City, Subdistrict/Area without Radius
       if (cityId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
         const city = await models.City.findByPk(cityId);
-        if (!city) return res.status(400).json({
-          success: false,
-          errors: 'City not found!'
-        });
+        if (!city)
+          return res.status(400).json({
+            success: false,
+            errors: 'City not found!'
+          });
 
         if (subdistrictId) {
           const subdistrict = await models.SubDistrict.findOne({
@@ -939,17 +1116,15 @@ async function listingAllNew(req, res, fromCallback = false) {
             latitude = subdistrict.latitude;
             longitude = subdistrict.longitude;
           }
-        } else {
-          if (city) {
-            Object.assign(whereCar, {
-              cityId
-            });
+        } else if (city) {
+          Object.assign(whereCar, {
+            cityId
+          });
 
-            whereQuery += ` AND "Car"."cityId" = ${cityId}`;
+          whereQuery += ` AND "Car"."cityId" = ${cityId}`;
 
-            latitude = city.latitude;
-            longitude = city.longitude;
-          }
+          latitude = city.latitude;
+          longitude = city.longitude;
         }
 
         order.push([Sequelize.literal(`"groupModel.brand.name" ${sort}`)]);
@@ -998,11 +1173,14 @@ async function listingAllNew(req, res, fromCallback = false) {
   if (minKm && maxKm) {
     Object.assign(whereCar, {
       km: {
-        [Op.and]: [{
-          [Op.gte]: minKm
-        }, {
-          [Op.lte]: maxKm
-        }]
+        [Op.and]: [
+          {
+            [Op.gte]: minKm
+          },
+          {
+            [Op.lte]: maxKm
+          }
+        ]
       }
     });
     required = true;
@@ -1013,11 +1191,14 @@ async function listingAllNew(req, res, fromCallback = false) {
   if (minPrice && maxPrice) {
     Object.assign(whereCar, {
       price: {
-        [Op.and]: [{
-          [Op.gte]: minPrice
-        }, {
-          [Op.lte]: maxPrice
-        }]
+        [Op.and]: [
+          {
+            [Op.gte]: minPrice
+          },
+          {
+            [Op.lte]: maxPrice
+          }
+        ]
       }
     });
     required = true;
@@ -1048,7 +1229,7 @@ async function listingAllNew(req, res, fromCallback = false) {
     });
   }
 
-  if(isMarket && JSON.parse(isMarket) == true) {
+  if (isMarket && JSON.parse(isMarket) == true) {
     Object.assign(whereModelYear, {
       [Op.and]: models.sequelize.literal(`
         (SELECT COUNT("Purchase"."id") 
@@ -1070,11 +1251,11 @@ async function listingAllNew(req, res, fromCallback = false) {
   } else {
     Object.assign(whereCar, {
       status: {
-        [Op.in]: [0,1]
+        [Op.in]: [0, 1]
       }
     });
-    
-    whereQuery += ` AND "Car"."status" IN (0,1)`
+
+    whereQuery += ` AND "Car"."status" IN (0,1)`;
   }
 
   const includeCar = [
@@ -1082,17 +1263,17 @@ async function listingAllNew(req, res, fromCallback = false) {
       model: models.User,
       as: 'user',
       attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
-      include: [{
-        model: models.Purchase,
-        as: 'purchase',
-        attributes: {
-          exclude: ['deletedAt']
-        },
-        order: [
-          ['id', 'desc']
-        ],
-        limit: 1
-      }]
+      include: [
+        {
+          model: models.Purchase,
+          as: 'purchase',
+          attributes: {
+            exclude: ['deletedAt']
+          },
+          order: [['id', 'desc']],
+          limit: 1
+        }
+      ]
     },
     {
       model: models.Color,
@@ -1227,10 +1408,14 @@ async function listingAllNew(req, res, fromCallback = false) {
   if (latitude && longitude) {
     if (radius && radius[0] >= 0 && radius[1] > 0) {
       Object.assign(whereCar, {
-        [Op.and]: [models.sequelize.where(distances, { [Op.and]: { 
-          [Op.gte]: radius[0], 
-          [Op.lte]: radius[1] 
-        } })]
+        [Op.and]: [
+          models.sequelize.where(distances, {
+            [Op.and]: {
+              [Op.gte]: radius[0],
+              [Op.lte]: radius[1]
+            }
+          })
+        ]
       });
 
       whereQuery += ` AND ${rawDistances} >= ${Number(radius[0])} AND ${rawDistances} <= ${Number(
@@ -1241,12 +1426,14 @@ async function listingAllNew(req, res, fromCallback = false) {
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableCarName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
     attributeCar.push([
-      models.sequelize.literal(distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude)),
+      models.sequelize.literal(
+        distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude)
+      ),
       'distance'
     ]);
   }
 
-  let queryCountCar = `(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`;
+  const queryCountCar = `(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "modelYears"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`;
   const whereCarNotNull = Sequelize.literal(`(${queryCountCar})`);
   Object.assign(whereModelYear, {
     whereModelYear: Sequelize.where(whereCarNotNull, {
@@ -1260,76 +1447,77 @@ async function listingAllNew(req, res, fromCallback = false) {
   });
 
   return models.Model.findAll({
-      attributes: Object.keys(models.Model.attributes).concat(modelAttribute),
-      include: [
-        {
-          model: models.GroupModel,
-          as: 'groupModel',
-          attributes: {
-            exclude: ['createdAt', 'updatedAt', 'deletedAt']
-          },
-          where: whereGroupModel,
-          include: [{
-              model: models.Brand,
-              as: 'brand',
-              attributes: {
-                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              },
-              where: whereBrand
-            },
-            {
-              model: models.Type,
-              as: 'type',
-              attributes: {
-                exclude: ['createdAt', 'updatedAt', 'deletedAt']
-              }
-            }
-          ]
+    attributes: Object.keys(models.Model.attributes).concat(modelAttribute),
+    include: [
+      {
+        model: models.GroupModel,
+        as: 'groupModel',
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
         },
-        {
-          model: models.ModelYear,
-          as: 'modelYears',
-          attributes: [
-            'id',
-            'modelId',
-            'year',
-            'picture',
-            'price',
-            'createdAt',
-            'updatedAt',
-            [
-              models.Sequelize.literal(
-                `(SELECT COUNT("Car"."id") 
+        where: whereGroupModel,
+        include: [
+          {
+            model: models.Brand,
+            as: 'brand',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            where: whereBrand
+          },
+          {
+            model: models.Type,
+            as: 'type',
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            }
+          }
+        ]
+      },
+      {
+        model: models.ModelYear,
+        as: 'modelYears',
+        attributes: [
+          'id',
+          'modelId',
+          'year',
+          'picture',
+          'price',
+          'createdAt',
+          'updatedAt',
+          [
+            models.Sequelize.literal(
+              `(SELECT COUNT("Car"."id") 
                   FROM "Cars" as "Car" 
                   WHERE "Car"."modelYearId" = "modelYears"."id" 
                     AND "Car"."deletedAt" IS NULL ${whereQuery}
                 )`
-              ),
-              'numberOfCar'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Car"."price") 
+            ),
+            'numberOfCar'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT MAX("Car"."price") 
                   FROM "Cars" as "Car" 
                   WHERE "Car"."modelYearId" = "modelYears"."id" 
                     AND "Car"."deletedAt" IS NULL ${whereQuery}
                 )`
-              ),
-              'maxPrice'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT MIN("Car"."price") 
+            ),
+            'maxPrice'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT MIN("Car"."price") 
                   FROM "Cars" as "Car" 
                   WHERE "Car"."modelYearId" = "modelYears"."id" 
                     AND "Car"."deletedAt" IS NULL ${whereQuery}
                 )`
-              ),
-              'minPrice'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Bargains"."id") 
+            ),
+            'minPrice'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT COUNT("Bargains"."id") 
                   FROM "Bargains" 
                   LEFT JOIN "Cars" as "Car" 
                     ON "Bargains"."carId" = "Car"."id" 
@@ -1342,12 +1530,12 @@ async function listingAllNew(req, res, fromCallback = false) {
                         AND "b"."negotiationType" = 8
                         AND "b"."carId" = "Bargains"."carId") = 0
                 )`
-              ),
-              'numberOfBidder'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT MAX("Bargains"."bidAmount") 
+            ),
+            'numberOfBidder'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT MAX("Bargains"."bidAmount") 
                   FROM "Bargains" 
                   LEFT JOIN "Cars" as "Car" 
                     ON "Bargains"."carId" = "Car"."id" 
@@ -1355,12 +1543,12 @@ async function listingAllNew(req, res, fromCallback = false) {
                     AND "Bargains"."deletedAt" IS NULL 
                     AND "Bargains"."bidType" = 0 ${whereQuery}
                 )`
-              ),
-              'highestBidder'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT "Bargains"."carId" 
+            ),
+            'highestBidder'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT "Bargains"."carId" 
                   FROM "Bargains" 
                   LEFT JOIN "Cars" as "Car" 
                     ON "Bargains"."carId" = "Car"."id" 
@@ -1370,12 +1558,12 @@ async function listingAllNew(req, res, fromCallback = false) {
                   ORDER BY "Bargains"."bidAmount" 
                   DESC LIMIT 1
                 )`
-              ),
-              'highestBidderCarId'
-            ],
-            [
-              models.sequelize.literal(
-                `(SELECT COUNT("Purchase"."id") 
+            ),
+            'highestBidderCarId'
+          ],
+          [
+            models.sequelize.literal(
+              `(SELECT COUNT("Purchase"."id") 
                   FROM "Purchases" as "Purchase" 
                   LEFT JOIN "Cars" as "Car" 
                     ON "Purchase"."carId" = "Car"."id" 
@@ -1383,13 +1571,14 @@ async function listingAllNew(req, res, fromCallback = false) {
                     AND "Car"."modelYearId" = "modelYears"."id" 
                     AND "Car"."deletedAt" IS NULL
                 )`
-              ),
-              'purchase'
-            ]
-          ],
-          where: whereModelYear,
-          order: orderModelYear,
-          include: [{
+            ),
+            'purchase'
+          ]
+        ],
+        where: whereModelYear,
+        order: orderModelYear,
+        include: [
+          {
             required,
             model: models.Car,
             as: 'cars',
@@ -1398,21 +1587,24 @@ async function listingAllNew(req, res, fromCallback = false) {
             include: includeCar,
             where: whereCar,
             order: orderCar
-          }]
-        }
-      ],
-      where,
-      order,
-      offset,
-      limit
-    })
+          }
+        ]
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
     .then(async data => {
       const count = await models.Model.count({
-        include: [{
+        include: [
+          {
             model: models.GroupModel,
             as: 'groupModel',
             where: whereGroupModel,
-            include: [{
+            include: [
+              {
                 model: models.Brand,
                 as: 'brand',
                 where: whereBrand
@@ -1428,15 +1620,17 @@ async function listingAllNew(req, res, fromCallback = false) {
             as: 'modelYears',
             where: whereModelYear,
             order: orderModelYear,
-            include: [{
-              required,
-              model: models.Car,
-              as: 'cars',
-              separate,
-              include: includeCar,
-              where: whereCar,
-              order: orderCar
-            }]
+            include: [
+              {
+                required,
+                model: models.Car,
+                as: 'cars',
+                separate,
+                include: includeCar,
+                where: whereCar,
+                order: orderCar
+              }
+            ]
           }
         ],
         where,
@@ -1466,8 +1660,8 @@ async function listingAllNew(req, res, fromCallback = false) {
         raw: true
       });
 
-      if(fromCallback) {
-        return data
+      if (fromCallback) {
+        return data;
       }
 
       res.status(200).json({
@@ -1726,18 +1920,19 @@ async function listingCar(req, res, auth = false) {
   if (by === 'price' || by === 'id' || by === 'km' || by === 'condition') order = [[by, sort]];
   else if (by === 'like') order = [[models.sequelize.col('like'), sort]];
   else if (by === 'userType')
-    order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];  
+    order = [[{ model: models.User, as: 'user' }, models.sequelize.col('type'), sort]];
   else if (by === 'brand')
-    order = [[
-      { model: models.ModelYear, as: 'modelYear' }, 
-      { model: models.Model, as: 'model' }, 
-      { model: models.GroupModel, as: 'groupModel' }, 
-      { model: models.Brand, as: 'brand' }, 
-      'name', 
-      sort
-    ]];
-  else if (by === 'createdAt')
-    order = [['createdAt', sort]];
+    order = [
+      [
+        { model: models.ModelYear, as: 'modelYear' },
+        { model: models.Model, as: 'model' },
+        { model: models.GroupModel, as: 'groupModel' },
+        { model: models.Brand, as: 'brand' },
+        'name',
+        sort
+      ]
+    ];
+  else if (by === 'createdAt') order = [['createdAt', sort]];
 
   // Search By Location (Latitude, Longitude & Radius)
   if (by === 'location') {
@@ -1753,11 +1948,11 @@ async function listingCar(req, res, auth = false) {
       return res.status(422).json({ success: false, errors: 'invalid city or subdistrictId!' });
   }
 
-  const where = { 
+  const where = {
     status: {
       [Op.in]: [0, 1]
     },
-    modelYearId: id 
+    modelYearId: id
   };
   const whereModelYear = {};
 
@@ -1767,11 +1962,16 @@ async function listingCar(req, res, auth = false) {
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
 
-    if(radius[0] >= 0 && radius[1] > 0) {
+    if (radius[0] >= 0 && radius[1] > 0) {
       const rawDistancesFunc = (tableName = 'Car') => {
         const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
         const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("${tableName}"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-        const calDistance = distanceHelper.calculate(latitude, longitude, queryLatitude, queryLongitude);
+        const calDistance = distanceHelper.calculate(
+          latitude,
+          longitude,
+          queryLatitude,
+          queryLongitude
+        );
         rawDistances = calDistance;
         return calDistance;
       };
@@ -1842,7 +2042,7 @@ async function listingCar(req, res, auth = false) {
     Object.assign(where, { interiorColorId });
   }
 
-  if (cityId && (radius && radius[0] >= 0 && radius[1] > 0)) {
+  if (cityId && radius && radius[0] >= 0 && radius[1] > 0) {
     // if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
@@ -1852,11 +2052,13 @@ async function listingCar(req, res, auth = false) {
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-    distances = models.sequelize.literal(distanceHelper.calculate(city.latitude, city.longitude, queryLatitude, queryLongitude));
+    distances = models.sequelize.literal(
+      distanceHelper.calculate(city.latitude, city.longitude, queryLatitude, queryLongitude)
+    );
 
     latitude = city.latitude;
     longitude = city.longitude;
-  } else if(cityId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
+  } else if (cityId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
     const city = await models.City.findByPk(cityId);
     if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
 
@@ -1868,7 +2070,7 @@ async function listingCar(req, res, auth = false) {
     });
   }
 
-  if (subdistrictId && (radius && radius[0] >= 0 && radius[1] > 0)) {
+  if (subdistrictId && radius && radius[0] >= 0 && radius[1] > 0) {
     // if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
     if (radius.length < 2)
       return res.status(422).json({ success: false, errors: 'incomplete radius' });
@@ -1882,7 +2084,14 @@ async function listingCar(req, res, auth = false) {
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
-    distances = models.sequelize.literal(distanceHelper.calculate(subdistrict.latitude, subdistrict.longitude, queryLatitude, queryLongitude));
+    distances = models.sequelize.literal(
+      distanceHelper.calculate(
+        subdistrict.latitude,
+        subdistrict.longitude,
+        queryLatitude,
+        queryLongitude
+      )
+    );
 
     latitude = subdistrict.latitude;
     longitude = subdistrict.longitude;
@@ -1963,7 +2172,7 @@ async function listingCar(req, res, auth = false) {
     carAttributes.fields.push('distance');
     Object.assign(carAttributes, { latitude, longitude, whereQuery: `` });
 
-    if(radius && radius[0] >= 0 && radius[1] > 0) {
+    if (radius && radius[0] >= 0 && radius[1] > 0) {
       Object.assign(where, {
         where: {
           [Op.and]: [
@@ -1973,23 +2182,25 @@ async function listingCar(req, res, auth = false) {
         }
       });
     }
-    
-    if(by == 'distance') {
+
+    if (by == 'distance') {
       order = [[Sequelize.col(`distance`), sort]];
     } else {
-      order = [[
-        { model: models.ModelYear, as: 'modelYear' }, 
-        { model: models.Model, as: 'model' }, 
-        { model: models.GroupModel, as: 'groupModel' }, 
-        { model: models.Brand, as: 'brand' }, 
-        'name', 
-        sort
-      ]];
-    }    
+      order = [
+        [
+          { model: models.ModelYear, as: 'modelYear' },
+          { model: models.Model, as: 'model' },
+          { model: models.GroupModel, as: 'groupModel' },
+          { model: models.Brand, as: 'brand' },
+          'name',
+          sort
+        ]
+      ];
+    }
   }
 
   const carAttribute = await carHelper.customFields(carAttributes);
-  if(isSimilarId) {
+  if (isSimilarId) {
     Object.assign(where, {
       id: {
         [Op.ne]: isSimilarId
@@ -2129,6 +2340,7 @@ async function listingCar(req, res, auth = false) {
 module.exports = {
   listingAll,
   listingAllNew,
+  listingAllNewRefactor,
   luxuryCar,
   listingCar
 };

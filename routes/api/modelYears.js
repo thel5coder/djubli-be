@@ -39,7 +39,11 @@ router.get('/', async (req, res) => {
     });
   }
 
-  const addAttribute = await carHelper.customFields({ fields: ['numberOfPurchase'], upperCase: true, whereQuery: '' });
+  const addAttribute = await carHelper.customFields({
+    fields: ['numberOfPurchase'],
+    upperCase: true,
+    whereQuery: ''
+  });
   return models.ModelYear.findAll({
     attributes: {
       include: addAttribute,
@@ -90,13 +94,14 @@ router.get('/id/:id', async (req, res) => {
     );
 });
 
-router.get('/listingAll', async (req, res) => {
-  return await modelYearController.listingAll(req, res);
-});
+router.get('/listingAll', async (req, res) => await modelYearController.listingAll(req, res));
 
-router.get('/listingAllNew', async (req, res) => {
-  return await modelYearController.listingAllNew(req, res);
-});
+router.get('/listingAllNew', async (req, res) => await modelYearController.listingAllNew(req, res));
+
+router.get(
+  '/listingAllNewRefactor',
+  async (req, res) => await modelYearController.listingAllNewRefactor(req, res)
+);
 
 router.get('/listingType', async (req, res) => {
   const {
@@ -179,14 +184,12 @@ router.get('/listingType', async (req, res) => {
 
   const whereModelGroup = {};
   if (typeId) {
-    const groupModelExist = tableName => {
-      return `EXISTS(SELECT "GroupModels"."typeId" 
+    const groupModelExist = tableName => `EXISTS(SELECT "GroupModels"."typeId" 
         FROM "GroupModels" 
         WHERE "GroupModels"."id" = "${tableName}"."groupModelId" 
           AND "GroupModels"."typeId" = ${typeId} 
           AND "GroupModels"."deletedAt" IS NULL
       )`;
-    };
 
     Object.assign(whereInclude, {
       [Op.and]: models.sequelize.literal(groupModelExist('car'))
@@ -367,16 +370,14 @@ router.get('/listingType', async (req, res) => {
     });
 });
 
-router.get('/listingCar/:id', async (req, res) => {
-  return await modelYearController.listingCar(req, res);
-});
+router.get('/listingCar/:id', async (req, res) => await modelYearController.listingCar(req, res));
 
-router.get('/listingCarLogon/:id', passport.authenticate('user', { session: false }), async (req, res) => {
-  return await modelYearController.listingCar(req, res, true);
-});
+router.get(
+  '/listingCarLogon/:id',
+  passport.authenticate('user', { session: false }),
+  async (req, res) => await modelYearController.listingCar(req, res, true)
+);
 
-router.get('/luxuryCar', async (req, res) => {
-  return await modelYearController.luxuryCar(req, res);
-});
+router.get('/luxuryCar', async (req, res) => await modelYearController.luxuryCar(req, res));
 
 module.exports = router;
