@@ -103,6 +103,11 @@ router.get(
   async (req, res) => await modelYearController.listingAllNewRefactor(req, res)
 );
 
+router.get(
+  '/countAllNewRefactor',
+  async (req, res) => await modelYearController.countAllNewRefactor(req, res)
+);
+
 router.get('/listingType', async (req, res) => {
   const {
     by,

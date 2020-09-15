@@ -1,3 +1,4 @@
+/* eslint-disable no-restricted-globals */
 /* eslint-disable linebreak-style */
 const express = require('express');
 const validator = require('validator');
@@ -690,7 +691,6 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     conditionString += ` AND c."subdistrictId" = :subdistrictId`;
     Object.assign(replacements, { subdistrictId });
   }
-  // eslint-disable-next-line no-restricted-globals
   if (
     !isNaN(latitude) &&
     !isNaN(longitude) &&
@@ -768,6 +768,145 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", pur.price
     order by m."name", my."year";
     `,
+      {
+        replacements,
+        type: QueryTypes.SELECT
+      }
+    )
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+
+  res.json({
+    success: true,
+    meta: req.query,
+    data
+  });
+}
+
+async function countAllNewRefactor(req, res, fromCallback = false) {
+  const { page, limit } = req.query;
+
+  const {
+    brandId,
+    groupModelId,
+    modelId,
+    exteriorColorId,
+    interiorColorId,
+    cityId,
+    subdistrictId,
+    latitude,
+    longitude,
+    minRadius,
+    maxRadius,
+    condition,
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    minKm,
+    maxKm
+  } = req.query;
+
+  const replacements = { bidType: 0 };
+  let conditionString = ``;
+  let carDistance = ``;
+  let carConditionString = ``;
+  let distanceJoin = ``;
+  if (brandId) {
+    conditionString += ` AND c."brandId" = :brandId`;
+    Object.assign(replacements, { brandId });
+    carConditionString += ` AND "brandId" = ${brandId}`;
+  }
+  if (groupModelId) {
+    conditionString += ` AND c."groupModelId" = :groupModelId`;
+    Object.assign(replacements, { groupModelId });
+    carConditionString += ` AND "groupModelId" = ${groupModelId}`;
+  }
+  if (modelId) {
+    conditionString += ` AND c."modelId" = :modelId`;
+    Object.assign(replacements, { modelId });
+    carConditionString += ` AND "modelId" = ${modelId}`;
+  }
+  if (exteriorColorId) {
+    conditionString += ` AND c."exteriorColorId" = :exteriorColorId`;
+    Object.assign(replacements, { exteriorColorId });
+    carConditionString += ` AND "exteriorColorId" = ${exteriorColorId}`;
+  }
+  if (interiorColorId) {
+    conditionString += ` AND c."interiorColorId" = :interiorColorId`;
+    Object.assign(replacements, { interiorColorId });
+    carConditionString += ` AND "interiorColorId" = ${interiorColorId}`;
+  }
+  if (cityId) {
+    conditionString += ` AND c."cityId" = :cityId`;
+    Object.assign(replacements, { cityId });
+  }
+  if (subdistrictId) {
+    conditionString += ` AND c."subdistrictId" = :subdistrictId`;
+    Object.assign(replacements, { subdistrictId });
+  }
+  if (
+    !isNaN(latitude) &&
+    !isNaN(longitude) &&
+    !isNaN(minRadius) &&
+    !isNaN(maxRadius) &&
+    !cityId &&
+    !subdistrictId
+  ) {
+    carDistance = `WITH car_distance AS (
+    select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
+        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
+      ) ) * cos( radians(
+        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 2) AS DOUBLE PRECISION) END
+      ) - radians(${longitude}) ) + sin( radians(${latitude}) ) * sin( radians(
+        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
+      ) ) ) ) * 0.8 * 1.60934 AS distance
+    from "Cars" where "deletedAt" IS NULL ${carConditionString})`;
+    distanceJoin = ` LEFT JOIN car_distance cd ON cd.id = c.id `;
+    conditionString += ` AND cd.distance >= :minRadius AND cd.distance <= :maxRadius`;
+    Object.assign(replacements, { minRadius, maxRadius });
+  }
+  if (condition) {
+    conditionString += ` AND c."condition" = :condition`;
+    Object.assign(replacements, { condition });
+  }
+  if (minPrice) {
+    conditionString += ` AND c."price" >= :minPrice`;
+    Object.assign(replacements, { minPrice });
+  }
+  if (maxPrice) {
+    conditionString += ` AND c."price" <= :maxPrice`;
+    Object.assign(replacements, { maxPrice });
+  }
+  if (minYear) {
+    conditionString += ` AND my."year" >= :minYear`;
+    Object.assign(replacements, { minYear });
+  }
+  if (maxYear) {
+    conditionString += ` AND my."year" <= :maxYear`;
+    Object.assign(replacements, { maxYear });
+  }
+  if (minKm) {
+    conditionString += ` AND c."km" >= :minKm`;
+    Object.assign(replacements, { minKm });
+  }
+  if (maxKm) {
+    conditionString += ` AND c."km" <= :maxKm`;
+    Object.assign(replacements, { maxKm });
+  }
+
+  const data = await models.sequelize
+    .query(
+      `${carDistance}
+    
+      select count(c.*) from "Cars" c
+        LEFT JOIN "ModelYears" my ON my."id" = c."modelYearId"
+        ${distanceJoin}
+      WHERE c."deletedAt" IS NULL ${conditionString}`,
       {
         replacements,
         type: QueryTypes.SELECT
@@ -2356,6 +2495,7 @@ module.exports = {
   listingAll,
   listingAllNew,
   listingAllNewRefactor,
+  countAllNewRefactor,
   luxuryCar,
   listingCar
 };
