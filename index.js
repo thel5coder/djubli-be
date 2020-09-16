@@ -36,18 +36,30 @@ const app = express();
 const http = require('http').Server(app);
 // const io = require('socket.io')(http);
 const io = require('socket.io')(http, {
-  path: '/socket',
+  // path: '/socket',
   serveClient: false,
   // below are engine.IO options
   pingInterval: 10000,
   pingTimeout: 5000,
   cookie: false,
   handlePreflightRequest: (req, res) => {
+    const allowedOrigins = [
+      'https://apidev-djublee.twisdev.com',
+      'https://apistage-djublee.twiscoder.com',
+      'http://localhost:5000'
+    ];
+
+    let origin = 'https://apidev-djublee.twisdev.com';
+    if (allowedOrigins.includes(req.headers.origin)) {
+      origin = req.headers.origin;
+    }
+
     const headers = {
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       // 'Access-Control-Allow-Origin': req.headers.origin, // or the specific origin you want to give access to,
-      'Access-Control-Allow-Origin': `https://apidev-djublee.twisdev.com`,
       // 'Access-Control-Allow-Origin': req.header('host'),
+      // 'Access-Control-Allow-Origin': `https://apidev-djublee.twisdev.com`,
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Credentials': true
     };
     res.writeHead(200, headers);
@@ -78,17 +90,17 @@ client.on('error', err => {
   console.log(`Error ${err}`);
 });
 
-app.get('/socket-message', (req, res) => {
-  res.sendFile(`${__dirname}/socket-message.html`);
-});
+// app.get('/socket-message', (req, res) => {
+//   res.sendFile(`${__dirname}/socket-message.html`);
+// });
 
-io.on('connection', socket => {
-  console.log('client connected');
+// io.on('connection', socket => {
+//   console.log('client connected');
 
-  socket.on('negotiation-car', msg => {
-    console.log(`Message: ${msg}`);
-  });
-});
+//   socket.on('negotiation-car', msg => {
+//     console.log(`Message: ${msg}`);
+//   });
+// });
 
 // enable socket io to routes
 app.use((req, res, next) => {
