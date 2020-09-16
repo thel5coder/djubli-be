@@ -27,6 +27,12 @@ router.get('/refactor', async (req, res) => await carsController.carsGetRefactor
 
 // With Login
 router.get(
+  '/refactor/logon',
+  async (req, res) => await carsController.carsGetRefactor(req, res, true)
+);
+
+// With Login
+router.get(
   '/logon',
   passport.authenticate('user', { session: false }),
   async (req, res) => await carsController.carsGet(req, res, true)
