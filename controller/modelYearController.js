@@ -752,8 +752,11 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
       GROUP BY c."modelYearId"
     ) ${carDistance}
     
-    select my.*, m."name" AS "modelName", m."groupModelId", gm."name" AS "groupModelName",
-    gm."brandId", b."name" AS "brandName", pur."price", count(c."id") as "listing",
+    select my.id, my."modelId", my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+    my.price, m."name" AS "modelName", m."groupModelId", gm."name" AS "groupModelName",
+    gm."brandId", b."name" AS "brandName",
+    CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo", pur."price",
+    count(c."id") as "listing",
     count(b2."id" ) as "countBid", max(b2."bidAmount" ) as "highestBid"
     from "ModelYears" my
     left join "Models" m on m."id" = my."modelId"
@@ -765,7 +768,7 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     LEFT JOIN "Purchases" pur ON pur.id = p.id AND pur."deletedAt" IS NULL
     ${distanceJoin}
     WHERE my."deletedAt" IS NULL ${conditionString}
-    group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", pur.price
+    group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", b."logo", pur.price
     order by m."name", my."year";
     `,
       {
