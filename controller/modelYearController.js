@@ -937,7 +937,10 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     .query(
       `${carDistance}
     
-      select count(c.*) from "Cars" c
+      select count(c.*), min(c.price) AS "minPrice", max(c.price) AS "maxPrice",
+      min(c.km) AS "minKm", max(c.km) AS "maxKm",
+      min(my.year) AS "minYear", max(my.year) AS "maxYear"
+        from "Cars" c
         LEFT JOIN "ModelYears" my ON my."id" = c."modelYearId"
         LEFT JOIN "GroupModels" gm ON gm."id" = c."groupModelId"
         ${distanceJoin}
@@ -954,10 +957,17 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
       });
     });
 
+  if (data.length === 0) {
+    res.status(422).json({
+      success: false,
+      errors: 'Empty Data'
+    });
+  }
+
   res.json({
     success: true,
     meta: req.query,
-    data
+    data: data[0]
   });
 }
 
