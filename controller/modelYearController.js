@@ -650,7 +650,9 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     minYear,
     maxYear,
     minKm,
-    maxKm
+    maxKm,
+    typeId,
+    isMarket
   } = req.query;
 
   const replacements = { bidType: 0 };
@@ -667,6 +669,10 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     conditionString += ` AND gm."id" = :groupModelId`;
     Object.assign(replacements, { groupModelId });
     carConditionString += ` AND "groupModelId" = ${groupModelId}`;
+  }
+  if (typeId) {
+    conditionString += ` AND gm."typeId" = :typeId`;
+    Object.assign(replacements, { typeId });
   }
   if (modelId) {
     conditionString += ` AND m."id" = :modelId`;
@@ -691,6 +697,16 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     conditionString += ` AND c."subdistrictId" = :subdistrictId`;
     Object.assign(replacements, { subdistrictId });
   }
+  if (isMarket === 'true') {
+    console.log(isMarket);
+    conditionString += ` AND c."status" = :carStatus`;
+    Object.assign(replacements, { carStatus: 2 });
+    carConditionString += ` AND "status" = 2`;
+  } else {
+    conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1)`;
+    Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
+    carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
+  }
   if (
     !isNaN(latitude) &&
     !isNaN(longitude) &&
@@ -699,7 +715,6 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     !cityId &&
     !subdistrictId
   ) {
-    console.log('RADIUS');
     carDistance = `, car_distance AS (
     select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
         CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
