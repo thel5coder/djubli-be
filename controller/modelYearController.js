@@ -826,7 +826,9 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     minYear,
     maxYear,
     minKm,
-    maxKm
+    maxKm,
+    typeId,
+    isMarket
   } = req.query;
 
   const replacements = { bidType: 0 };
@@ -849,6 +851,10 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     Object.assign(replacements, { modelId });
     carConditionString += ` AND "modelId" = ${modelId}`;
   }
+  if (typeId) {
+    conditionString += ` AND gm."typeId" = :typeId`;
+    Object.assign(replacements, { typeId });
+  }
   if (exteriorColorId) {
     conditionString += ` AND c."exteriorColorId" = :exteriorColorId`;
     Object.assign(replacements, { exteriorColorId });
@@ -867,6 +873,16 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     conditionString += ` AND c."subdistrictId" = :subdistrictId`;
     Object.assign(replacements, { subdistrictId });
   }
+  if (isMarket === 'true') {
+    conditionString += ` AND c."status" = :carStatus`;
+    Object.assign(replacements, { carStatus: 2 });
+    carConditionString += ` AND "status" = 2`;
+  } else {
+    conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1)`;
+    Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
+    carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
+  }
+
   if (
     !isNaN(latitude) &&
     !isNaN(longitude) &&
@@ -923,6 +939,7 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     
       select count(c.*) from "Cars" c
         LEFT JOIN "ModelYears" my ON my."id" = c."modelYearId"
+        LEFT JOIN "GroupModels" gm ON gm."id" = c."groupModelId"
         ${distanceJoin}
       WHERE c."deletedAt" IS NULL ${conditionString}`,
       {
