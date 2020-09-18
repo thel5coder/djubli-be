@@ -606,7 +606,7 @@ async function carsGetRefactor(req, res, auth = false) {
     !cityId &&
     !subdistrictId
   ) {
-    carDistance = `WITH car_distance AS (
+    carDistance = `, car_distance AS (
     select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
         CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
       ) ) * cos( radians(
@@ -660,7 +660,10 @@ async function carsGetRefactor(req, res, auth = false) {
 
   const data = await models.sequelize
     .query(
-      `${carDistance}
+      `WITH loan_cars AS (
+        SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
+      )
+      ${carDistance}
       
       select c.*${distanceSelect}, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
       my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
@@ -679,8 +682,9 @@ async function carsGetRefactor(req, res, auth = false) {
       LEFT JOIN "Likes" l ON l."carId" = c.id
       LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId
       LEFT JOIN "Views" v ON v."carId" = c.id
+      LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
       ${distanceJoin}
-      WHERE c."deletedAt" IS NULL ${conditionString}
+      WHERE c."deletedAt" IS NULL AND lc."id" IS NULL ${conditionString}
       group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo"
       order by ${by} ${sort}
       OFFSET ${offset} LIMIT ${limit}`,

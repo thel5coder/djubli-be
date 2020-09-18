@@ -765,6 +765,8 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
       LEFT JOIN "Cars" c ON c."id" = p1."carId" AND c."deletedAt" IS NULL
       WHERE p1."deletedAt" IS NULL
       GROUP BY c."modelYearId"
+    ), loan_cars AS (
+      SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
     ) ${carDistance}
     
     select my.id, my."modelId", my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
@@ -781,8 +783,9 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     left join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
     LEFT JOIN purchase p ON p."modelYearId" = my."id"
     LEFT JOIN "Purchases" pur ON pur.id = p.id AND pur."deletedAt" IS NULL
+    LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
     ${distanceJoin}
-    WHERE my."deletedAt" IS NULL ${conditionString}
+    WHERE my."deletedAt" IS NULL AND lc."id" IS NULL ${conditionString}
     group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", b."logo", pur.price
     order by m."name", my."year";
     `,
@@ -891,7 +894,7 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     !cityId &&
     !subdistrictId
   ) {
-    carDistance = `WITH car_distance AS (
+    carDistance = `, car_distance AS (
     select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
         CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
       ) ) * cos( radians(
@@ -935,7 +938,9 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
 
   const data = await models.sequelize
     .query(
-      `${carDistance}
+      `WITH loan_cars AS (
+        SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
+      ) ${carDistance}
     
       select count(c.*), min(c.price) AS "minPrice", max(c.price) AS "maxPrice",
       min(c.km) AS "minKm", max(c.km) AS "maxKm",
@@ -943,8 +948,9 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
         from "Cars" c
         LEFT JOIN "ModelYears" my ON my."id" = c."modelYearId"
         LEFT JOIN "GroupModels" gm ON gm."id" = c."groupModelId"
+        LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
         ${distanceJoin}
-      WHERE c."deletedAt" IS NULL ${conditionString}`,
+      WHERE c."deletedAt" IS NULL AND lc."id" IS NULL ${conditionString}`,
       {
         replacements,
         type: QueryTypes.SELECT
