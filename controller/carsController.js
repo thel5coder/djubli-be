@@ -1018,7 +1018,7 @@ async function getByUserId(req, res) {
   const whereProfile = {};
   const whereBargain = {};
   const customFields = {
-    fields: ['islike', 'isBidFromLike', 'like', 'view', 'numberOfBidder', 'highestBidder'],
+    fields: ['islike', 'isBid', 'like', 'view', 'numberOfBidder', 'highestBidder'],
     id,
     upperCase: true
   };
@@ -2753,7 +2753,7 @@ async function like(req, res) {
   const customFields = {
     fields: [
       'islike',
-      'isBidFromLike',
+      'isBid',
       'like',
       'view',
       'numberOfBidder',
@@ -3029,7 +3029,7 @@ async function view(req, res) {
   const customFields = {
     fields: [
       'islike',
-      'isBidFromLike',
+      'isBid',
       'like',
       'view',
       'numberOfBidder',
