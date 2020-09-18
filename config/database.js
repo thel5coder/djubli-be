@@ -15,7 +15,7 @@ module.exports = {
       idle: 200000,
       acquire: 200000
     },
-    logging: console.log,
+    logging: true,
     operatorsAliases: false
   },
   test: {
