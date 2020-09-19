@@ -6,7 +6,6 @@ const distanceHelper = require('./distance');
 const { Op } = Sequelize;
 
 async function customFields(params) {
-  const modelYearId = params.modelYearId || `"ModelYear"."id"`;
   if(!params.whereQuery) {
     params.whereQuery = '';
   } else {
@@ -14,7 +13,12 @@ async function customFields(params) {
   }
 
   const fields = [];
-  let car = 'upperCase' in params ? (params.upperCase ? `Car` : `car`) : `car`;
+  let car = 'upperCase' in params ? (params.upperCase ? 'Car' : 'car') : 'car';
+  car = 'customCar' in params ? params.customCar : car;
+  let modelYear = 'modelYearLowerCase' in params ? 'modelYear' : 'ModelYear';
+  modelYear = 'modelYearLowerCasePrefix' in params ? `${modelYear}s` : modelYear;
+  const modelYearId = params.modelYearId || `"${modelYear}"."id"`;
+
   params.fields.map(async field => {
     switch (field) {
 
@@ -147,7 +151,7 @@ async function customFields(params) {
               FROM "Bargains" 
               LEFT JOIN "Cars" as "c" 
                 ON "Bargains"."carId" = "c"."id" 
-              WHERE "c"."modelYearId" = "ModelYear"."id"
+              WHERE "c"."modelYearId" = "${modelYear}"."id"
                 AND "Bargains"."deletedAt" IS NULL 
                 AND "Bargains"."bidType" = 0 
                 ${params.whereQuery}
@@ -232,7 +236,7 @@ async function customFields(params) {
               FROM "Bargains" 
               LEFT JOIN "Cars" as "c" 
                 ON "Bargains"."carId" = "c"."id" 
-              WHERE "c"."modelYearId" = "ModelYear"."id" 
+              WHERE "c"."modelYearId" = "${modelYear}"."id" 
                 AND "Bargains"."deletedAt" IS NULL 
                 AND "Bargains"."bidType" = 0 
                 AND (SELECT COUNT("b"."id")
@@ -254,7 +258,7 @@ async function customFields(params) {
               FROM "Bargains" 
               LEFT JOIN "Cars" as "c" 
                 ON "Bargains"."carId" = "c"."id" 
-              WHERE "c"."modelYearId" = "ModelYear"."id" 
+              WHERE "c"."modelYearId" = "${modelYear}"."id" 
                 AND "Bargains"."deletedAt" IS NULL 
                 AND "Bargains"."bidType" = 0 
                 AND (SELECT COUNT("b"."id")
@@ -284,6 +288,22 @@ async function customFields(params) {
             )`
           ),
           'numberOfPurchase'
+        ]);
+        break;
+
+      case 'purchase':
+        fields.push([
+          models.sequelize.literal(
+            `(SELECT COUNT("Purchase"."id") 
+              FROM "Purchases" as "Purchase" 
+              LEFT JOIN "Cars" as "c" 
+                ON "Purchase"."carId" = "c"."id" 
+              WHERE "c"."status" = 2 
+                AND "c"."modelYearId" = ${modelYearId} 
+                AND "c"."deletedAt" IS NULL ${params.whereQuery}
+            )`
+          ),
+          'purchase'
         ]);
         break;
 
@@ -364,7 +384,7 @@ async function customFields(params) {
           models.sequelize.literal(
             `(SELECT COUNT("c"."id") 
               FROM "Cars" as "c" 
-              WHERE "c"."modelYearId" = "ModelYear"."id" 
+              WHERE "c"."modelYearId" = "${modelYear}"."id" 
                 AND "c"."deletedAt" IS NULL
                 ${defaultQuery}
             )`
@@ -378,7 +398,7 @@ async function customFields(params) {
           models.sequelize.literal(
             `(SELECT MAX("c"."price") 
               FROM "Cars" as "c" 
-              WHERE "c"."modelYearId" = "ModelYear"."id" 
+              WHERE "c"."modelYearId" = "${modelYear}"."id" 
                 AND "c"."deletedAt" IS NULL ${params.whereQuery}
             )`
           ),
@@ -391,7 +411,7 @@ async function customFields(params) {
           models.sequelize.literal(
             `(SELECT MIN("c"."price") 
               FROM "Cars" as "c" 
-              WHERE "c"."modelYearId" = "ModelYear"."id" 
+              WHERE "c"."modelYearId" = "${modelYear}"."id" 
                 AND "c"."deletedAt" IS NULL ${params.whereQuery}
             )`
           ),
