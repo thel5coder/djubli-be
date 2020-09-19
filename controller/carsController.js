@@ -1269,30 +1269,18 @@ async function getByStatus(req, res) {
     });
   }
 
+  const addAttributes = {
+    fields: [
+      'like',
+      'view'
+    ],
+    upperCase: true,
+    id: userId
+  };
+
+  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'like'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Views"."id") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
-        ),
-        'view'
-      ]
-    ]),
+    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
         model: models.ModelYear,
