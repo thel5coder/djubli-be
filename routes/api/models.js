@@ -4,6 +4,7 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const passport = require('passport');
 const models = require('../../db/models');
+const carHelper = require('../../helpers/car');
 const paginator = require('../../helpers/paginator');
 
 const { Op } = Sequelize;
@@ -196,6 +197,15 @@ router.get('/listingCar/:id', async (req, res) => {
     });
   }
 
+  const addAttributes = {
+    fields: [
+      'like',
+      'view'
+    ],
+    upperCase: true,
+  };
+
+  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat([
       [

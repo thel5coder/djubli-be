@@ -3201,15 +3201,12 @@ async function viewLike(req, res) {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  if (!by) by = 'jumlahLike';
   const array = [
     'id',
     'condition',
     'price',
     'km',
     'createdAt',
-    'jumlahView',
-    'jumlahLike',
     'like',
     'view',
     'profile'
@@ -3220,8 +3217,6 @@ async function viewLike(req, res) {
   switch (by) {
     case 'like':
     case 'view':
-    case 'jumlahView':
-    case 'jumlahLike':
       order.push([Sequelize.col(by), sort]);
       break;
     case 'profile':
@@ -3246,8 +3241,6 @@ async function viewLike(req, res) {
     fields: [
       'Brands', 
       'Model', 
-      'jumlahLike', 
-      'jumlahView', 
       'highestBidder', 
       'numberOfBidder',
       'like',

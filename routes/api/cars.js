@@ -208,7 +208,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
         Object.assign(checkDetails, { status: false, message: `invalid day ${d.id}` });
         return;
       }
-      // if (validator.isInt(d.startTime ? d.startTime.toString() : '') === false) {
+      
       if (!d.startTime) {
         Object.assign(checkDetails, { status: false, message: `invalid startTime ${d.id}` });
         return;
@@ -290,17 +290,6 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
       });
     }
   }
-
-  // console.log(userNotifs.length);
-  // return res
-  //   .status(200)
-  //   .json({
-  //     success: true,
-  //     userNotifs,
-  //     price,
-  //     status: price < carExists.price ? `lebih murah` : `tidak`,
-  //     data: carExists
-  //   });
 
   const trans = await models.sequelize.transaction();
   const errors = [];

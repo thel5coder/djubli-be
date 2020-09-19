@@ -328,7 +328,6 @@ router.get('/listingType', async (req, res) => {
             ]
           })
         },
-        // include: await carHelper.extraInclude({ key: 'noModelYear' }),
         include: includeCar,
         where: whereInclude
       }
