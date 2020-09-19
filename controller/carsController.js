@@ -712,83 +712,25 @@ async function getById(req, res) {
 
   // FOR isLike & isBid
   const { userId } = req.query;
-  const attributes = [
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Likes"."id") 
-          FROM "Likes" 
-          WHERE "Likes"."carId" = "Car"."id" 
-            AND "Likes"."status" IS TRUE 
-            AND "Likes"."deletedAt" IS NULL
-        )`
-      ),
-      'like'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Views"."id") 
-          FROM "Views" 
-          WHERE "Views"."carId" = "Car"."id" 
-            AND "Views"."deletedAt" IS NULL
-        )`
-      ),
-      'view'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Bargains"."id") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."deletedAt" IS NULL
-            AND "Bargains"."bidType" = 0
-        )`
-      ),
+  const attributes = {
+    fields: [
+      'like',
+      'view',
+      'view',
+      'highestBidder',
       'numberOfBidder'
     ],
-    [
-      models.sequelize.literal(
-        `(SELECT MAX("Bargains"."bidAmount") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."deletedAt" IS NULL
-            AND "Bargains"."bidType" = 0
-        )`
-      ),
-      'highestBidder'
-    ]
-  ];
+    upperCase: true
+  };
 
-  if (userId) {
-    attributes.push(
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE 
-              AND "Likes"."userId" = ${userId} 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'islike'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."userId" = ${userId} 
-              AND "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'isBid'
-      ]
-    );
+  if(userId) {
+    attributes.fields.push('islike', 'isBid')
+    attributes.id = userId
   }
 
+  const addAttribute = await carHelper.customFields(attributes);
   return models.Car.findOne({
-    attributes: Object.keys(models.Car.attributes).concat(attributes),
+    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
         model: models.User,
