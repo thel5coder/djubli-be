@@ -2104,7 +2104,8 @@ async function listingCar(req, res, auth = false) {
     typeId,
     exteriorColorId,
     interiorColorId,
-    isSimilarId
+    isSimilarId,
+    isMarket
   } = req.query;
   let { latitude, longitude } = req.query;
 
@@ -2409,6 +2410,18 @@ async function listingCar(req, res, auth = false) {
     Object.assign(where, {
       id: {
         [Op.ne]: isSimilarId
+      }
+    });
+  }
+
+  if (isMarket && JSON.parse(isMarket) == true) {
+    Object.assign(where, {
+      status: 2
+    });
+  } else {
+    Object.assign(where, {
+      status: {
+        [Op.in]: [0,1]
       }
     });
   }
