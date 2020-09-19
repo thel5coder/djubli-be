@@ -4,6 +4,7 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const paginator = require('../../helpers/paginator');
+const carHelper = require('../../helpers/car');
 const distanceHelper = require('../../helpers/distance');
 
 const {
@@ -559,6 +560,17 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
         whereCondition += ` AND "Cars"."groupModelId" = ${groupModelId}`
     }
 
+    const addAttributes = {
+        fields: [
+            'like',
+            'view',
+            'numberOfBidder',
+            'bidAmount'
+        ],
+        upperCase: true,
+    };
+
+    const addAttribute = await carHelper.customFields(addAttributes);
     return models.Brand.findByPk(id, {
             attributes: Object.keys(models.Brand.attributes).concat([
                 [
@@ -656,53 +668,7 @@ router.get('/listingBrandForDealer/id/:id', async (req, res) => {
                     as: 'car',
                     where: whereCar,
                     subQuery: true,
-                    attributes: {
-                        include: [
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT MAX("Bargains"."bidAmount") 
-                                        FROM "Bargains" 
-                                        WHERE "Bargains"."carId" = "Car"."id" 
-                                            AND "Bargains"."deletedAt" IS NULL
-                                            AND "Bargains"."bidType" = 0
-                                    )`
-                                ),
-                                'bidAmount'
-                            ],
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT COUNT("Bargains"."id") 
-                                        FROM "Bargains" 
-                                        WHERE "Bargains"."carId" = "Car"."id" 
-                                            AND "Bargains"."deletedAt" IS NULL
-                                            AND "Bargains"."bidType" = 0
-                                    )`
-                                ),
-                                'numberOfBidder'
-                            ],
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT COUNT("Likes"."id") 
-                                        FROM "Likes" 
-                                        WHERE "Likes"."carId" = "Car"."id" 
-                                            AND "Likes"."status" IS TRUE 
-                                            AND "Likes"."deletedAt" IS NULL
-                                    )`
-                                ),
-                                'like'
-                            ],
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT COUNT("Views"."id") 
-                                        FROM "Views" 
-                                        WHERE "Views"."carId" = "Car"."id" 
-                                            AND "Views"."deletedAt" IS NULL
-                                    )`
-                                ),
-                                'view'
-                            ]
-                        ]
-                    },
+                    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
                     include: [
                         {
                             model: models.User,
@@ -832,6 +798,18 @@ router.get('/car/sellList/:id', async (req, res) => {
   if (!sort) sort = 'asc';
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
+  const addAttributes = {
+    fields: [
+        'like',
+        'view',
+        'numberOfBidder',
+        'bidAmount',
+        'highestBidder'
+    ],
+    upperCase: true,
+  };
+
+  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Dealer.findByPk(id, {
     raw: true,
     nest: true,
@@ -870,40 +848,7 @@ router.get('/car/sellList/:id', async (req, res) => {
       if (data) {
         await models.Car.findAll({
           where: whereCar,
-          attributes: {
-            include: [
-              [
-                models.sequelize.literal(
-                  `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0 AND "Bargains"."userId" = ${data.userId})`
-                ),
-                'bidAmount'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Bargains"."id") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
-                ),
-                'numberOfBidder'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT MAX("Bargains"."bidAmount") FROM "Bargains" WHERE "Bargains"."carId" = "Car"."id" AND "Bargains"."deletedAt" IS NULL AND "Bargains"."bidType" = 0)`
-                ),
-                'highestBidder'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Likes"."id") FROM "Likes" WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE AND "Likes"."deletedAt" IS NULL)`
-                ),
-                'like'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Views"."id") FROM "Views" WHERE "Views"."carId" = "Car"."id" AND "Views"."deletedAt" IS NULL)`
-                ),
-                'view'
-              ]
-            ]
-          },
+          attributes: Object.keys(models.Car.attributes).concat(addAttribute),
           include: [
             {
               model: models.ExteriorGalery,
@@ -1050,18 +995,18 @@ router.get('/car/bidList/:id', async (req, res) => {
     	]
     }
 
-    countBargains =  models.sequelize.literal(
-        `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."carId" = "Car"."id" 
-                AND "Bargains"."deletedAt" IS NULL
-        )`
-    );
+    const addAttributes = {
+        fields: [
+            'like',
+            'view',
+            'numberOfBidder',
+            'bidAmount',
+            'highestBidder'
+        ],
+        upperCase: true,
+    };
 
-    let whereCar = {
-	    [Op.and]: [models.sequelize.where(countBargains, { [Op.gte]: 1 })]
-    }
-
+    const addAttribute = await carHelper.customFields(addAttributes);
     return models.Dealer.findByPk(id, {
             raw: true,
             nest: true,
@@ -1093,76 +1038,27 @@ router.get('/car/bidList/:id', async (req, res) => {
             ]
         })
         .then(async data => {
-            const userId = models.sequelize.literal(
-                `(SELECT "userId" 
-                    FROM "Dealers" 
-                    WHERE "Dealers"."id" = ${id} 
-                        AND "deletedAt" IS NULL
+            countBargains =  models.sequelize.literal(
+                `(SELECT COUNT("Bargains"."id") 
+                    FROM "Bargains" 
+                    WHERE "Bargains"."carId" = "Car"."id" 
+                        AND "Bargains"."deletedAt" IS NULL
                 )`
             );
+
+            let whereCar = {
+                [Op.and]: [
+                    models.sequelize.where(countBargains, { [Op.gt]: 0 }),
+                    {
+                        userId: data.userId
+                    }
+                ]
+            }
 
             if(data) {
                 const cars = await models.Car.findAll({
                     where: whereCar,
-                    attributes: {
-                        include: [
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT MAX("Bargains"."bidAmount") 
-                                        FROM "Bargains" 
-                                        WHERE "Bargains"."carId" = "Car"."id" 
-                                            AND "Bargains"."deletedAt" IS NULL
-                                            AND "Bargains"."bidType" = 0
-                                            AND "Bargains"."userId" = ${userId}
-                                    )`
-                                ),
-                                'bidAmount'
-                            ],
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT COUNT("Bargains"."id") 
-                                        FROM "Bargains" 
-                                        WHERE "Bargains"."carId" = "Car"."id" 
-                                            AND "Bargains"."deletedAt" IS NULL
-                                            AND "Bargains"."bidType" = 0
-                                    )`
-                                ),
-                                'numberOfBidder'
-                            ],
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT MAX("Bargains"."bidAmount") 
-                                        FROM "Bargains" 
-                                        WHERE "Bargains"."carId" = "Car"."id" 
-                                            AND "Bargains"."deletedAt" IS NULL
-                                            AND "Bargains"."bidType" = 0
-                                    )`
-                                ),
-                                'highestBidder'
-                            ],
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT COUNT("Likes"."id") 
-                                        FROM "Likes" 
-                                        WHERE "Likes"."carId" = "Car"."id" 
-                                            AND "Likes"."status" IS TRUE 
-                                            AND "Likes"."deletedAt" IS NULL
-                                    )`
-                                ),
-                                'like'
-                            ],
-                            [
-                                models.sequelize.literal(
-                                    `(SELECT COUNT("Views"."id") 
-                                        FROM "Views" 
-                                        WHERE "Views"."carId" = "Car"."id" 
-                                            AND "Views"."deletedAt" IS NULL
-                                    )`
-                                ),
-                                'view'
-                            ]
-                        ]
-                    },
+                    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
                     include: [
                         {
                             model: models.Bargain,

@@ -531,14 +531,6 @@ router.post('/login', async (req, res) => {
     });
   }
 
-  // if (data.type == 0 && data.companyType == 0) {
-  //   userType = 'Member';
-  // } else if (data.type == 0 && data.companyType == 1) {
-  //   userType = 'Company';
-  // } else if (data.type == 1) {
-  //   userType = 'Dealer';
-  // }
-
   if (data.type == 0 && data.companyType == 0) userType = 'End User';
   else if (data.type == 0 && data.companyType == 1) userType = 'End User';
   else if (data.type == 1 && data.companyType == 0) userType = 'Dealer';
@@ -1962,8 +1954,6 @@ router.post('/firebase', passport.authenticate('user', { session: false }), asyn
   });
 
   if (tokenExists) return res.json({ success: true, data: tokenExists });
-
-  // return res.status(200).json({ success: true, data: req.body });
   return models.UserToken.create({
     userId,
     token,
