@@ -3210,12 +3210,16 @@ async function viewLike(req, res) {
     'createdAt',
     'jumlahView',
     'jumlahLike',
+    'like',
+    'view',
     'profile'
   ];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [];
   switch (by) {
+    case 'like':
+    case 'view':
     case 'jumlahView':
     case 'jumlahLike':
       order.push([Sequelize.col(by), sort]);
@@ -3239,7 +3243,16 @@ async function viewLike(req, res) {
   const whereModelYear = {};
   const whereProfile = {};
   const customFields = {
-    fields: ['Brands', 'Model', 'jumlahLike', 'jumlahView', 'highestBidder', 'numberOfBidder'],
+    fields: [
+      'Brands', 
+      'Model', 
+      'jumlahLike', 
+      'jumlahView', 
+      'highestBidder', 
+      'numberOfBidder',
+      'like',
+      'view'
+    ],
     upperCase: true
   };
 
