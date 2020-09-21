@@ -882,6 +882,56 @@ async function getById(req, res) {
     });
 }
 
+async function getByIdRefactor(req, res, auth = false) {
+  const { id } = req.params;
+  const userId = auth ? req.user.id : null;
+  const data = await models.sequelize
+    .query(
+      `WITH loan_cars AS (
+        SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
+      )
+      
+      select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
+      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
+      count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
+      count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views
+      FROM "Cars" c
+      left join "Users" u on u."id" = c."userId"
+      left join "ModelYears" my on my."id" = c."modelYearId"
+      left join "Models" m on m."id" = c."modelId"
+      left join "GroupModels" gm on gm."id" = c."groupModelId"
+      left join "Brands" b on b."id" = c."brandId"
+      left join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
+      left join "Bargains" isBid on isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
+      LEFT JOIN "Likes" l ON l."carId" = c.id
+      LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId
+      LEFT JOIN "Views" v ON v."carId" = c.id
+      LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
+      WHERE c."deletedAt" IS NULL AND lc."id" IS NULL
+      AND c."id" = :id
+      group by c."id", my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo"`,
+      {
+        replacements: { userId, id },
+        type: QueryTypes.SELECT,
+        plain: true
+      }
+    )
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+
+  res.json({
+    success: true,
+    meta: req.query,
+    data
+  });
+}
+
 async function getByUserId(req, res) {
   const { id } = req.params;
   const {
@@ -4045,6 +4095,7 @@ module.exports = {
   carsGet,
   carsGetRefactor,
   getById,
+  getByIdRefactor,
   getByUserId,
   getByStatus,
   purchaseList,

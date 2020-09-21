@@ -77,6 +77,11 @@ router.get(
 
 router.get('/id/:id', async (req, res) => await carsController.getById(req, res));
 
+// Get By ID Refactor
+router.get('/id/:id/refactor', async (req, res) => await carsController.getByIdRefactor(req, res));
+router.get('/id/:id/refactor/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.getByIdRefactor(req, res, true));
+// Get By ID Refactor
+
 router.get('/like/:id', async (req, res) => await carsController.like(req, res));
 
 router.get('/view/:id', async (req, res) => await carsController.view(req, res));
