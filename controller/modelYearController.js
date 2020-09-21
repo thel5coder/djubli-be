@@ -786,7 +786,8 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     gm."brandId", b."name" AS "brandName",
     CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo", pur."price",
     count(DISTINCT(c."id")) as "listing", count(DISTINCT(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
-    AVG(pur."price") as "marketPrice"
+    AVG(all_pur."price") as "marketPrice", MIN(all_pur."price") as "lowestPrice",
+    COUNT(DISTINCT(all_pur."id")) AS "countTransaction", pur."price" as "lastTransaction"
     from "ModelYears" my
     left join "Models" m on m."id" = my."modelId"
     left join "GroupModels" gm on gm."id" = m."groupModelId"
@@ -795,6 +796,7 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     left join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
     LEFT JOIN purchase p ON p."modelYearId" = my."id"
     LEFT JOIN "Purchases" pur ON pur.id = p.id AND pur."deletedAt" IS NULL
+    LEFT JOIN "Purchases" all_pur ON all_pur."carId" = c.id AND all_pur."deletedAt" IS NULL
     LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
     ${distanceJoin}
     WHERE my."deletedAt" IS NULL ${conditionString}

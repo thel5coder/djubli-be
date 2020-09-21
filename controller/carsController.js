@@ -672,6 +672,8 @@ async function carsGetRefactor(req, res, auth = false) {
     .query(
       `WITH loan_cars AS (
         SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
+      ), car_picture as (
+        SELECT "carId", MIN("fileId") as "fileId" FROM "ExteriorGaleries" GROUP BY "carId"
       )
       ${carDistance}
       
@@ -680,7 +682,8 @@ async function carsGetRefactor(req, res, auth = false) {
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
       count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
-      count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views
+      count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
+      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture"
       FROM "Cars" c
       left join "Users" u on u."id" = c."userId"
       left join "ModelYears" my on my."id" = c."modelYearId"
@@ -693,9 +696,11 @@ async function carsGetRefactor(req, res, auth = false) {
       LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId
       LEFT JOIN "Views" v ON v."carId" = c.id
       LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
+      LEFT JOIN "car_picture" AS cp ON cp."carId" = c."id"
+      LEFT JOIN "Files" AS cpf ON cpf."id" = cp."fileId"
       ${distanceJoin}
       WHERE c."deletedAt" IS NULL ${conditionString}
-      group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo"
+      group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo", cpf."url"
       order by ${by} ${sort}
       OFFSET ${offset} LIMIT ${limit}`,
       {
