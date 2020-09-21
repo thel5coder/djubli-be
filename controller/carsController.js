@@ -533,7 +533,8 @@ async function carsGetRefactor(req, res, auth = false) {
     interiorColorId,
     minKm,
     maxKm,
-    profileUser
+    profileUser,
+    isMarket
   } = req.query;
   const { latitude, longitude } = req.query;
   let { page, limit, by, sort } = req.query;
@@ -597,6 +598,15 @@ async function carsGetRefactor(req, res, auth = false) {
   if (subdistrictId) {
     conditionString += ` AND c."subdistrictId" = :subdistrictId`;
     Object.assign(replacements, { subdistrictId });
+  }
+  if (isMarket === 'true') {
+    conditionString += ` AND c."status" = :carStatus`;
+    Object.assign(replacements, { carStatus: 2 });
+    carConditionString += ` AND "status" = 2`;
+  } else {
+    conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1) AND lc."id" IS NULL`;
+    Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
+    carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
   }
   if (
     !isNaN(latitude) &&

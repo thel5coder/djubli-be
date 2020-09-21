@@ -698,12 +698,11 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     Object.assign(replacements, { subdistrictId });
   }
   if (isMarket === 'true') {
-    console.log(isMarket);
     conditionString += ` AND c."status" = :carStatus`;
     Object.assign(replacements, { carStatus: 2 });
     carConditionString += ` AND "status" = 2`;
   } else {
-    conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1)`;
+    conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1) AND lc."id" IS NULL`;
     Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
     carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
   }
@@ -773,8 +772,8 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     my.price, m."name" AS "modelName", m."groupModelId", gm."name" AS "groupModelName",
     gm."brandId", b."name" AS "brandName",
     CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo", pur."price",
-    count(c."id") as "listing",
-    count(b2."id" ) as "countBid", max(b2."bidAmount" ) as "highestBid"
+    count(DISTINCT(c."id")) as "listing", count(DISTINCT(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
+    AVG(pur."price") as "marketPrice"
     from "ModelYears" my
     left join "Models" m on m."id" = my."modelId"
     left join "GroupModels" gm on gm."id" = m."groupModelId"
@@ -785,7 +784,7 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     LEFT JOIN "Purchases" pur ON pur.id = p.id AND pur."deletedAt" IS NULL
     LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
     ${distanceJoin}
-    WHERE my."deletedAt" IS NULL AND lc."id" IS NULL ${conditionString}
+    WHERE my."deletedAt" IS NULL ${conditionString}
     group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", b."logo", pur.price
     order by m."name", my."year";
     `,
@@ -942,7 +941,7 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
         SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
       ) ${carDistance}
     
-      select count(c.*), min(c.price) AS "minPrice", max(c.price) AS "maxPrice",
+      select count(DISTINCT(c.*)), min(c.price) AS "minPrice", max(c.price) AS "maxPrice",
       min(c.km) AS "minKm", max(c.km) AS "maxKm",
       min(my.year) AS "minYear", max(my.year) AS "maxYear"
         from "Cars" c
