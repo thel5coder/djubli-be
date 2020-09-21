@@ -709,7 +709,8 @@ async function carsGetRefactor(req, res, auth = false) {
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
       subdistrict."name" as "subdistrictName", u."type" as "userType", ic."name" AS "interiorColorName",
-      ec."name" AS "exteriorColorName" ${pictureSelect}
+      ec."name" AS "exteriorColorName" ${pictureSelect}, purchase."id" AS "purchaseId", purchase."createdAt" AS "purchaseDate",
+      buyer."id" AS "buyerId", buyer."name" AS "buyerName"
       FROM "Cars" c
       left join "Users" u on u."id" = c."userId"
       left join "Cities" city on city."id" = c."cityId"
@@ -728,11 +729,14 @@ async function carsGetRefactor(req, res, auth = false) {
       LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
       LEFT JOIN "car_picture" AS cp ON cp."carId" = c."id"
       LEFT JOIN "Files" AS cpf ON cpf."id" = cp."fileId"
+      LEFT JOIN "Purchases" AS purchase ON purchase."carId" = c."id"
+      LEFT JOIN "Users" AS buyer ON buyer."id" = purchase."userId"
       ${pictureJoin}
       ${distanceJoin}
       WHERE c."deletedAt" IS NULL ${conditionString}
       group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name",
-      b."logo", cpf."url", city."name", subdistrict."name", u."type", ic."name", ec."name"
+      b."logo", cpf."url", city."name", subdistrict."name", u."type", ic."name", ec."name",
+      purchase."id", "buyer".id
       order by ${by} ${sort}
       OFFSET ${offset} LIMIT ${limit}`,
       {
@@ -955,7 +959,7 @@ async function getByIdRefactor(req, res, auth = false) {
   function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
   }
-  if(data) {
+  if (data) {
     const exteriorGalery = new Array();
     const interiorGalery = new Array();
     const eg = data.exteriorGaleries.split('|').filter(onlyUnique);
