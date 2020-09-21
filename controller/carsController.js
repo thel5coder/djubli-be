@@ -929,11 +929,7 @@ async function getByIdRefactor(req, res, auth = false) {
   const userId = auth ? req.user.id : null;
   const data = await models.sequelize
     .query(
-      `WITH last_purchase_amount AS (
-        SELECT "carId", "price" FROM "Purchases" ORDER BY "Purchases"."id" LIMIT 1
-      )
-
-      select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      `select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
       my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
       cle.name AS exteriorColorName, cle.hex AS exteriorColorHex,
@@ -947,7 +943,7 @@ async function getByIdRefactor(req, res, auth = false) {
       count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
-      COALESCE(lpa."price", 0) AS lastPurchaseAmount,
+      p."id" AS "purchaseId", p."createdAt" AS "purchaseDate", p."price" AS "purchaseAmount",
       case when u."type" = 0 then 'End User' when u."type" = 1 then 'Dealer' end as userType
       FROM "Cars" c
       LEFT join "Users" u on u."id" = c."userId"
@@ -970,14 +966,14 @@ async function getByIdRefactor(req, res, auth = false) {
 
       LEFT join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
       LEFT join "Bargains" isBid on isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
-      LEFT JOIN "last_purchase_amount" AS lpa ON lpa."carId" = c."id"
+      LEFT JOIN "Purchases" AS p ON p."carId" = c."id"
       LEFT JOIN "Likes" l ON l."carId" = c.id
       LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId
       LEFT JOIN "Views" v ON v."carId" = c.id
       WHERE c."deletedAt" IS NULL AND c."id" = :id
       group by c."id", my.year, my.picture, my.price, m."name", gm."name", 
       b."name", b."logo", cle."name", cli."name", cle."hex", cli."hex", 
-      u."type", ct."name", sdt."name", lpa."price"`,
+      u."type", ct."name", sdt."name", p."id"`,
       {
         replacements: { userId, id },
         type: QueryTypes.SELECT,
