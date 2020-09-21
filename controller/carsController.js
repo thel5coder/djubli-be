@@ -722,83 +722,25 @@ async function getById(req, res) {
 
   // FOR isLike & isBid
   const { userId } = req.query;
-  const attributes = [
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Likes"."id") 
-          FROM "Likes" 
-          WHERE "Likes"."carId" = "Car"."id" 
-            AND "Likes"."status" IS TRUE 
-            AND "Likes"."deletedAt" IS NULL
-        )`
-      ),
-      'like'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Views"."id") 
-          FROM "Views" 
-          WHERE "Views"."carId" = "Car"."id" 
-            AND "Views"."deletedAt" IS NULL
-        )`
-      ),
-      'view'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Bargains"."id") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."deletedAt" IS NULL
-            AND "Bargains"."bidType" = 0
-        )`
-      ),
+  const attributes = {
+    fields: [
+      'like',
+      'view',
+      'view',
+      'highestBidder',
       'numberOfBidder'
     ],
-    [
-      models.sequelize.literal(
-        `(SELECT MAX("Bargains"."bidAmount") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "Car"."id" 
-            AND "Bargains"."deletedAt" IS NULL
-            AND "Bargains"."bidType" = 0
-        )`
-      ),
-      'highestBidder'
-    ]
-  ];
+    upperCase: true
+  };
 
-  if (userId) {
-    attributes.push(
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" AND "Likes"."status" IS TRUE 
-              AND "Likes"."userId" = ${userId} 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'islike'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Bargains"."id") 
-            FROM "Bargains" 
-            WHERE "Bargains"."userId" = ${userId} 
-              AND "Bargains"."carId" = "Car"."id" 
-              AND "Bargains"."expiredAt" >= (SELECT NOW()) 
-              AND "Bargains"."deletedAt" IS NULL
-              AND "Bargains"."bidType" = 0
-          )`
-        ),
-        'isBid'
-      ]
-    );
+  if(userId) {
+    attributes.fields.push('islike', 'isBid')
+    attributes.id = userId
   }
 
+  const addAttribute = await carHelper.customFields(attributes);
   return models.Car.findOne({
-    attributes: Object.keys(models.Car.attributes).concat(attributes),
+    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
         model: models.User,
@@ -1028,7 +970,7 @@ async function getByUserId(req, res) {
   const whereProfile = {};
   const whereBargain = {};
   const customFields = {
-    fields: ['islike', 'isBidFromLike', 'like', 'view', 'numberOfBidder', 'highestBidder'],
+    fields: ['islike', 'isBid', 'like', 'view', 'numberOfBidder', 'highestBidder'],
     id,
     upperCase: true
   };
@@ -1337,30 +1279,18 @@ async function getByStatus(req, res) {
     });
   }
 
+  const addAttributes = {
+    fields: [
+      'like',
+      'view'
+    ],
+    upperCase: true,
+    id: userId
+  };
+
+  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'like'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Views"."id") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
-        ),
-        'view'
-      ]
-    ]),
+    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
         model: models.ModelYear,
@@ -2763,7 +2693,7 @@ async function like(req, res) {
   const customFields = {
     fields: [
       'islike',
-      'isBidFromLike',
+      'isBid',
       'like',
       'view',
       'numberOfBidder',
@@ -3039,7 +2969,7 @@ async function view(req, res) {
   const customFields = {
     fields: [
       'islike',
-      'isBidFromLike',
+      'isBid',
       'like',
       'view',
       'numberOfBidder',
@@ -3269,23 +3199,22 @@ async function viewLike(req, res) {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  if (!by) by = 'jumlahLike';
   const array = [
     'id',
     'condition',
     'price',
     'km',
     'createdAt',
-    'jumlahView',
-    'jumlahLike',
+    'like',
+    'view',
     'profile'
   ];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [];
   switch (by) {
-    case 'jumlahView':
-    case 'jumlahLike':
+    case 'like':
+    case 'view':
       order.push([Sequelize.col(by), sort]);
       break;
     case 'profile':
@@ -3307,7 +3236,14 @@ async function viewLike(req, res) {
   const whereModelYear = {};
   const whereProfile = {};
   const customFields = {
-    fields: ['Brands', 'Model', 'jumlahLike', 'jumlahView', 'highestBidder', 'numberOfBidder'],
+    fields: [
+      'Brands', 
+      'Model', 
+      'highestBidder', 
+      'numberOfBidder',
+      'like',
+      'view'
+    ],
     upperCase: true
   };
 

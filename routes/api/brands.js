@@ -3,6 +3,7 @@ const express = require('express');
 const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
+const carHelper = require('../../helpers/car');
 const paginator = require('../../helpers/paginator');
 
 const { Op } = Sequelize;
@@ -166,11 +167,10 @@ router.get('/listingCar/:id', async (req, res) => {
 
   if (by === 'price' || by === 'id') order = [[by, sort]];
 
+  const includeWhere = {};
   const where = {
     brandId: id
   };
-
-  const includeWhere = {};
 
   if (year) {
     Object.assign(includeWhere, {
@@ -180,30 +180,17 @@ router.get('/listingCar/:id', async (req, res) => {
     });
   }
 
+  const addAttributes = {
+    fields: [
+      'like',
+      'view'
+    ],
+    upperCase: true,
+  };
+
+  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat([
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
-        'like'
-      ],
-      [
-        models.sequelize.literal(
-          `(SELECT COUNT("Views"."id") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
-        ),
-        'view'
-      ]
-    ]),
+    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
         model: models.ModelYear,

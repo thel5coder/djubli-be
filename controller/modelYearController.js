@@ -17,6 +17,7 @@ const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
 async function listingAll(req, res) {
+  let { page, limit, sort, by } = req.query;
   const {
     condition,
     brandId,
@@ -36,8 +37,7 @@ async function listingAll(req, res) {
     typeId,
     isMarket
   } = req.query;
-
-  let { page, limit, sort, by } = req.query;
+  
   let offset = 0;
   const countDataPage = 0;
   let distances = {};
@@ -159,6 +159,7 @@ async function listingAll(req, res) {
         queryLatitude,
         queryLongitude
       );
+
       rawDistances = calDistance;
       return calDistance;
     };
@@ -171,7 +172,6 @@ async function listingAll(req, res) {
 
     carFields.push('distance');
     upperCase = true;
-
     separate = true;
     orderCar = [[Sequelize.col(`distance`), sort]];
   }
@@ -209,6 +209,7 @@ async function listingAll(req, res) {
               queryLatitude,
               queryLongitude
             );
+
             rawDistances = calDistance;
             return calDistance;
           };
@@ -230,6 +231,7 @@ async function listingAll(req, res) {
             queryLatitude,
             queryLongitude
           );
+
           rawDistances = calDistance;
           return calDistance;
         };
@@ -264,17 +266,19 @@ async function listingAll(req, res) {
     }
   }
 
+  let whereQuery = '';
+  const whereInclude = {};
   const where = {};
   if (minYear && maxYear) {
     Object.assign(where, {
       year: {
-        [Op.and]: [{ [Op.gte]: minYear }, { [Op.lte]: maxYear }]
+        [Op.and]: [
+          { [Op.gte]: minYear }, 
+          { [Op.lte]: maxYear }
+        ]
       }
     });
   }
-
-  let whereQuery = '';
-  const whereInclude = {};
 
   // Search by City, Subdistrict/Area without Radius
   if (by === 'area' && !radius) {
@@ -305,8 +309,8 @@ async function listingAll(req, res) {
             subdistrictId
           });
 
-          whereQuery += ` AND "Car"."cityId" = ${cityId} AND "Car"."subdistrictId" = ${subdistrictId}`;
-
+          whereQuery += ` AND "Car"."cityId" = ${cityId} 
+            AND "Car"."subdistrictId" = ${subdistrictId}`;
           Object.assign(carCustomFields, {
             latitude: subdistrict.latitude,
             longitude: subdistrict.longitude
@@ -318,12 +322,12 @@ async function listingAll(req, res) {
         });
 
         whereQuery += ` AND "Car"."cityId" = ${cityId}`;
-
         Object.assign(carCustomFields, {
           latitude: city.latitude,
           longitude: city.longitude
         });
       }
+
       carFields.push('distance');
       upperCase = true;
       order = [
@@ -389,33 +393,43 @@ async function listingAll(req, res) {
   if (minKm && maxKm) {
     Object.assign(whereInclude, {
       km: {
-        [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
+        [Op.and]: [
+          { [Op.gte]: minKm }, 
+          { [Op.lte]: maxKm }
+        ]
       }
     });
 
-    whereQuery += ` AND ("Car"."km" >= ${minKm} AND "Car"."km" <= ${maxKm})`;
+    whereQuery += ` AND ("Car"."km" >= ${minKm} 
+      AND "Car"."km" <= ${maxKm})`;
   }
 
   if (minPrice && maxPrice) {
     Object.assign(whereInclude, {
       price: {
-        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+        [Op.and]: [
+          { [Op.gte]: minPrice }, 
+          { [Op.lte]: maxPrice }
+        ]
       }
     });
 
-    whereQuery += ` AND ("Car"."price" >= ${minPrice} AND "Car"."price" <= ${maxPrice})`;
+    whereQuery += ` AND ("Car"."price" >= ${minPrice} 
+      AND "Car"."price" <= ${maxPrice})`;
   }
 
   if (by === 'highestBidder') {
-    const highestBidder = `(SELECT "Bargains"."carId" FROM "Bargains" LEFT JOIN "Cars" as "Car" ON "Bargains"."carId" = "Car"."id" WHERE "Car"."modelYearId" = "ModelYear"."id"  AND "Bargains"."deletedAt" IS NULL  AND "Bargains"."bidType" = 0 ORDER BY "Bargains"."bidAmount" DESC LIMIT 1)`;
+    const highestBidder = await carHelper.customFields({
+      fields: ['highestBidderCarId']
+    });
 
     Object.assign(whereInclude, {
       id: {
-        [Op.eq]: models.sequelize.literal(highestBidder)
+        [Op.eq]: highestBidder[0][0]
       }
     });
 
-    whereQuery += ` AND ("Car"."id" = ${highestBidder})`;
+    whereQuery += ` AND ("Car"."id" = ${highestBidder[0][0].val})`;
   }
 
   if (by === 'location' || (by === 'area' && radius)) {
@@ -439,7 +453,11 @@ async function listingAll(req, res) {
 
   // HARUS diatas return
   const countCar = models.sequelize.literal(
-    `(SELECT COUNT("Car"."id") FROM "Cars" as "Car" WHERE "Car"."modelYearId" = "ModelYear"."id" AND "Car"."deletedAt" IS NULL ${whereQuery})`
+    `(SELECT COUNT("Car"."id") 
+      FROM "Cars" as "Car" 
+      WHERE "Car"."modelYearId" = "ModelYear"."id" 
+        AND "Car"."deletedAt" IS NULL ${whereQuery}
+    )`
   );
 
   if (by === 'like') {
@@ -448,7 +466,11 @@ async function listingAll(req, res) {
   }
 
   Object.assign(where, {
-    [Op.and]: [models.sequelize.where(countCar, { [Op.gte]: 0 })]
+    [Op.and]: [
+      models.sequelize.where(countCar, { 
+        [Op.gte]: 0 }
+      )
+    ]
   });
 
   if (isMarket && JSON.parse(isMarket) == true) {
@@ -978,7 +1000,7 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
 
 async function listingAllNew(req, res, fromCallback = false) {
   let { page, limit, by, sort } = req.query;
-
+  let { radius, latitude, longitude } = req.query;
   const {
     id,
     condition,
@@ -999,8 +1021,6 @@ async function listingAllNew(req, res, fromCallback = false) {
     isMarket
   } = req.query;
 
-  let { radius, latitude, longitude } = req.query;
-
   let offset = 0;
   let distances = {};
   let rawDistances = ``;
@@ -1015,7 +1035,6 @@ async function listingAllNew(req, res, fromCallback = false) {
   else if (sort !== 'asc' && sort !== 'desc') sort = 'asc';
 
   let tableCarName = 'modelYears->cars';
-
   const array = [
     'id',
     'highestBidder',
@@ -1238,10 +1257,12 @@ async function listingAllNew(req, res, fromCallback = false) {
   let required = false;
   const where = {};
   let whereQuery = ' AND "Car"."deletedAt" IS NULL';
-  if (id)
+
+  if (id) {
     Object.assign(where, {
       id
     });
+  }
 
   if (radius) {
     if (radius.length < 2)
@@ -1260,6 +1281,7 @@ async function listingAllNew(req, res, fromCallback = false) {
           queryLatitude,
           queryLongitude
         );
+
         rawDistances = calDistance;
         return calDistance;
       };
@@ -1290,11 +1312,12 @@ async function listingAllNew(req, res, fromCallback = false) {
       // Search by City, Subdistrict/Area without Radius
       if (cityId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
         const city = await models.City.findByPk(cityId);
-        if (!city)
+        if (!city) {
           return res.status(400).json({
             success: false,
             errors: 'City not found!'
           });
+        }
 
         if (subdistrictId) {
           const subdistrict = await models.SubDistrict.findOne({
@@ -1303,11 +1326,13 @@ async function listingAllNew(req, res, fromCallback = false) {
               cityId
             }
           });
-          if (!subdistrict)
+
+          if (!subdistrict) {
             return res.status(400).json({
               success: false,
               errors: 'Subdistrict not found!'
             });
+          }
 
           if (city && subdistrict) {
             Object.assign(whereCar, {
@@ -1315,8 +1340,8 @@ async function listingAllNew(req, res, fromCallback = false) {
               subdistrictId
             });
 
-            whereQuery += ` AND "Car"."cityId" = ${cityId} AND "Car"."subdistrictId" = ${subdistrictId}`;
-
+            whereQuery += ` AND "Car"."cityId" = ${cityId} 
+              AND "Car"."subdistrictId" = ${subdistrictId}`;
             latitude = subdistrict.latitude;
             longitude = subdistrict.longitude;
           }
@@ -1326,7 +1351,6 @@ async function listingAllNew(req, res, fromCallback = false) {
           });
 
           whereQuery += ` AND "Car"."cityId" = ${cityId}`;
-
           latitude = city.latitude;
           longitude = city.longitude;
         }
@@ -1345,6 +1369,7 @@ async function listingAllNew(req, res, fromCallback = false) {
     Object.assign(whereCar, {
       condition
     });
+
     required = true;
     whereQuery += ` AND "Car"."condition" = ${condition}`;
   }
@@ -1354,6 +1379,7 @@ async function listingAllNew(req, res, fromCallback = false) {
     Object.assign(whereBrand, {
       id: brandId
     });
+
     required = true;
     whereQuery += ` AND "Car"."brandId" = ${brandId}`;
   }
@@ -1362,6 +1388,7 @@ async function listingAllNew(req, res, fromCallback = false) {
     Object.assign(whereCar, {
       modelId
     });
+
     required = true;
     whereQuery += ` AND "Car"."modelId" = ${modelId}`;
   }
@@ -1370,6 +1397,7 @@ async function listingAllNew(req, res, fromCallback = false) {
     Object.assign(whereCar, {
       groupModelId
     });
+
     required = true;
     whereQuery += ` AND "Car"."groupModelId" = ${groupModelId}`;
   }
@@ -1387,9 +1415,10 @@ async function listingAllNew(req, res, fromCallback = false) {
         ]
       }
     });
-    required = true;
 
-    whereQuery += ` AND ("Car"."km" >= ${minKm} AND "Car"."km" <= ${maxKm})`;
+    required = true;
+    whereQuery += ` AND ("Car"."km" >= ${minKm} 
+      AND "Car"."km" <= ${maxKm})`;
   }
 
   if (minPrice && maxPrice) {
@@ -1405,15 +1434,17 @@ async function listingAllNew(req, res, fromCallback = false) {
         ]
       }
     });
-    required = true;
 
-    whereQuery += ` AND ("Car"."price" >= ${minPrice} AND "Car"."price" <= ${maxPrice})`;
+    required = true;
+    whereQuery += ` AND ("Car"."price" >= ${minPrice} 
+      AND "Car"."price" <= ${maxPrice})`;
   }
 
   if (exteriorColorId) {
     Object.assign(whereCar, {
       exteriorColorId
     });
+
     required = true;
     whereQuery += ` AND ("Car"."exteriorColorId" = ${exteriorColorId})`;
   }
@@ -1422,6 +1453,7 @@ async function listingAllNew(req, res, fromCallback = false) {
     Object.assign(whereCar, {
       interiorColorId
     });
+
     required = true;
     whereQuery += ` AND ("Car"."interiorColorId" = ${interiorColorId})`;
   }
@@ -1515,7 +1547,21 @@ async function listingAllNew(req, res, fromCallback = false) {
       }
     }
   ];
-  const attributeCar = [
+
+  const attributeCar = await carHelper.customFields({
+    fields: [
+      'bidAmount',
+      'numberOfBidder',
+      'like',
+      'view',
+      'groupModelTypeId',
+      'latitude',
+      'longitude',
+    ],
+    customCar: tableCarName
+  });
+
+  attributeCar.push(
     'id',
     'userId',
     'brandId',
@@ -1540,74 +1586,8 @@ async function listingAllNew(req, res, fromCallback = false) {
     'roomId',
     'oldPrice',
     'createdAt',
-    'updatedAt',
-    [
-      models.sequelize.literal(
-        `(SELECT MAX("Bargains"."bidAmount") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "${tableCarName}"."id" 
-            AND "Bargains"."deletedAt" IS NULL 
-            AND "Bargains"."bidType" = 0
-        )`
-      ),
-      'bidAmount'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Bargains"."id") 
-          FROM "Bargains" 
-          WHERE "Bargains"."carId" = "${tableCarName}"."id" 
-            AND "Bargains"."deletedAt" IS NULL 
-            AND "Bargains"."bidType" = 0
-            AND (SELECT COUNT("b"."id")
-              FROM "Bargains" b
-              WHERE "b"."deletedAt" IS NULL
-                AND "b"."negotiationType" = 8
-                AND "b"."carId" = "Bargains"."carId") = 0
-        )`
-      ),
-      'numberOfBidder'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Likes"."id") 
-          FROM "Likes" 
-          WHERE "Likes"."carId" = "${tableCarName}"."id" 
-            AND "Likes"."status" IS TRUE 
-            AND "Likes"."deletedAt" IS NULL
-        )`
-      ),
-      'like'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT COUNT("Views"."id") 
-          FROM "Views" 
-          WHERE "Views"."carId" = "${tableCarName}"."id" 
-            AND "Views"."deletedAt" IS NULL
-        )`
-      ),
-      'view'
-    ],
-    [
-      models.sequelize.literal(
-        `(SELECT "GroupModels"."typeId" 
-          FROM "GroupModels" 
-          WHERE "GroupModels"."id" = "${tableCarName}"."groupModelId" 
-            AND "GroupModels"."deletedAt" IS NULL
-        )`
-      ),
-      'groupModelTypeId'
-    ],
-    [
-      models.sequelize.literal(`(SELECT split_part("${tableCarName}"."location", ',', 1))`),
-      'latitude'
-    ],
-    [
-      models.sequelize.literal(`(SELECT split_part("${tableCarName}"."location", ',', 2))`),
-      'longitude'
-    ]
-  ];
+    'updatedAt'
+  );
 
   if (latitude && longitude) {
     if (radius && radius[0] >= 0 && radius[1] > 0) {
@@ -1646,9 +1626,42 @@ async function listingAllNew(req, res, fromCallback = false) {
   });
 
   const modelAttribute = await carHelper.customFields({
-    fields: ['maxPriceModel', 'minPriceModel', 'maxKm', 'minKm', 'maxYear', 'minYear'],
+    fields: [
+      'maxPriceModel', 
+      'minPriceModel', 
+      'maxKm', 
+      'minKm', 
+      'maxYear', 
+      'minYear'
+    ],
     whereQuery
   });
+
+  const modelYearAttribute = await carHelper.customFields({
+    fields: [
+      'numberOfCar',
+      'maxPrice',
+      'minPrice',
+      'numberOfBidderModelYear',
+      'highestBidderModelYear',
+      'highestBidderCarId',
+      'purchase'
+    ],
+    whereQuery,
+    upperCase: true,
+    modelYearLowerCase: true,
+    modelYearLowerCasePrefix: true
+  });
+
+  modelYearAttribute.push(
+    'id',
+    'modelId',
+    'year',
+    'picture',
+    'price',
+    'createdAt',
+    'updatedAt'
+  );
 
   return models.Model.findAll({
     attributes: Object.keys(models.Model.attributes).concat(modelAttribute),
@@ -1681,104 +1694,7 @@ async function listingAllNew(req, res, fromCallback = false) {
       {
         model: models.ModelYear,
         as: 'modelYears',
-        attributes: [
-          'id',
-          'modelId',
-          'year',
-          'picture',
-          'price',
-          'createdAt',
-          'updatedAt',
-          [
-            models.Sequelize.literal(
-              `(SELECT COUNT("Car"."id") 
-                  FROM "Cars" as "Car" 
-                  WHERE "Car"."modelYearId" = "modelYears"."id" 
-                    AND "Car"."deletedAt" IS NULL ${whereQuery}
-                )`
-            ),
-            'numberOfCar'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT MAX("Car"."price") 
-                  FROM "Cars" as "Car" 
-                  WHERE "Car"."modelYearId" = "modelYears"."id" 
-                    AND "Car"."deletedAt" IS NULL ${whereQuery}
-                )`
-            ),
-            'maxPrice'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT MIN("Car"."price") 
-                  FROM "Cars" as "Car" 
-                  WHERE "Car"."modelYearId" = "modelYears"."id" 
-                    AND "Car"."deletedAt" IS NULL ${whereQuery}
-                )`
-            ),
-            'minPrice'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT COUNT("Bargains"."id") 
-                  FROM "Bargains" 
-                  LEFT JOIN "Cars" as "Car" 
-                    ON "Bargains"."carId" = "Car"."id" 
-                  WHERE "Car"."modelYearId" = "modelYears"."id" 
-                    AND "Bargains"."deletedAt" IS NULL 
-                    AND "Bargains"."bidType" = 0 ${whereQuery}
-                    AND (SELECT COUNT("b"."id")
-                      FROM "Bargains" b
-                      WHERE "b"."deletedAt" IS NULL
-                        AND "b"."negotiationType" = 8
-                        AND "b"."carId" = "Bargains"."carId") = 0
-                )`
-            ),
-            'numberOfBidder'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT MAX("Bargains"."bidAmount") 
-                  FROM "Bargains" 
-                  LEFT JOIN "Cars" as "Car" 
-                    ON "Bargains"."carId" = "Car"."id" 
-                  WHERE "Car"."modelYearId" = "modelYears"."id" 
-                    AND "Bargains"."deletedAt" IS NULL 
-                    AND "Bargains"."bidType" = 0 ${whereQuery}
-                )`
-            ),
-            'highestBidder'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT "Bargains"."carId" 
-                  FROM "Bargains" 
-                  LEFT JOIN "Cars" as "Car" 
-                    ON "Bargains"."carId" = "Car"."id" 
-                  WHERE "Car"."modelYearId" = "modelYears"."id" 
-                    AND "Bargains"."deletedAt" IS NULL 
-                    AND "Bargains"."bidType" = 0 ${whereQuery} 
-                  ORDER BY "Bargains"."bidAmount" 
-                  DESC LIMIT 1
-                )`
-            ),
-            'highestBidderCarId'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT COUNT("Purchase"."id") 
-                  FROM "Purchases" as "Purchase" 
-                  LEFT JOIN "Cars" as "Car" 
-                    ON "Purchase"."carId" = "Car"."id" 
-                  WHERE "Car"."status" = 2 
-                    AND "Car"."modelYearId" = "modelYears"."id" 
-                    AND "Car"."deletedAt" IS NULL
-                )`
-            ),
-            'purchase'
-          ]
-        ],
+        attributes: modelYearAttribute,
         where: whereModelYear,
         order: orderModelYear,
         include: [
@@ -1840,8 +1756,8 @@ async function listingAllNew(req, res, fromCallback = false) {
         where,
         distinct: true
       });
-      const pagination = paginator.paging(page, count, limit);
 
+      const pagination = paginator.paging(page, count, limit);
       const additional = await models.Car.findAll({
         attributes: [
           [Sequelize.fn('max', Sequelize.col('price')), 'maxPrice'],
@@ -1850,13 +1766,23 @@ async function listingAllNew(req, res, fromCallback = false) {
           [Sequelize.fn('min', Sequelize.col('km')), 'minKm'],
           [
             models.sequelize.literal(
-              `(SELECT MAX("ModelYear"."year") FROM "ModelYears" as "ModelYear" INNER JOIN "Cars" as "Car" ON "ModelYear"."id" = "Car"."modelYearId" WHERE "Car"."deletedAt" IS NULL)`
+              `(SELECT MAX("ModelYear"."year") 
+                FROM "ModelYears" as "ModelYear" 
+                INNER JOIN "Cars" as "Car" 
+                  ON "ModelYear"."id" = "Car"."modelYearId" 
+                WHERE "Car"."deletedAt" IS NULL
+              )`
             ),
             'maxYear'
           ],
           [
             models.sequelize.literal(
-              `(SELECT MIN("ModelYear"."year") FROM "ModelYears" as "ModelYear" INNER JOIN "Cars" as "Car" ON "ModelYear"."id" = "Car"."modelYearId" WHERE "Car"."deletedAt" IS NULL)`
+              `(SELECT MIN("ModelYear"."year") 
+                FROM "ModelYears" as "ModelYear" 
+                INNER JOIN "Cars" as "Car" 
+                  ON "ModelYear"."id" = "Car"."modelYearId" 
+                WHERE "Car"."deletedAt" IS NULL
+              )`
             ),
             'minYear'
           ]
@@ -1903,15 +1829,19 @@ async function luxuryCar(req, res) {
 
   const where = {};
   let whereQuery = '';
-
   const whereInclude = {
-    [Op.or]: [{ status: 0 }, { status: 1 }]
+    status: {
+      [Op.in]: [0,1]
+    }
   };
 
   if (minPrice && maxPrice) {
     Object.assign(whereInclude, {
       price: {
-        [Op.and]: [{ [Op.gte]: minPrice }, { [Op.lte]: maxPrice }]
+        [Op.and]: [
+          { [Op.gte]: minPrice }, 
+          { [Op.lte]: maxPrice }
+        ]
       }
     });
 
@@ -2046,7 +1976,12 @@ async function luxuryCar(req, res) {
         order: [['bidAmount', 'desc']],
         attributes: {
           include: await carHelper.customFields({
-            fields: ['bidAmountModelYears', 'numberOfBidder', 'like', 'view']
+            fields: [
+              'bidAmountModelYears', 
+              'numberOfBidder', 
+              'like', 
+              'view'
+            ]
           })
         },
         include: includeCar
@@ -2103,7 +2038,8 @@ async function listingCar(req, res, auth = false) {
     typeId,
     exteriorColorId,
     interiorColorId,
-    isSimilarId
+    isSimilarId,
+    isMarket
   } = req.query;
   let { latitude, longitude } = req.query;
 
@@ -2140,31 +2076,60 @@ async function listingCar(req, res, auth = false) {
 
   // Search By Location (Latitude, Longitude & Radius)
   if (by === 'location') {
-    if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
-    if (!longitude) return res.status(400).json({ success: false, errors: 'Longitude not found!' });
-    if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
+    if (!latitude) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Latitude not found!' 
+      });
+    }
+
+    if (!longitude) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Longitude not found!' 
+      });
+    }
+
+    if (!radius) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Radius not found!' 
+      });
+    }
   }
 
   // Search by City, Subdistrict/Area & Radius
   if (by === 'area') {
-    // if (!radius) return res.status(400).json({ success: false, errors: 'Radius not found!' });
-    if (!cityId && !subdistrictId)
-      return res.status(422).json({ success: false, errors: 'invalid city or subdistrictId!' });
+    if (!cityId && !subdistrictId) {
+      return res.status(422).json({ 
+        success: false, 
+        errors: 'invalid city or subdistrictId!' 
+      });
+    }
   }
 
+  const whereModelYear = {};
   const where = {
     status: {
       [Op.in]: [0, 1]
     },
     modelYearId: id
   };
-  const whereModelYear = {};
 
   if (radius) {
-    if (!Array.isArray(radius))
-      return res.status(422).json({ success: false, errors: 'invalid radius' });
-    if (radius.length < 2)
-      return res.status(422).json({ success: false, errors: 'incomplete radius' });
+    if (!Array.isArray(radius)) {
+      return res.status(422).json({ 
+        success: false, 
+        errors: 'invalid radius' 
+      });
+    }
+
+    if (radius.length < 2) {
+      return res.status(422).json({ 
+        success: false, 
+        errors: 'incomplete radius' 
+      });
+    }
 
     if (radius[0] >= 0 && radius[1] > 0) {
       const rawDistancesFunc = (tableName = 'Car') => {
@@ -2176,6 +2141,7 @@ async function listingCar(req, res, auth = false) {
           queryLatitude,
           queryLongitude
         );
+
         rawDistances = calDistance;
         return calDistance;
       };
@@ -2218,7 +2184,12 @@ async function listingCar(req, res, auth = false) {
 
   if (minYear && maxYear) {
     Object.assign(whereModelYear, {
-      year: { [Op.and]: [{ [Op.lte]: maxYear }, { [Op.gte]: minYear }] }
+      year: { 
+        [Op.and]: [
+          { [Op.lte]: maxYear }, 
+          { [Op.gte]: minYear }
+        ] 
+      }
     });
   }
 
@@ -2233,7 +2204,10 @@ async function listingCar(req, res, auth = false) {
   if (minKm && maxKm) {
     Object.assign(where, {
       km: {
-        [Op.and]: [{ [Op.gte]: minKm }, { [Op.lte]: maxKm }]
+        [Op.and]: [
+          { [Op.gte]: minKm }, 
+          { [Op.lte]: maxKm }
+        ]
       }
     });
   }
@@ -2247,12 +2221,20 @@ async function listingCar(req, res, auth = false) {
   }
 
   if (cityId && radius && radius[0] >= 0 && radius[1] > 0) {
-    // if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
-    if (radius.length < 2)
-      return res.status(422).json({ success: false, errors: 'incomplete radius' });
-
+    if (radius.length < 2) {
+      return res.status(422).json({ 
+        success: false, 
+        errors: 'incomplete radius' 
+      });
+    }
+      
     const city = await models.City.findByPk(cityId);
-    if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+    if (!city) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'City not found!' 
+      });
+    }
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
@@ -2264,27 +2246,40 @@ async function listingCar(req, res, auth = false) {
     longitude = city.longitude;
   } else if (cityId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
     const city = await models.City.findByPk(cityId);
-    if (!city) return res.status(400).json({ success: false, errors: 'City not found!' });
+    if (!city) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'City not found!' 
+      });
+    }
 
     latitude = city.latitude;
     longitude = city.longitude;
-
     Object.assign(where, {
       cityId
     });
   }
 
   if (subdistrictId && radius && radius[0] >= 0 && radius[1] > 0) {
-    // if (!radius) return res.status(422).json({ success: false, errors: 'radius not found' });
-    if (radius.length < 2)
-      return res.status(422).json({ success: false, errors: 'incomplete radius' });
+    if (radius.length < 2) {
+      return res.status(422).json({ 
+        success: false, 
+        errors: 'incomplete radius' 
+      });
+    }
 
     const whereSubDistrict = { id: subdistrictId };
-    if (cityId) Object.assign(whereSubDistrict, { cityId });
+    if (cityId) {
+      Object.assign(whereSubDistrict, { cityId });
+    }
 
     const subdistrict = await models.SubDistrict.findOne({ where: whereSubDistrict });
-    if (!subdistrict)
-      return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+    if (!subdistrict) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Subdistrict not found!' 
+      });
+    }
 
     const queryLatitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 1)), ''), '0') AS NUMERIC) AS "latitude")`;
     const queryLongitude = `(SELECT CAST(COALESCE(NULLIF((SELECT split_part("Car"."location", ',', 2)), ''), '0') AS NUMERIC) AS "longitude")`;
@@ -2301,11 +2296,17 @@ async function listingCar(req, res, auth = false) {
     longitude = subdistrict.longitude;
   } else if (subdistrictId && (!radius || (radius && radius[0] == 0 && radius[1] == ''))) {
     const whereSubDistrict = { id: subdistrictId };
-    if (cityId) Object.assign(whereSubDistrict, { cityId });
+    if (cityId) {
+      Object.assign(whereSubDistrict, { cityId });
+    }
 
     const subdistrict = await models.SubDistrict.findOne({ where: whereSubDistrict });
-    if (!subdistrict)
-      return res.status(400).json({ success: false, errors: 'Subdistrict not found!' });
+    if (!subdistrict) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Subdistrict not found!' 
+      });
+    }
 
     latitude = subdistrict.latitude;
     longitude = subdistrict.longitude;
@@ -2317,33 +2318,39 @@ async function listingCar(req, res, auth = false) {
   }
 
   if (by === 'highestBidder') {
-    const highestBidder = `(SELECT "Bargains"."carId" 
-      FROM "Bargains" 
-      LEFT JOIN "Cars" 
-        ON "Bargains"."carId" = "Car"."id" 
-      WHERE "Bargains"."deletedAt" IS NULL 
-        AND "Bargains"."bidType" = 0
-      ORDER BY "Bargains"."bidAmount" 
-      DESC LIMIT 1
-    )`;
-
+    const highestBidder = await carHelper.customFields({
+      fields: ['highestBidderCarId'],
+      modelYearLowerCase: true
+    });
+    
     Object.assign(where, {
       id: {
-        [Op.eq]: models.sequelize.literal(highestBidder)
+        [Op.eq]: highestBidder[0][0]
       }
     });
   }
 
   if ((by === 'location' || by === 'area') && radius) {
-    // if (!radius) return res.status(422).json({ success: false, errors: 'invalid radius' });
-    if (radius.length < 2)
-      return res.status(422).json({ success: false, errors: 'incomplete radius' });
-    if (!latitude) return res.status(400).json({ success: false, errors: 'Latitude not found!' });
-    if (!longitude) return res.status(400).json({ success: false, errors: 'Longitude not found!' });
+    if (radius.length < 2) {
+      return res.status(422).json({ 
+        success: false, 
+        errors: 'incomplete radius' 
+      });
+    }
+      
+    if (!latitude) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Latitude not found!' 
+      });
+    }
 
-    // Object.assign(where, {
-    //   [Op.and]: [models.sequelize.where(distances, { [Op.lte]: radius })]
-    // });
+    if (!longitude) {
+      return res.status(400).json({ 
+        success: false, 
+        errors: 'Longitude not found!' 
+      });
+    }
   }
 
   if (typeId) {
@@ -2408,6 +2415,18 @@ async function listingCar(req, res, auth = false) {
     Object.assign(where, {
       id: {
         [Op.ne]: isSimilarId
+      }
+    });
+  }
+
+  if (isMarket && JSON.parse(isMarket) == true) {
+    Object.assign(where, {
+      status: 2
+    });
+  } else {
+    Object.assign(where, {
+      status: {
+        [Op.in]: [0,1]
       }
     });
   }

@@ -76,8 +76,6 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
       notificationBody: `Mobil yang anda suka telah terjual`,
       notificationClickAction: `carPriceSold`,
       dataReferenceId: carData.id,
-      // category: 3, // like
-      // status: 2, // mobil terjual
       typeNotif: 'tabLike'
     });
   });
@@ -129,8 +127,6 @@ router.post('/', passport.authenticate('user', { session: false }), async (req, 
         notificationClickAction: `carPurchase`,
         dataReferenceId: carData.id,
         category: 7,
-        // category: 1,
-        // status: 1,
         typeNotif: 'tabJual'
       });
 

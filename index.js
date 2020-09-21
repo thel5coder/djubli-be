@@ -34,9 +34,7 @@ const upload = multer({
 const port = process.env.PORT || 5000;
 const app = express();
 const http = require('http').Server(app);
-// const io = require('socket.io')(http);
 const io = require('socket.io')(http, {
-  // path: '/socket',
   serveClient: false,
   // below are engine.IO options
   pingInterval: 10000,
@@ -49,15 +47,12 @@ const io = require('socket.io')(http, {
       'http://localhost:5000'
     ];
 
-    let origin = 'https://apidev-djublee.twisdev.com';
+    let origin = '';
     if (allowedOrigins.includes(req.headers.origin)) {
       origin = req.headers.origin;
     }
 
     const headers = {
-      // 'Access-Control-Allow-Origin': req.headers.origin, // or the specific origin you want to give access to,
-      // 'Access-Control-Allow-Origin': req.header('host'),
-      // 'Access-Control-Allow-Origin': `https://apidev-djublee.twisdev.com`,
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       'Access-Control-Allow-Origin': origin,
       'Access-Control-Allow-Credentials': true
@@ -85,22 +80,13 @@ app.use(passport.initialize());
 require('./config/passport')(passport);
 
 const client = redis.createClient(process.env.REDIS_HOST);
-// const client = redis.createClient(6379, 'localhost');
 client.on('error', err => {
   console.log(`Error ${err}`);
 });
 
-// app.get('/socket-message', (req, res) => {
-//   res.sendFile(`${__dirname}/socket-message.html`);
-// });
-
-// io.on('connection', socket => {
-//   console.log('client connected');
-
-//   socket.on('negotiation-car', msg => {
-//     console.log(`Message: ${msg}`);
-//   });
-// });
+io.on('connection', socket => {
+  console.log('client connected');
+});
 
 // enable socket io to routes
 app.use((req, res, next) => {

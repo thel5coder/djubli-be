@@ -3,6 +3,7 @@ const express = require('express');
 const validator = require('validator');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
+const carHelper = require('../../helpers/car');
 const paginator = require('../../helpers/paginator');
 
 const { Op } = Sequelize;
@@ -94,6 +95,18 @@ router.get('/listingCar', async (req, res) => {
       condition: carCondition
     });
   }
+
+  const addAttributes = {
+    fields: [
+      'like',
+      'view',
+      'numberOfBidder',
+      'bidAmount'
+    ],
+    upperCase: true,
+  };
+
+  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Type.findAll({
     include: [
       {
@@ -136,52 +149,9 @@ router.get('/listingCar', async (req, res) => {
           {
             model: models.Car,
             as: 'car',
+            separate: true,
             where: whereCar,
-            attributes: Object.keys(models.Car.attributes).concat([
-              [
-                models.sequelize.literal(
-                  `(SELECT MAX("Bargains"."bidAmount") 
-                    FROM "Bargains" 
-                    WHERE "Bargains"."carId" = "Car"."id"
-                      AND "Bargains"."deletedAt" IS NULL
-                      AND "Bargains"."bidType" = 0
-                  )`
-                ),
-                'bidAmount'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Bargains"."id") 
-                    FROM "Bargains" 
-                    WHERE "Bargains"."carId" = "Car"."id"
-                      AND "Bargains"."deletedAt" IS NULL
-                      AND "Bargains"."bidType" = 0
-                  )`
-                ),
-                'numberOfBidder'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Likes"."id") 
-                    FROM "Likes" 
-                    WHERE "Likes"."carId" = "car"."id" 
-                      AND "Likes"."status" IS TRUE 
-                      AND "Likes"."deletedAt" IS NULL
-                  )`
-                ),
-                'like'
-              ],
-              [
-                models.sequelize.literal(
-                  `(SELECT COUNT("Views"."id") 
-                    FROM "Views" 
-                    WHERE "Views"."carId" = "car"."id" 
-                      AND "Views"."deletedAt" IS NULL
-                  )`
-                ),
-                'view'
-              ]
-            ]),
+            attributes: Object.keys(models.Car.attributes).concat(addAttribute),
             include: [
               {
                 model: models.User,
