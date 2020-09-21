@@ -694,7 +694,7 @@ async function carsGetRefactor(req, res, auth = false) {
       LEFT JOIN "Views" v ON v."carId" = c.id
       LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
       ${distanceJoin}
-      WHERE c."deletedAt" IS NULL AND lc."id" IS NULL ${conditionString}
+      WHERE c."deletedAt" IS NULL ${conditionString}
       group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo"
       order by ${by} ${sort}
       OFFSET ${offset} LIMIT ${limit}`,
@@ -723,19 +723,13 @@ async function getById(req, res) {
   // FOR isLike & isBid
   const { userId } = req.query;
   const attributes = {
-    fields: [
-      'like',
-      'view',
-      'view',
-      'highestBidder',
-      'numberOfBidder'
-    ],
+    fields: ['like', 'view', 'view', 'highestBidder', 'numberOfBidder'],
     upperCase: true
   };
 
-  if(userId) {
-    attributes.fields.push('islike', 'isBid')
-    attributes.id = userId
+  if (userId) {
+    attributes.fields.push('islike', 'isBid');
+    attributes.id = userId;
   }
 
   const addAttribute = await carHelper.customFields(attributes);
@@ -1280,10 +1274,7 @@ async function getByStatus(req, res) {
   }
 
   const addAttributes = {
-    fields: [
-      'like',
-      'view'
-    ],
+    fields: ['like', 'view'],
     upperCase: true,
     id: userId
   };
@@ -2691,15 +2682,7 @@ async function like(req, res) {
   const whereModelYear = {};
   const whereProfile = {};
   const customFields = {
-    fields: [
-      'islike',
-      'isBid',
-      'like',
-      'view',
-      'numberOfBidder',
-      'highestBidder',
-      'bidAmount'
-    ],
+    fields: ['islike', 'isBid', 'like', 'view', 'numberOfBidder', 'highestBidder', 'bidAmount'],
     id
   };
 
@@ -2967,15 +2950,7 @@ async function view(req, res) {
   const whereModelYear = {};
   const whereProfile = {};
   const customFields = {
-    fields: [
-      'islike',
-      'isBid',
-      'like',
-      'view',
-      'numberOfBidder',
-      'highestBidder',
-      'bidAmount'
-    ],
+    fields: ['islike', 'isBid', 'like', 'view', 'numberOfBidder', 'highestBidder', 'bidAmount'],
     id
   };
 
@@ -3199,16 +3174,7 @@ async function viewLike(req, res) {
   if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
   else page = 1;
 
-  const array = [
-    'id',
-    'condition',
-    'price',
-    'km',
-    'createdAt',
-    'like',
-    'view',
-    'profile'
-  ];
+  const array = ['id', 'condition', 'price', 'km', 'createdAt', 'like', 'view', 'profile'];
   if (array.indexOf(by) < 0) by = 'createdAt';
   sort = ['asc', 'desc'].indexOf(sort) < 0 ? 'asc' : sort;
   const order = [];
@@ -3236,14 +3202,7 @@ async function viewLike(req, res) {
   const whereModelYear = {};
   const whereProfile = {};
   const customFields = {
-    fields: [
-      'Brands', 
-      'Model', 
-      'highestBidder', 
-      'numberOfBidder',
-      'like',
-      'view'
-    ],
+    fields: ['Brands', 'Model', 'highestBidder', 'numberOfBidder', 'like', 'view'],
     upperCase: true
   };
 
