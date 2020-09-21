@@ -550,6 +550,16 @@ async function carsGetRefactor(req, res, auth = false) {
     by = `c."createdAt"`;
   } else if (by === 'price') {
     by = `c."price"`;
+  } else if (by === 'km') {
+    by = `c."km"`;
+  } else if (by === 'userType') {
+    by = `u."type"`;
+  } else if (by === 'condition') {
+    by = `c."condition"`;
+  } else if (by === 'likes') {
+    by = `likes`;
+  } else if (by === 'location' && !isNaN(latitude) && !isNaN(longitude)) {
+    by = `cd."distance"`;
   } else {
     by = 'c.id';
   }
@@ -608,6 +618,21 @@ async function carsGetRefactor(req, res, auth = false) {
     Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
     carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
   }
+
+  if (!isNaN(latitude) && !isNaN(longitude)) {
+    carDistance = `, car_distance AS (
+      select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
+          CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
+        ) ) * cos( radians(
+          CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 2) AS DOUBLE PRECISION) END
+        ) - radians(${longitude}) ) + sin( radians(${latitude}) ) * sin( radians(
+          CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
+        ) ) ) ) * 0.8 * 1.60934 AS distance
+      from "Cars" where "deletedAt" IS NULL ${carConditionString})`;
+    distanceJoin = ` LEFT JOIN car_distance cd ON cd.id = c.id `;
+    distanceSelect = `, cd.distance`;
+    distanceGroup = `, cd.distance`;
+  }
   if (
     !isNaN(latitude) &&
     !isNaN(longitude) &&
@@ -616,20 +641,7 @@ async function carsGetRefactor(req, res, auth = false) {
     !cityId &&
     !subdistrictId
   ) {
-    carDistance = `, car_distance AS (
-    select id, ( 6371.8 * acos( cos( radians(${latitude}) ) * cos( radians(
-        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
-      ) ) * cos( radians(
-        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 2) AS DOUBLE PRECISION) END
-      ) - radians(${longitude}) ) + sin( radians(${latitude}) ) * sin( radians(
-        CASE WHEN location = '' THEN 0 ELSE CAST(SPLIT_PART(location, ',', 1) AS DOUBLE PRECISION) END
-      ) ) ) ) * 0.8 * 1.60934 AS distance
-    from "Cars" where "deletedAt" IS NULL ${carConditionString})`;
-    distanceJoin = ` LEFT JOIN car_distance cd ON cd.id = c.id `;
     conditionString += ` AND cd.distance >= :minRadius AND cd.distance <= :maxRadius`;
-    distanceSelect = `, cd.distance`;
-    distanceGroup = `, cd.distance`;
-
     Object.assign(replacements, { minRadius, maxRadius });
   }
   if (condition) {
@@ -683,9 +695,14 @@ async function carsGetRefactor(req, res, auth = false) {
       count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture"
+      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
+      subdistrict."name" as "subdistrictName", u."type" as "userType",
+      array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
+      array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries"
       FROM "Cars" c
       left join "Users" u on u."id" = c."userId"
+      left join "Cities" city on city."id" = c."cityId"
+      left join "SubDistricts" subdistrict on subdistrict."id" = c."subdistrictId"
       left join "ModelYears" my on my."id" = c."modelYearId"
       left join "Models" m on m."id" = c."modelId"
       left join "GroupModels" gm on gm."id" = c."groupModelId"
@@ -698,11 +715,16 @@ async function carsGetRefactor(req, res, auth = false) {
       LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
       LEFT JOIN "car_picture" AS cp ON cp."carId" = c."id"
       LEFT JOIN "Files" AS cpf ON cpf."id" = cp."fileId"
+      LEFT JOIN "ExteriorGaleries" eg ON eg."carId" = c.id
+      LEFT JOIN "Files" egf ON egf."id" = eg."fileId"
+      LEFT JOIN "InteriorGaleries" ig ON ig."carId" = c.id
+      LEFT JOIN "Files" igf ON igf."id" = ig."fileId"
       ${distanceJoin}
       WHERE c."deletedAt" IS NULL ${conditionString}
-      group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo", cpf."url"
-      order by ${by} ${sort}
-      OFFSET ${offset} LIMIT ${limit}`,
+      group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name",
+      b."logo", cpf."url", city."name", subdistrict."name", u."type"
+      order by ${by} ${sort}`,
+      // OFFSET ${offset} LIMIT ${limit}`,
       {
         replacements,
         type: QueryTypes.SELECT
@@ -714,6 +736,43 @@ async function carsGetRefactor(req, res, auth = false) {
         errors: err.message
       });
     });
+
+  function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+  }
+  for (let i = 0; i < data.length; i += 1) {
+    const exteriors = new Array();
+    const eg = data[i].exteriorGaleries.split('|').filter(onlyUnique);
+    for (let j = 0; j < eg.length; j += 1) {
+      const egColumn = eg[j].split('#sep#');
+      if (egColumn.length === 2) {
+        if (egColumn[1] !== '<m>') {
+          exteriors.push({
+            id: parseInt(egColumn[0], 10),
+            picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+          });
+        }
+      }
+      data[i].exteriorGalery = exteriors;
+      delete data[i].exteriorGaleries;
+    }
+
+    const interiors = new Array();
+    const ig = data[i].interiorGaleries.split('|').filter(onlyUnique);
+    for (let j = 0; j < ig.length; j += 1) {
+      const igColumn = ig[j].split('#sep#');
+      if (igColumn.length === 2) {
+        if (igColumn[1] !== '<m>') {
+          interiors.push({
+            id: parseInt(igColumn[0], 10),
+            picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+          });
+        }
+      }
+    }
+    data[i].interiorGalery = interiors;
+    delete data[i].interiorGaleries;
+  }
 
   res.json({
     success: true,
