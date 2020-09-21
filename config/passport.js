@@ -37,6 +37,7 @@ module.exports = passport => {
   passport.use(
     'user',
     new Strategy(opts, async (jwtPayload, done) => {
+      console.log(jwtPayload);
       const data = await models.User.findByPk(jwtPayload.id);
       if (data) {
         return done(null, data);

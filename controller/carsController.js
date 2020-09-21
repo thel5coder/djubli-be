@@ -536,6 +536,8 @@ async function carsGetRefactor(req, res, auth = false) {
     profileUser,
     isMarket,
     showDetailPhoto,
+    likeMe,
+    viewMe,
     negoStatus
   } = req.query;
   const { latitude, longitude } = req.query;
@@ -565,7 +567,7 @@ async function carsGetRefactor(req, res, auth = false) {
   } else {
     by = 'c.id';
   }
-  const userId = auth ? req.user.id : null;
+  const userId = req.user ? req.user.id : null;
   const replacements = { bidType: 0, userId };
   let conditionString = ``;
   let carDistance = ``;
@@ -681,6 +683,12 @@ async function carsGetRefactor(req, res, auth = false) {
     conditionString += ` AND ((u."type" = :typeDealer AND u."companyType" = :companyTypeDealer0) OR (u."type" = :typeDealer AND u."companyType" = :companyTypeDealer1))`;
     Object.assign(replacements, { typeDealer: 1, companyTypeDealer0: 0, companyTypeDealer1: 1 });
   }
+  if (likeMe === 'true' && userId) {
+    conditionString += ` AND isLike."id" IS NOT NULL`;
+  }
+  if (viewMe === 'true' && userId) {
+    conditionString += ` AND vme."id" IS NOT NULL`;
+  }
 
   const negoSelect = ``;
   const negoRoom = ``;
@@ -748,9 +756,10 @@ async function carsGetRefactor(req, res, auth = false) {
       left join "Brands" b on b."id" = c."brandId"
       left join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
       left join "Bargains" isBid on isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
-      LEFT JOIN "Likes" l ON l."carId" = c.id
-      LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId
+      LEFT JOIN "Likes" l ON l."carId" = c.id AND l.status IS true
+      LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId AND isLike.status IS true
       LEFT JOIN "Views" v ON v."carId" = c.id
+      LEFT JOIN "Views" vme ON vme."carId" = c.id AND vme."userId" = :userId
       LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
       LEFT JOIN "car_picture" AS cp ON cp."carId" = c."id"
       LEFT JOIN "Files" AS cpf ON cpf."id" = cp."fileId"
