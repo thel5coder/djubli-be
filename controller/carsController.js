@@ -903,28 +903,36 @@ async function getByIdRefactor(req, res, auth = false) {
   const userId = auth ? req.user.id : null;
   const data = await models.sequelize
     .query(
-      `WITH loan_cars AS (
-        SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
+      `WITH last_purchase_amount AS (
+        SELECT "carId", "price" FROM "Purchases" ORDER BY "Purchases"."id" LIMIT 1
       )
-      
+
       select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
       my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
       cle.name AS exteriorColorName, cle.hex AS exteriorColorHex,
       cli.name AS interiorColorName, cli.hex AS interiorColorHex,
+      ct."name" AS city, sdt."name" AS subdistrict,
 
       array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
       array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries",
+      array_to_string(array_agg(ms.id::TEXT || '#sep#' || ms."day" || '#sep#' || ms."startTime"  || '#sep#' || ms."endTime"),'|') AS "meetingSchedules",
 
       count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
-      count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views
+      count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
+      COALESCE(lpa."price", 0) AS lastPurchaseAmount,
+      case when u."type" = 0 then 'End User' when u."type" = 1 then 'Dealer' end as userType
       FROM "Cars" c
       LEFT join "Users" u on u."id" = c."userId"
       LEFT join "ModelYears" my on my."id" = c."modelYearId"
       LEFT join "Models" m on m."id" = c."modelId"
       LEFT join "GroupModels" gm on gm."id" = c."groupModelId"
       LEFT join "Brands" b on b."id" = c."brandId"
+      LEFT join "MeetingSchedules" ms on ms."carId" = c."id"
+
+      LEFT join "Cities" ct on ct."id" = c."cityId"
+      LEFT join "SubDistricts" sdt on sdt."id" = c."subdistrictId"
 
       LEFT join "Colors" cle on cle."id" = c."exteriorColorId"
       LEFT join "Colors" cli on cli."id" = c."interiorColorId"
@@ -936,13 +944,14 @@ async function getByIdRefactor(req, res, auth = false) {
 
       LEFT join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
       LEFT join "Bargains" isBid on isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
+      LEFT JOIN "last_purchase_amount" AS lpa ON lpa."carId" = c."id"
       LEFT JOIN "Likes" l ON l."carId" = c.id
       LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId
       LEFT JOIN "Views" v ON v."carId" = c.id
-      LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
-      WHERE c."deletedAt" IS NULL AND lc."id" IS NULL
-      AND c."id" = :id
-      group by c."id", my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo", cle."name", cli."name", cle."hex", cli."hex"`,
+      WHERE c."deletedAt" IS NULL AND c."id" = :id
+      group by c."id", my.year, my.picture, my.price, m."name", gm."name", 
+      b."name", b."logo", cle."name", cli."name", cle."hex", cli."hex", 
+      u."type", ct."name", sdt."name", lpa."price"`,
       {
         replacements: { userId, id },
         type: QueryTypes.SELECT,
@@ -962,8 +971,10 @@ async function getByIdRefactor(req, res, auth = false) {
   if (data) {
     const exteriorGalery = new Array();
     const interiorGalery = new Array();
+    const meetingSchedule = new Array();
     const eg = data.exteriorGaleries.split('|').filter(onlyUnique);
     const ig = data.interiorGaleries.split('|').filter(onlyUnique);
+    const ms = data.meetingSchedules.split('|').filter(onlyUnique);
 
     for (let j = 0; j < eg.length; j += 1) {
       const egColumn = eg[j].split('#sep#');
@@ -993,6 +1004,23 @@ async function getByIdRefactor(req, res, auth = false) {
 
       data.interiorGalery = interiorGalery;
       delete data.interiorGaleries;
+    }
+
+    for (let j = 0; j < ms.length; j += 1) {
+      const msColumn = ms[j].split('#sep#');
+      if (msColumn.length === 4) {
+        if (msColumn[1] !== '<m>') {
+          meetingSchedule.push({
+            id: parseInt(msColumn[0], 10),
+            day: msColumn[1],
+            startTime: msColumn[2],
+            endTime: msColumn[3]
+          });
+        }
+      }
+
+      data.meetingSchedule = meetingSchedule;
+      delete data.meetingSchedules;
     }
   }
 
