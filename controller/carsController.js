@@ -534,7 +534,8 @@ async function carsGetRefactor(req, res, auth = false) {
     minKm,
     maxKm,
     profileUser,
-    isMarket
+    isMarket,
+    showDetailPhoto
   } = req.query;
   const { latitude, longitude } = req.query;
   let { page, limit, by, sort } = req.query;
@@ -680,6 +681,17 @@ async function carsGetRefactor(req, res, auth = false) {
     Object.assign(replacements, { typeDealer: 1, companyTypeDealer0: 0, companyTypeDealer1: 1 });
   }
 
+  let pictureSelect = ``;
+  let pictureJoin = ``;
+  if (showDetailPhoto === 'true') {
+    pictureSelect = `,
+    array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
+    array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries"`;
+    pictureJoin = `LEFT JOIN "ExteriorGaleries" eg ON eg."carId" = c.id
+    LEFT JOIN "Files" egf ON egf."id" = eg."fileId"
+    LEFT JOIN "InteriorGaleries" ig ON ig."carId" = c.id
+    LEFT JOIN "Files" igf ON igf."id" = ig."fileId"`;
+  }
   const data = await models.sequelize
     .query(
       `WITH loan_cars AS (
@@ -696,13 +708,14 @@ async function carsGetRefactor(req, res, auth = false) {
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
-      subdistrict."name" as "subdistrictName", u."type" as "userType",
-      array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
-      array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries"
+      subdistrict."name" as "subdistrictName", u."type" as "userType", ic."name" AS "interiorColorName",
+      ec."name" AS "exteriorColorName" ${pictureSelect}
       FROM "Cars" c
       left join "Users" u on u."id" = c."userId"
       left join "Cities" city on city."id" = c."cityId"
       left join "SubDistricts" subdistrict on subdistrict."id" = c."subdistrictId"
+      left join "Colors" ic on ic."id" = c."interiorColorId"
+      left join "Colors" ec on ec."id" = c."exteriorColorId"
       left join "ModelYears" my on my."id" = c."modelYearId"
       left join "Models" m on m."id" = c."modelId"
       left join "GroupModels" gm on gm."id" = c."groupModelId"
@@ -715,16 +728,13 @@ async function carsGetRefactor(req, res, auth = false) {
       LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
       LEFT JOIN "car_picture" AS cp ON cp."carId" = c."id"
       LEFT JOIN "Files" AS cpf ON cpf."id" = cp."fileId"
-      LEFT JOIN "ExteriorGaleries" eg ON eg."carId" = c.id
-      LEFT JOIN "Files" egf ON egf."id" = eg."fileId"
-      LEFT JOIN "InteriorGaleries" ig ON ig."carId" = c.id
-      LEFT JOIN "Files" igf ON igf."id" = ig."fileId"
+      ${pictureJoin}
       ${distanceJoin}
       WHERE c."deletedAt" IS NULL ${conditionString}
       group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name",
-      b."logo", cpf."url", city."name", subdistrict."name", u."type"
-      order by ${by} ${sort}`,
-      // OFFSET ${offset} LIMIT ${limit}`,
+      b."logo", cpf."url", city."name", subdistrict."name", u."type", ic."name", ec."name"
+      order by ${by} ${sort}
+      OFFSET ${offset} LIMIT ${limit}`,
       {
         replacements,
         type: QueryTypes.SELECT
@@ -737,41 +747,43 @@ async function carsGetRefactor(req, res, auth = false) {
       });
     });
 
-  function onlyUnique(value, index, self) {
-    return self.indexOf(value) === index;
-  }
-  for (let i = 0; i < data.length; i += 1) {
-    const exteriors = new Array();
-    const eg = data[i].exteriorGaleries.split('|').filter(onlyUnique);
-    for (let j = 0; j < eg.length; j += 1) {
-      const egColumn = eg[j].split('#sep#');
-      if (egColumn.length === 2) {
-        if (egColumn[1] !== '<m>') {
-          exteriors.push({
-            id: parseInt(egColumn[0], 10),
-            picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
-          });
-        }
-      }
-      data[i].exteriorGalery = exteriors;
-      delete data[i].exteriorGaleries;
+  if (showDetailPhoto === 'true') {
+    function onlyUnique(value, index, self) {
+      return self.indexOf(value) === index;
     }
+    for (let i = 0; i < data.length; i += 1) {
+      const exteriors = new Array();
+      const eg = data[i].exteriorGaleries.split('|').filter(onlyUnique);
+      for (let j = 0; j < eg.length; j += 1) {
+        const egColumn = eg[j].split('#sep#');
+        if (egColumn.length === 2) {
+          if (egColumn[1] !== '<m>') {
+            exteriors.push({
+              id: parseInt(egColumn[0], 10),
+              picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+            });
+          }
+        }
+        data[i].exteriorGalery = exteriors;
+        delete data[i].exteriorGaleries;
+      }
 
-    const interiors = new Array();
-    const ig = data[i].interiorGaleries.split('|').filter(onlyUnique);
-    for (let j = 0; j < ig.length; j += 1) {
-      const igColumn = ig[j].split('#sep#');
-      if (igColumn.length === 2) {
-        if (igColumn[1] !== '<m>') {
-          interiors.push({
-            id: parseInt(igColumn[0], 10),
-            picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
-          });
+      const interiors = new Array();
+      const ig = data[i].interiorGaleries.split('|').filter(onlyUnique);
+      for (let j = 0; j < ig.length; j += 1) {
+        const igColumn = ig[j].split('#sep#');
+        if (igColumn.length === 2) {
+          if (igColumn[1] !== '<m>') {
+            interiors.push({
+              id: parseInt(igColumn[0], 10),
+              picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+            });
+          }
         }
       }
+      data[i].interiorGalery = interiors;
+      delete data[i].interiorGaleries;
     }
-    data[i].interiorGalery = interiors;
-    delete data[i].interiorGaleries;
   }
 
   res.json({
