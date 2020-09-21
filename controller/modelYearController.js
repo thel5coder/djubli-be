@@ -786,7 +786,7 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     gm."brandId", b."name" AS "brandName",
     CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo", pur."price",
     count(DISTINCT(c."id")) as "listing", count(DISTINCT(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
-    AVG(all_pur."price") as "marketPrice", MIN(all_pur."price") as "lowestPrice",
+    AVG(all_pur."price") as "marketPrice", MIN(c."price") as "lowestPrice",
     COUNT(DISTINCT(all_pur."id")) AS "countTransaction", pur."price" as "lastTransaction"
     from "ModelYears" my
     left join "Models" m on m."id" = my."modelId"
