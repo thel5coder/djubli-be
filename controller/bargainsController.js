@@ -32,14 +32,14 @@ const whereQueryBargain = (id, customWhere) => `(SELECT COUNT("bc"."id")
 async function bargainsList(req, res) {
   let { page, limit, sort, by } = req.query;
   const userLoginId = req.user.id;
-  const { 
-    userId, 
-    carId, 
-    bidType, 
-    negotiationType, 
-    expiredAt, 
-    paymentMethod, 
-    haveSeenCar, 
+  const {
+    userId,
+    carId,
+    bidType,
+    negotiationType,
+    expiredAt,
+    paymentMethod,
+    haveSeenCar,
     profileUser,
     condition
   } = req.query;
@@ -142,7 +142,8 @@ async function bargainsList(req, res) {
     });
   }
 
-  let customWhen = userLoginId ? `WHEN ((SELECT COUNT("b"."id")
+  const customWhen = userLoginId
+    ? `WHEN ((SELECT COUNT("b"."id")
       FROM "Bargains" b 
       WHERE "b"."carId" = "Bargain"."carId"
         AND "b"."bidType" = 1
@@ -151,7 +152,8 @@ async function bargainsList(req, res) {
         )
         AND "b"."deletedAt" IS NULL
       )) > 0
-    THEN true` : ``;
+    THEN true`
+    : ``;
   const include = [
     [
       models.sequelize.literal(`(EXISTS(SELECT "b"."id" 
@@ -164,19 +166,17 @@ async function bargainsList(req, res) {
               AND "sb"."bidType" = 1
               AND "sb"."negotiationType" IN (3,4,7)
               AND "sb"."deletedAt" IS NULL) = 0
-          AND "b"."deletedAt" IS NULL))`
-      ), 
+          AND "b"."deletedAt" IS NULL))`),
       'isNego'
     ],
     [
       models.sequelize.literal(`(CASE ${customWhen} WHEN "expiredAt" >= now() THEN false
-        ELSE true END)`
-      ), 
+        ELSE true END)`),
       'isExpired'
     ]
   ];
 
-  if(userLoginId) {
+  if (userLoginId) {
     include.push([
       models.sequelize.literal(`(CASE WHEN "Bargain"."userId" = ${userLoginId} THEN
         (EXISTS(SELECT "r"."id" 
@@ -187,13 +187,12 @@ async function bargainsList(req, res) {
             -- AND "r"."type" = 4
             AND "r"."isRead" = TRUE
             AND "r"."deletedAt" IS NULL))
-        ELSE true END)`
-      ), 
+        ELSE true END)`),
       'isRead'
     ]);
   }
 
-  if(bidType == 0) {
+  if (bidType == 0) {
     Object.assign(where, {
       [Op.and]: [
         models.sequelize.literal(`(SELECT COUNT("b"."id") 
@@ -201,17 +200,13 @@ async function bargainsList(req, res) {
           WHERE "b"."carId" = "Bargain"."carId" 
             AND "b"."negotiationType" = 8
             AND "b"."deletedAt" IS NULL
-          ) = 0`
-        )
+          ) = 0`)
       ]
     });
   }
 
   const addAttribute = await carHelper.customFields({
-    fields: [
-      'like',
-      'view'
-    ]
+    fields: ['like', 'view']
   });
 
   return models.Bargain.findAll({
@@ -319,7 +314,7 @@ async function bargainsList(req, res) {
     limit
   })
     .then(async data => {
-      const findAndCount = await models.Bargain.findAndCountAll({ 
+      const findAndCount = await models.Bargain.findAndCountAll({
         attributes: {
           include: [
             [
@@ -334,8 +329,7 @@ async function bargainsList(req, res) {
                       AND "sb"."bidType" = 1
                       AND "sb"."negotiationType" IN (3,4,7)
                       AND "sb"."deletedAt" IS NULL) = 0
-                  AND "b"."deletedAt" IS NULL))`
-              ), 
+                  AND "b"."deletedAt" IS NULL))`),
               'isNego'
             ]
           ]
@@ -375,20 +369,19 @@ async function bargainsList(req, res) {
       let isNego = false;
       let bidderName = '';
       findAndCount.rows.map(item => {
-        if(item.dataValues.isNego) {
+        if (item.dataValues.isNego) {
           isNego = true;
           bidderName = item.dataValues.user.name;
         }
       });
 
-      const count = findAndCount.count;
+      const { count } = findAndCount;
       const pagination = paginator.paging(page, count, limit);
 
-      if(userLoginId && userLoginId !== '') {
+      if (userLoginId && userLoginId !== '') {
         await Promise.all(
           data.map(async item => {
-
-            if(item.userId != userLoginId) {
+            if (item.userId != userLoginId) {
               const findBargainReader = await models.BargainReader.findOne({
                 where: {
                   userId: userLoginId,
@@ -396,22 +389,20 @@ async function bargainsList(req, res) {
                 }
               });
 
-              if(!findBargainReader) {
+              if (!findBargainReader) {
                 await models.BargainReader.create({
                   userId: userLoginId,
                   bargainId: item.id,
                   carId: item.carId,
                   isRead: true
-                })
-                  .catch(err => {
-                    res.status(422).json({
-                      success: false,
-                      errors: 'failed to read bargain chat'
-                    });
+                }).catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: 'failed to read bargain chat'
                   });
+                });
               }
             }
-            
           })
         );
       }
@@ -436,14 +427,14 @@ async function bargainsList(req, res) {
 
 async function bargainsListBidder(req, res) {
   let { page, limit, sort, by } = req.query;
-  const { 
-    userId, 
-    carId, 
-    bidType, 
-    negotiationType, 
-    expiredAt, 
-    paymentMethod, 
-    haveSeenCar, 
+  const {
+    userId,
+    carId,
+    bidType,
+    negotiationType,
+    expiredAt,
+    paymentMethod,
+    haveSeenCar,
     profileUser,
     condition
   } = req.query;
@@ -546,7 +537,7 @@ async function bargainsListBidder(req, res) {
     });
   }
 
-  let customWhen = `WHEN ((SELECT COUNT("b"."id")
+  const customWhen = `WHEN ((SELECT COUNT("b"."id")
       FROM "Bargains" b 
       WHERE "b"."carId" = "Bargain"."carId"
         AND "b"."bidType" = 1
@@ -568,19 +559,17 @@ async function bargainsListBidder(req, res) {
               AND "sb"."bidType" = 1
               AND "sb"."negotiationType" IN (3,4,7)
               AND "sb"."deletedAt" IS NULL) = 0
-          AND "b"."deletedAt" IS NULL))`
-      ), 
+          AND "b"."deletedAt" IS NULL))`),
       'isNego'
     ],
     [
       models.sequelize.literal(`(CASE ${customWhen} WHEN "expiredAt" >= now() THEN false
-        ELSE true END)`
-      ), 
+        ELSE true END)`),
       'isExpired'
     ]
   ];
 
-  if(bidType == 0) {
+  if (bidType == 0) {
     Object.assign(where, {
       [Op.and]: [
         models.sequelize.literal(`(SELECT COUNT("b"."id") 
@@ -588,17 +577,13 @@ async function bargainsListBidder(req, res) {
           WHERE "b"."carId" = "Bargain"."carId" 
             AND "b"."negotiationType" IN (4,7,8)
             AND "b"."deletedAt" IS NULL
-          ) = 0`
-        )
+          ) = 0`)
       ]
     });
   }
 
   const addAttribute = await carHelper.customFields({
-    fields: [
-      'like',
-      'view'
-    ]
+    fields: ['like', 'view']
   });
 
   return models.Bargain.findAll({
@@ -703,7 +688,7 @@ async function bargainsListBidder(req, res) {
     limit
   })
     .then(async data => {
-      const findAndCount = await models.Bargain.findAndCountAll({ 
+      const findAndCount = await models.Bargain.findAndCountAll({
         attributes: {
           include: [
             [
@@ -718,8 +703,7 @@ async function bargainsListBidder(req, res) {
                       AND "sb"."bidType" = 1
                       AND "sb"."negotiationType" IN (3,4,7)
                       AND "sb"."deletedAt" IS NULL) = 0
-                  AND "b"."deletedAt" IS NULL))`
-              ), 
+                  AND "b"."deletedAt" IS NULL))`),
               'isNego'
             ]
           ]
@@ -742,13 +726,13 @@ async function bargainsListBidder(req, res) {
       let isNego = false;
       let bidderName = '';
       findAndCount.rows.map(item => {
-        if(item.dataValues.isNego) {
+        if (item.dataValues.isNego) {
           isNego = true;
           bidderName = item.dataValues.user.name;
         }
       });
 
-      const count = findAndCount.count;
+      const { count } = findAndCount;
       const pagination = paginator.paging(page, count, limit);
 
       res.json({
@@ -844,7 +828,7 @@ async function getSellNego(req, res) {
       [Op.and]: {
         [Op.or]: {
           negotiationType: {
-            [Op.in]: [7,8]
+            [Op.in]: [7, 8]
           },
           [Op.and]: [
             {
@@ -976,10 +960,7 @@ async function getSellNego(req, res) {
           ),
           'view'
         ],
-        [
-          models.sequelize.literal(whereQueryBargain(id, customWhere)), 
-          'isRead'
-        ]
+        [models.sequelize.literal(whereQueryBargain(id, customWhere)), 'isRead']
       ]
     },
     include: [
@@ -1156,7 +1137,7 @@ async function getSellNego(req, res) {
     ],
     subQuery: false,
     group: [
-      'Car.id', 
+      'Car.id',
       'bargainCheckNegotiationType.id',
       'modelYear.id',
       'brand.id',
@@ -1177,7 +1158,7 @@ async function getSellNego(req, res) {
       'room.id',
       'room->members.id',
       'room->members->member.id',
-      'room->members->member->file.id',
+      'room->members->member->file.id'
     ],
     where,
     order,
@@ -1255,8 +1236,12 @@ async function getSellNego(req, res) {
 
           if (negotiationType == 0) {
             item.dataValues.statusNego = 'Tunggu Jawaban';
-            if(dataBargain.length && 
-              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
+            if (
+              dataBargain.length &&
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') <
+                moment()
+                  .tz('Asia/Jakarta')
+                  .format('YYYY-MM-DD HH:mm:ss')
             ) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
@@ -1267,18 +1252,26 @@ async function getSellNego(req, res) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
             }
 
-            if(dataBargain.length && 
-              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
-              [1,2,5,6].includes(dataBargain[0].negotiationType)
-            ) {              
+            if (
+              dataBargain.length &&
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') <
+                moment()
+                  .tz('Asia/Jakarta')
+                  .format('YYYY-MM-DD HH:mm:ss') &&
+              [1, 2, 5, 6].includes(dataBargain[0].negotiationType)
+            ) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
 
-            if(dataBargain.length && dataBargain[0].negotiationType == 4) {
+            if (dataBargain.length && dataBargain[0].negotiationType == 4) {
               item.dataValues.statusNego = 'Nego Berhasil';
             }
 
-            if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
+            if (
+              dataBargain.length &&
+              dataBargain[0].negotiationType == 3 &&
+              dataBargain[0].userId != id
+            ) {
               item.dataValues.statusNego = 'Pembeli Keluar Nego';
             }
           }
@@ -1375,7 +1368,7 @@ async function getBuyNego(req, res) {
       [Op.and]: {
         [Op.or]: {
           negotiationType: {
-            [Op.in]: [7,8]
+            [Op.in]: [7, 8]
           },
           [Op.and]: [
             {
@@ -1507,10 +1500,7 @@ async function getBuyNego(req, res) {
           ),
           'view'
         ],
-        [
-          models.sequelize.literal(whereQueryBargain(id, customWhere)), 
-          'isRead'
-        ]
+        [models.sequelize.literal(whereQueryBargain(id, customWhere)), 'isRead']
       ]
     },
     include: [
@@ -1685,7 +1675,7 @@ async function getBuyNego(req, res) {
     ],
     subQuery: false,
     group: [
-      'Car.id', 
+      'Car.id',
       'bargainCheckNegotiationType.id',
       'modelYear.id',
       'brand.id',
@@ -1706,7 +1696,7 @@ async function getBuyNego(req, res) {
       'room.id',
       'room->members.id',
       'room->members->member.id',
-      'room->members->member->file.id',
+      'room->members->member->file.id'
     ],
     where,
     order,
@@ -1781,12 +1771,16 @@ async function getBuyNego(req, res) {
       await Promise.all(
         data.map(async item => {
           const dataBargain = item.dataValues.bargain;
-          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;  
+          const userIdLastBargain = dataBargain.length ? dataBargain[0].userId : null;
 
           if (negotiationType == 0) {
             item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
-            if(dataBargain.length && 
-              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss')
+            if (
+              dataBargain.length &&
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') <
+                moment()
+                  .tz('Asia/Jakarta')
+                  .format('YYYY-MM-DD HH:mm:ss')
             ) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
@@ -1797,18 +1791,26 @@ async function getBuyNego(req, res) {
               item.dataValues.statusNego = 'Jawaban Anda Ditunggu';
             }
 
-            if(dataBargain.length && 
-              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') < moment().tz('Asia/Jakarta').format('YYYY-MM-DD HH:mm:ss') && 
-              [0,1,2,5,6].includes(dataBargain[0].negotiationType)
+            if (
+              dataBargain.length &&
+              moment.utc(dataBargain[0].expiredAt).format('YYYY-MM-DD HH:mm:ss') <
+                moment()
+                  .tz('Asia/Jakarta')
+                  .format('YYYY-MM-DD HH:mm:ss') &&
+              [0, 1, 2, 5, 6].includes(dataBargain[0].negotiationType)
             ) {
               item.dataValues.statusNego = 'Waktu Habis';
             }
 
-            if(dataBargain.length && dataBargain[0].negotiationType == 4) {
+            if (dataBargain.length && dataBargain[0].negotiationType == 4) {
               item.dataValues.statusNego = 'Nego Berhasil';
             }
 
-            if(dataBargain.length && dataBargain[0].negotiationType == 3 && dataBargain[0].userId != id) {
+            if (
+              dataBargain.length &&
+              dataBargain[0].negotiationType == 3 &&
+              dataBargain[0].userId != id
+            ) {
               item.dataValues.statusNego = 'Penjual Keluar Nego';
             }
           }
@@ -1831,40 +1833,33 @@ async function getBuyNego(req, res) {
 }
 
 async function bid(req, res) {
-  const { 
-    userId, 
-    carId, 
-    bidAmount, 
-    haveSeenCar, 
-    paymentMethod, 
-    expiredAt 
-  } = req.body;
+  const { userId, carId, bidAmount, haveSeenCar, paymentMethod, expiredAt } = req.body;
 
   if (!bidAmount) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'bidAmount must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'bidAmount must be filled'
     });
   }
 
   if (!paymentMethod) {
-    return res.status(400).json({ 
-      success: false, 
+    return res.status(400).json({
+      success: false,
       errors: 'paymentMethod must be filled'
     });
   }
 
   if (!expiredAt) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'expiredAt must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'expiredAt must be filled'
     });
   }
 
   if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid()) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'Invalid expired date' 
+    return res.status(400).json({
+      success: false,
+      errors: 'Invalid expired date'
     });
   }
 
@@ -1879,23 +1874,23 @@ async function bid(req, res) {
   });
 
   if (checkIfUserHasBid.length) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'You have bid this car' 
+    return res.status(400).json({
+      success: false,
+      errors: 'You have bid this car'
     });
   }
 
   const carExists = await models.Car.findByPk(carId);
   if (!carExists) {
-    return res.status(404).json({ 
-      success: false, 
-      errors: 'car not found' 
+    return res.status(404).json({
+      success: false,
+      errors: 'car not found'
     });
   }
 
-  if(carExists.userId == userId) {
-    return res.status(400).json({ 
-      success: false, 
+  if (carExists.userId == userId) {
+    return res.status(400).json({
+      success: false,
       errors: "You can't bid the car you sell"
     });
   }
@@ -1912,10 +1907,10 @@ async function bid(req, res) {
       }
     });
 
-    if(checkIfCarUnderNegotiate) {
-      return res.status(422).json({ 
-        success: false, 
-        errors: `you can't bid this car, because someone under negotiation` 
+    if (checkIfCarUnderNegotiate) {
+      return res.status(422).json({
+        success: false,
+        errors: `you can't bid this car, because someone under negotiation`
       });
     }
   }
@@ -1964,23 +1959,19 @@ async function bid(req, res) {
 async function editBid(req, res) {
   const carId = req.params.id;
   const userId = req.user.id;
-  const { 
-    bidAmount, 
-    haveSeenCar, 
-    paymentMethod 
-  } = req.body;
+  const { bidAmount, haveSeenCar, paymentMethod } = req.body;
 
   if (!bidAmount) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'bidAmount must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'bidAmount must be filled'
     });
   }
 
   if (!paymentMethod) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'paymentMethod must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'paymentMethod must be filled'
     });
   }
 
@@ -1993,10 +1984,11 @@ async function editBid(req, res) {
     }
   });
 
-  if (!data) return res.status(400).json({ 
-    success: false, 
-    errors: 'Transaksi not found' 
-  });
+  if (!data)
+    return res.status(400).json({
+      success: false,
+      errors: 'Transaksi not found'
+    });
 
   return data
     .update({
@@ -2035,21 +2027,21 @@ async function editBid(req, res) {
 }
 
 async function extend(req, res) {
-  const id = req.params.id;
+  const { id } = req.params;
   const userId = req.user.id;
   const { expiredAt } = req.body;
 
   if (!expiredAt) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'expiredAt must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'expiredAt must be filled'
     });
   }
 
   if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid()) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'Invalid expired date' 
+    return res.status(400).json({
+      success: false,
+      errors: 'Invalid expired date'
     });
   }
 
@@ -2064,8 +2056,7 @@ async function extend(req, res) {
               AND "r"."userId" != ${userId}
               AND "r"."type" = 4
               AND "r"."isRead" = TRUE
-              AND "r"."deletedAt" IS NULL))`
-          ), 
+              AND "r"."deletedAt" IS NULL))`),
           'isRead'
         ]
       ]
@@ -2096,20 +2087,23 @@ async function extend(req, res) {
   });
 
   if (!data) {
-    return res.status(400).json({ 
-      success: false, errors: 'data not found or you are not the author of this data' 
+    return res.status(400).json({
+      success: false,
+      errors: 'data not found or you are not the author of this data'
     });
   }
 
   if (data.isExtend) {
-    return res.status(400).json({ 
-      success: false, errors: 'You have already extended this data before' 
+    return res.status(400).json({
+      success: false,
+      errors: 'You have already extended this data before'
     });
   }
 
   if (data.isRead) {
-    return res.status(400).json({ 
-      success: false, errors: 'The user reads the offer but is not replied' 
+    return res.status(400).json({
+      success: false,
+      errors: 'The user reads the offer but is not replied'
     });
   }
 
@@ -2163,72 +2157,72 @@ async function negotiate(req, res) {
   } = req.body;
 
   if (bidderId && validator.isInt(bidderId ? bidderId.toString() : '') === false) {
-    return res.status(406).json({ 
-      success: false, 
-      errors: 'type of bidderId must be int' 
+    return res.status(406).json({
+      success: false,
+      errors: 'type of bidderId must be int'
     });
   }
 
   if (validator.isInt(carId ? carId.toString() : '') === false) {
-    return res.status(406).json({ 
-      success: false, 
-      errors: 'type of carId must be int' 
+    return res.status(406).json({
+      success: false,
+      errors: 'type of carId must be int'
     });
   }
 
   if (validator.isInt(negotiationType ? negotiationType.toString() : '') === false) {
-    return res.status(406).json({ 
-      success: false, 
-      errors: 'type of negotiationType must be int' 
+    return res.status(406).json({
+      success: false,
+      errors: 'type of negotiationType must be int'
     });
   }
-    
+
   if (validator.isBoolean(haveSeenCar ? haveSeenCar.toString() : '') === false) {
-    return res.status(406).json({ 
-      success: false, 
-      errors: 'type of haveSeenCar must be boolean' 
+    return res.status(406).json({
+      success: false,
+      errors: 'type of haveSeenCar must be boolean'
     });
   }
-    
+
   if (!bidAmount) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'bidAmount must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'bidAmount must be filled'
     });
   }
 
   if (!paymentMethod) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'paymentMethod must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'paymentMethod must be filled'
     });
   }
 
   if (!expiredAt) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'expiredAt must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'expiredAt must be filled'
     });
   }
 
   if (!moment(expiredAt, 'YYYY-MM-DD HH:mm:ss', true).isValid()) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'Invalid expired date' 
+    return res.status(400).json({
+      success: false,
+      errors: 'Invalid expired date'
     });
   }
 
   if (!carPrice) {
-    return res.status(400).json({ 
-      success: false, 
-      errors: 'carPrice must be filled' 
+    return res.status(400).json({
+      success: false,
+      errors: 'carPrice must be filled'
     });
   }
 
   if (validator.isInt(carPrice ? carPrice.toString() : '') === false) {
-    return res.status(406).json({ 
-      success: false, 
-      errors: 'type of carPrice must be int' 
+    return res.status(406).json({
+      success: false,
+      errors: 'type of carPrice must be int'
     });
   }
 
@@ -2263,18 +2257,18 @@ async function negotiate(req, res) {
     ]
   });
 
-  let include = [];
+  const include = [];
   let carExists;
-  if(negotiationType == 4) {
+  if (negotiationType == 4) {
     const checkHaveRoom = await models.Car.findByPk(carId);
-    if(checkHaveRoom.roomId) {
+    if (checkHaveRoom.roomId) {
       carExists = findCarWithUserInRoom;
     } else {
       carExists = checkHaveRoom;
-      if(!bidderId) {
-        return res.status(404).json({ 
-          success: false, 
-          errors: 'please input bidderId' 
+      if (!bidderId) {
+        return res.status(404).json({
+          success: false,
+          errors: 'please input bidderId'
         });
       }
     }
@@ -2283,31 +2277,32 @@ async function negotiate(req, res) {
   }
 
   if (!carExists) {
-    return res.status(404).json({ 
-      success: false, 
-      errors: 'car not found' 
+    return res.status(404).json({
+      success: false,
+      errors: 'car not found'
     });
   }
 
   // saat pembeli yang nego, dia masuk tab mana
   const userNotifs = [];
-  const customerFromRoom = (carExists.room.members[0].userId == carExists.userId) ? id : carExists.room.members[0].userId;
+  const customerFromRoom =
+    carExists.room.members[0].userId == carExists.userId ? id : carExists.room.members[0].userId;
   const customer = bidderId || customerFromRoom;
   const negotiationTypeString = [
     'Mengajak ke Ruang Nego',
-    'Ulangi Tawaran',
-    'Naikan Tawaran',
+    'Ulangi Tawaran', // masih di ruang nego 1
+    'Naikan Tawaran', // masih di ruang nego 2
     'Keluar dari Ruang Nego',
-    'Terima Nego',
-    'Turunkan Tawaran',
-    'Ulangi Harga',
+    'Terima Nego', // deal 4
+    'Turunkan Tawaran', // masih di ruang nego 5
+    'Ulangi Harga', // masih di ruang nego 6
     'Tetap Sebagai Penawar',
     'Coret Sebagai Penawar'
   ];
 
   if (id === carExists.userId) {
     let category;
-    if(negotiationType == 0) {
+    if (negotiationType == 0) {
       category = 2;
     } else {
       category = 3;
@@ -2326,7 +2321,7 @@ async function negotiate(req, res) {
       tab: `tabNego-${customer}`
     });
   } else {
-    console.log(carExists.userId)
+    console.log(carExists.userId);
     userNotifs.push({
       userId: carExists.userId,
       collapseKey: null,
@@ -2359,43 +2354,48 @@ async function negotiate(req, res) {
     transaction: trans
   }).catch(err => {
     trans.rollback();
-    return res.status(422).json({ 
-      success: false, 
-      errors: err.message 
+    return res.status(422).json({
+      success: false,
+      errors: err.message
     });
   });
 
-  if(negotiationType == 4) {
+  if (negotiationType == 4) {
     await carExists.update({ status: 2 }, { transaction: trans }).catch(err => {
       trans.rollback();
-      return res.status(422).json({ 
-        success: false, 
-        errors: err.message 
+      return res.status(422).json({
+        success: false,
+        errors: err.message
       });
     });
-    
-    const expiredAtPurchase = moment().add(2, 'd').format('YYYY-MM-DD HH:mm:ss');
-    await models.Purchase.create({
-      userId: customer,
-      carId,
-      price: bidAmount,
-      paymentMethod,
-      bargainId: data.id,
-      expiredAt: expiredAtPurchase 
-    }, {
-      transaction: trans
-    }).catch(err => {
+
+    const expiredAtPurchase = moment()
+      .add(2, 'd')
+      .format('YYYY-MM-DD HH:mm:ss');
+    await models.Purchase.create(
+      {
+        userId: customer,
+        carId,
+        price: bidAmount,
+        paymentMethod,
+        bargainId: data.id,
+        expiredAt: expiredAtPurchase
+      },
+      {
+        transaction: trans
+      }
+    ).catch(err => {
       trans.rollback();
-      return res.status(422).json({ 
-        success: false, 
-        errors: err.message 
+      return res.status(422).json({
+        success: false,
+        errors: err.message
       });
     });
   }
 
-  if(negotiationType == 7 || negotiationType == 8) {
+  if (negotiationType == 7 || negotiationType == 8) {
     const where = { carId };
-    if(negotiationType == 7) {
+    if (negotiationType == 7) {
       Object.assign(where, {
         negotiationType: {
           [Op.not]: null
@@ -2405,17 +2405,17 @@ async function negotiate(req, res) {
     }
 
     await models.Bargain.destroy({
-        where,
-        transaction: trans
-      }).catch(err => {
-        trans.rollback();
-        return res.status(422).json({ 
-          success: false, 
-          errors: err.message 
-        });
+      where,
+      transaction: trans
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err.message
       });
+    });
 
-    if(negotiationType == 8) {
+    if (negotiationType == 8) {
       await models.Room.destroy({
         where: {
           id: carExists.roomId
@@ -2423,9 +2423,9 @@ async function negotiate(req, res) {
         transaction: trans
       }).catch(err => {
         trans.rollback();
-        return res.status(422).json({ 
-          success: false, 
-          errors: err.message 
+        return res.status(422).json({
+          success: false,
+          errors: err.message
         });
       });
 
@@ -2436,28 +2436,27 @@ async function negotiate(req, res) {
         transaction: trans
       }).catch(err => {
         trans.rollback();
-        return res.status(422).json({ 
-          success: false, 
-          errors: err.message 
+        return res.status(422).json({
+          success: false,
+          errors: err.message
         });
       });
 
       await carExists.update({ roomId: null }, { transaction: trans }).catch(err => {
         trans.rollback();
-        return res.status(422).json({ 
-          success: false, 
-          errors: err.message 
+        return res.status(422).json({
+          success: false,
+          errors: err.message
         });
       });
     }
   }
 
-  const runQuery = async (query) => {
-    return await models.sequelize.query(query, { 
-      transaction: trans, 
-      type: models.sequelize.QueryTypes.SELECT 
+  const runQuery = async query =>
+    await models.sequelize.query(query, {
+      transaction: trans,
+      type: models.sequelize.QueryTypes.SELECT
     });
-  }
 
   const getIsNego = await runQuery(`SELECT(EXISTS(SELECT "b"."id" 
     FROM "Bargains" b 
@@ -2466,8 +2465,7 @@ async function negotiate(req, res) {
       AND "b"."bidType" = 1
       AND "b"."negotiationType" NOT IN (3, 4)
       AND "b"."expiredAt" >= (SELECT NOW())
-      AND "b"."deletedAt" IS NULL)) AS isnego`
-  );
+      AND "b"."deletedAt" IS NULL)) AS isnego`);
 
   const getIsRead = await runQuery(`SELECT(EXISTS(SELECT "r"."id" 
     FROM "BargainReaders" r 
@@ -2476,8 +2474,7 @@ async function negotiate(req, res) {
       AND "r"."userId" = ${id}
       AND "r"."type" = 4
       AND "r"."isRead" = TRUE
-      AND "r"."deletedAt" IS NULL)) AS isread`
-  );
+      AND "r"."deletedAt" IS NULL)) AS isread`);
 
   const getIsExpired = await runQuery(`SELECT(NOT EXISTS(SELECT "b"."id" 
     FROM "Bargains" b 
@@ -2485,12 +2482,11 @@ async function negotiate(req, res) {
       AND "b"."bidType" = 1
       AND "b"."negotiationType" NOT IN (3, 4)
       AND "b"."expiredAt" > (SELECT NOW())
-      AND "b"."deletedAt" IS NULL)) AS isexpired`
-  );
+      AND "b"."deletedAt" IS NULL)) AS isexpired`);
 
-  data.dataValues.isNego = getIsNego[0].isnego
-  data.dataValues.isRead = getIsRead[0].isread
-  data.dataValues.isExpired = getIsExpired[0].isexpired
+  data.dataValues.isNego = getIsNego[0].isnego;
+  data.dataValues.isRead = getIsRead[0].isread;
+  data.dataValues.isExpired = getIsExpired[0].isexpired;
 
   trans.commit();
   req.io.emit(`negotiation-car${carId}`, data);
@@ -2501,9 +2497,9 @@ async function negotiate(req, res) {
     notification.userNotif(userNotif);
   });
 
-  return res.status(200).json({ 
-    success: true, 
-    data 
+  return res.status(200).json({
+    success: true,
+    data
   });
 }
 
@@ -2536,12 +2532,11 @@ async function failureNegotiation(req, res) {
   await models.Bargain.destroy({
     where,
     transaction: trans
-  })
-  .catch(err => {
+  }).catch(err => {
     trans.rollback();
-    return res.status(422).json({ 
-      success: false, 
-      errors: err.message 
+    return res.status(422).json({
+      success: false,
+      errors: err.message
     });
   });
 
@@ -2552,9 +2547,9 @@ async function failureNegotiation(req, res) {
     transaction: trans
   }).catch(err => {
     trans.rollback();
-    return res.status(422).json({ 
-      success: false, 
-      errors: err.message 
+    return res.status(422).json({
+      success: false,
+      errors: err.message
     });
   });
 
@@ -2565,23 +2560,23 @@ async function failureNegotiation(req, res) {
     transaction: trans
   }).catch(err => {
     trans.rollback();
-    return res.status(422).json({ 
-      success: false, 
-      errors: err.message 
+    return res.status(422).json({
+      success: false,
+      errors: err.message
     });
   });
 
   await car.update({ roomId: null }, { transaction: trans }).catch(err => {
     trans.rollback();
-    return res.status(422).json({ 
-      success: false, 
-      errors: err.message 
+    return res.status(422).json({
+      success: false,
+      errors: err.message
     });
   });
 
   trans.commit();
-  return res.status(200).json({ 
-    success: true 
+  return res.status(200).json({
+    success: true
   });
 }
 

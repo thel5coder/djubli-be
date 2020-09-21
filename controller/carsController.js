@@ -535,7 +535,8 @@ async function carsGetRefactor(req, res, auth = false) {
     maxKm,
     profileUser,
     isMarket,
-    showDetailPhoto
+    showDetailPhoto,
+    negoStatus
   } = req.query;
   const { latitude, longitude } = req.query;
   let { page, limit, by, sort } = req.query;
@@ -681,6 +682,29 @@ async function carsGetRefactor(req, res, auth = false) {
     Object.assign(replacements, { typeDealer: 1, companyTypeDealer0: 0, companyTypeDealer1: 1 });
   }
 
+  const negoSelect = ``;
+  const negoRoom = ``;
+  const negoJoin = ``;
+  // if (negoStatus === '0') {
+  //   negoSelect = `, nego_bargain."negotiationType", nego_bargain."expiredAt", nego_bargain."isExtend"`;
+  //   negoRoom = `, nego_room AS (
+  //     SELECT MAX("id") as "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL
+  //     GROUP BY "carId"
+  //   )`;
+  //   negoJoin = ` LEFT JOIN nego_room nr ON nr."carId" = c.id
+  //     LEFT JOIN "Bargains" nego_bargain ON nego_bargain."id" = nr.id AND nego_bargain."negotiationType" = 0`;
+  //   conditionString += ` AND nego_bargain."id" IS NOT NULL`;
+  // } else if (negoStatus === '1') {
+  //   negoSelect = `, nego_bargain."negotiationType", nego_bargain."expiredAt", nego_bargain."isExtend"`;
+  //   negoRoom = `, nego_room AS (
+  //     SELECT MAX("id") as "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL
+  //     GROUP BY "carId"
+  //   )`;
+  //   negoJoin = ` LEFT JOIN nego_room nr ON nr."carId" = c.id
+  //   LEFT JOIN "Bargains" nego_bargain ON nego_bargain."id" = nr.id AND nego_bargain."negotiationType" IN (1, 2, 5, 6)`;
+  //   conditionString += ` AND nego_bargain."id" IS NOT NULL`;
+  // }
+
   let pictureSelect = ``;
   let pictureJoin = ``;
   if (showDetailPhoto === 'true') {
@@ -700,6 +724,7 @@ async function carsGetRefactor(req, res, auth = false) {
         SELECT "carId", MIN("fileId") as "fileId" FROM "ExteriorGaleries" GROUP BY "carId"
       )
       ${carDistance}
+      ${negoRoom}
       
       select c.*${distanceSelect}, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
       my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
@@ -733,6 +758,7 @@ async function carsGetRefactor(req, res, auth = false) {
       LEFT JOIN "Users" AS buyer ON buyer."id" = purchase."userId"
       ${pictureJoin}
       ${distanceJoin}
+      ${negoJoin}
       WHERE c."deletedAt" IS NULL ${conditionString}
       group by c."id"${distanceGroup}, my.year, my.picture, my.price, m."name", gm."name", b."name",
       b."logo", cpf."url", city."name", subdistrict."name", u."type", ic."name", ec."name",
