@@ -894,24 +894,39 @@ async function getByIdRefactor(req, res, auth = false) {
       select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
       my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      cle.name AS exteriorColorName, cle.hex AS exteriorColorHex,
+      cli.name AS interiorColorName, cli.hex AS interiorColorHex,
+
+      array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
+      array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries",
+
       count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views
       FROM "Cars" c
-      left join "Users" u on u."id" = c."userId"
-      left join "ModelYears" my on my."id" = c."modelYearId"
-      left join "Models" m on m."id" = c."modelId"
-      left join "GroupModels" gm on gm."id" = c."groupModelId"
-      left join "Brands" b on b."id" = c."brandId"
-      left join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
-      left join "Bargains" isBid on isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
+      LEFT join "Users" u on u."id" = c."userId"
+      LEFT join "ModelYears" my on my."id" = c."modelYearId"
+      LEFT join "Models" m on m."id" = c."modelId"
+      LEFT join "GroupModels" gm on gm."id" = c."groupModelId"
+      LEFT join "Brands" b on b."id" = c."brandId"
+
+      LEFT join "Colors" cle on cle."id" = c."exteriorColorId"
+      LEFT join "Colors" cli on cli."id" = c."interiorColorId"
+
+      LEFT JOIN "ExteriorGaleries" eg ON eg."carId" = c.id
+      LEFT JOIN "Files" egf ON egf."id" = eg."fileId"
+      LEFT JOIN "InteriorGaleries" ig ON ig."carId" = c.id
+      LEFT JOIN "Files" igf ON igf."id" = ig."fileId"
+
+      LEFT join "Bargains" b2 on b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
+      LEFT join "Bargains" isBid on isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
       LEFT JOIN "Likes" l ON l."carId" = c.id
       LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId
       LEFT JOIN "Views" v ON v."carId" = c.id
       LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
       WHERE c."deletedAt" IS NULL AND lc."id" IS NULL
       AND c."id" = :id
-      group by c."id", my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo"`,
+      group by c."id", my.year, my.picture, my.price, m."name", gm."name", b."name", b."logo", cle."name", cli."name", cle."hex", cli."hex"`,
       {
         replacements: { userId, id },
         type: QueryTypes.SELECT,
@@ -924,6 +939,46 @@ async function getByIdRefactor(req, res, auth = false) {
         errors: err.message
       });
     });
+
+  function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
+  }
+  if(data) {
+    const exteriorGalery = new Array();
+    const interiorGalery = new Array();
+    const eg = data.exteriorGaleries.split('|').filter(onlyUnique);
+    const ig = data.interiorGaleries.split('|').filter(onlyUnique);
+
+    for (let j = 0; j < eg.length; j += 1) {
+      const egColumn = eg[j].split('#sep#');
+      if (egColumn.length === 2) {
+        if (egColumn[1] !== '<m>') {
+          exteriorGalery.push({
+            id: parseInt(egColumn[0], 10),
+            picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+          });
+        }
+      }
+
+      data.exteriorGalery = exteriorGalery;
+      delete data.exteriorGaleries;
+    }
+
+    for (let j = 0; j < ig.length; j += 1) {
+      const igColumn = ig[j].split('#sep#');
+      if (igColumn.length === 2) {
+        if (igColumn[1] !== '<m>') {
+          interiorGalery.push({
+            id: parseInt(igColumn[0], 10),
+            picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+          });
+        }
+      }
+
+      data.interiorGalery = interiorGalery;
+      delete data.interiorGaleries;
+    }
+  }
 
   res.json({
     success: true,
