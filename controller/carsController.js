@@ -735,7 +735,7 @@ async function carsGetRefactor(req, res, auth = false) {
       ${negoRoom}
       
       select c.*${distanceSelect}, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
-      my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
+      my.price AS "modelYearPrice", m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
       count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
