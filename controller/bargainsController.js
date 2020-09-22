@@ -1100,7 +1100,7 @@ async function getSellNego(req, res) {
             as: 'purchase',
             required: true,
             where: {
-              isAccept: true
+              isAcceptSeller: true
             }
           }
         ]
@@ -1236,7 +1236,7 @@ async function getSellNego(req, res) {
                 as: 'purchase',
                 required: true,
                 where: {
-                  isAccept: true
+                  isAcceptSeller: true
                 }
               }
             ]
@@ -1252,10 +1252,10 @@ async function getSellNego(req, res) {
             where: models.sequelize.where(
               models.sequelize.literal(
                 `(SELECT COUNT( "RoomMembers"."id" ) 
-                	FROM "RoomMembers" 
-                	WHERE "RoomMembers"."roomId" = "room"."id" 
-                		AND "RoomMembers"."userId" <> ${id}
-                	)`
+                  FROM "RoomMembers" 
+                  WHERE "RoomMembers"."roomId" = "room"."id" 
+                    AND "RoomMembers"."userId" <> ${id}
+                  )`
               ),
               { [Op.gt]: 0 }
             )
@@ -1640,7 +1640,7 @@ async function getBuyNego(req, res) {
             as: 'purchase',
             required: true,
             where: {
-              isAccept: true
+              isAcceptBuyer: true
             }
           }
         ]
@@ -1774,7 +1774,7 @@ async function getBuyNego(req, res) {
                 as: 'purchase',
                 required: true,
                 where: {
-                  isAccept: true
+                  isAcceptBuyer: true
                 }
               }
             ]
@@ -1791,10 +1791,10 @@ async function getBuyNego(req, res) {
             where: models.sequelize.where(
               models.sequelize.literal(
                 `(SELECT COUNT( "RoomMembers"."id" ) 
-                	FROM "RoomMembers" 
-                	WHERE "RoomMembers"."roomId" = "room"."id" 
-                		AND "RoomMembers"."userId" = ${id}
-                	)`
+                  FROM "RoomMembers" 
+                  WHERE "RoomMembers"."roomId" = "room"."id" 
+                    AND "RoomMembers"."userId" = ${id}
+                  )`
               ),
               { [Op.gt]: 0 }
             )
