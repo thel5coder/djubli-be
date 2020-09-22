@@ -48,6 +48,11 @@ module.exports = (sequelize, DataTypes) => {
       as: 'purchase',
       onDelete: 'CASCADE'
     });
+    Bargain.belongsTo(models.Room, {
+      foreignKey: 'roomId',
+      targetKey: 'id',
+      as: 'room'
+    });
   };
   return Bargain;
 };
