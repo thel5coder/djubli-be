@@ -524,6 +524,14 @@ async function listingAll(req, res) {
       ]
     },
     {
+      model: models.City,
+      as: 'city'
+    },
+    {
+      model: models.SubDistrict,
+      as: 'subdistrict'
+    },
+    {
       model: models.Color,
       as: 'interiorColor',
       attributes: ['id', 'name', 'hex']
@@ -1503,6 +1511,14 @@ async function listingAllNew(req, res, fromCallback = false) {
       ]
     },
     {
+      model: models.City,
+      as: 'city'
+    },
+    {
+      model: models.SubDistrict,
+      as: 'subdistrict'
+    },
+    {
       model: models.Color,
       as: 'interiorColor',
       attributes: ['id', 'name', 'hex']
@@ -1861,6 +1877,14 @@ async function luxuryCar(req, res) {
           limit: 1
         }
       ]
+    },
+    {
+      model: models.City,
+      as: 'city'
+    },
+    {
+      model: models.SubDistrict,
+      as: 'subdistrict'
     },
     {
       model: models.Brand,
@@ -2421,6 +2445,14 @@ async function listingCar(req, res, auth = false) {
             ]
           }
         ]
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
       },
       {
         model: models.User,
