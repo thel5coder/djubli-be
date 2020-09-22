@@ -2,7 +2,13 @@ module.exports = (sequelize, DataTypes) => {
   const SubDistrict = sequelize.define(
     'SubDistrict',
     {
-      name: DataTypes.STRING,
+      name: {
+        type: DataTypes.STRING,
+        get() {
+          const rawValue = this.getDataValue('name');
+          return rawValue ? rawValue.toLowerCase().split(' ').map((s) => s.charAt(0).toUpperCase() + s.substring(1)).join(' ') : null;
+        }
+      },
       longitude: DataTypes.NUMERIC,
       latitude: DataTypes.NUMERIC,
       cityId: DataTypes.INTEGER

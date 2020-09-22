@@ -86,7 +86,6 @@ router.get('/cityId/:id', async (req, res) => {
 	.then(async data => {
 		res.json({
 	        success: true,
-	        // pagination,
 	        data
 	    });
 	})

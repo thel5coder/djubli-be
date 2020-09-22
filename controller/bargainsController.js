@@ -271,6 +271,14 @@ async function bargainsList(req, res) {
             ]
           },
           {
+            model: models.City,
+            as: 'city'
+          },
+          {
+            model: models.SubDistrict,
+            as: 'subdistrict'
+          },
+          {
             model: models.ModelYear,
             as: 'modelYear',
             attributes: ['id', 'year', 'modelId']
@@ -665,6 +673,14 @@ async function bargainsListBidder(req, res) {
             ]
           },
           {
+            model: models.City,
+            as: 'city'
+          },
+          {
+            model: models.SubDistrict,
+            as: 'subdistrict'
+          },
+          {
             model: models.ModelYear,
             as: 'modelYear',
             attributes: ['id', 'year', 'modelId']
@@ -1006,6 +1022,14 @@ async function getSellNego(req, res) {
         as: 'modelYear',
         attributes: ['id', 'year', 'modelId'],
         where: whereYear
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
       },
       {
         model: models.Brand,
@@ -1546,6 +1570,14 @@ async function getBuyNego(req, res) {
         as: 'modelYear',
         attributes: ['id', 'year', 'modelId'],
         where: whereYear
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
       },
       {
         model: models.Brand,

@@ -89,13 +89,11 @@ module.exports = (sequelize, DataTypes) => {
       as: 'user',
       onDelete: 'CASCADE'
     });
-
     Car.belongsTo(models.User, {
       foreignKey: 'userId',
       as: 'profile',
       onDelete: 'CASCADE'
     });
-
     Car.belongsTo(models.Brand, {
       foreignKey: 'brandId',
       as: 'brand',
@@ -126,23 +124,30 @@ module.exports = (sequelize, DataTypes) => {
       as: 'exteriorColor',
       onDelete: 'CASCADE'
     });
-
     Car.hasMany(models.Notification, {
       foreignKey: 'referenceId',
       targetKey: 'id',
       as: 'notifications'
     });
-
     Car.belongsTo(models.Room, {
       foreignKey: 'roomId',
       targetKey: 'id',
       as: 'room'
     });
-
     Car.hasMany(models.Purchase, {
       foreignKey: 'carId',
       sourceKey: 'id',
       as: 'purchase',
+      onDelete: 'CASCADE'
+    });
+    Car.belongsTo(models.SubDistrict, {
+      foreignKey: 'subdistrictId',
+      as: 'subdistrict',
+      onDelete: 'CASCADE'
+    });
+    Car.belongsTo(models.City, {
+      foreignKey: 'cityId',
+      as: 'city',
       onDelete: 'CASCADE'
     });
   };
