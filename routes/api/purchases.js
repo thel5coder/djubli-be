@@ -233,9 +233,18 @@ router.put('/bargainId/:bargainId', passport.authenticate('user', { session: fal
   }
 
   const data = await models.Purchase.findOne({
+    include: [
+      {
+        model: models.Car,
+        as: 'car'
+      }
+    ],
     where: {
       bargainId,
-      userId: id
+      [Op.or]: [
+        { userId: id },
+        models.sequelize.literal(`"car"."userId" = ${id}`)
+      ]
     }
   });
 
@@ -245,11 +254,27 @@ router.put('/bargainId/:bargainId', passport.authenticate('user', { session: fal
       errors: 'Purchase not found'
     });
   }
+
+  const car = await models.Car.findOne({
+    where: {
+      id: data.carId,
+      userId: id
+    }
+  });
+
+  const value = {};
+  if(car) {
+    Object.assign(value, {
+      isAcceptSeller: isAccept
+    });
+  } else {
+    Object.assign(value, {
+      isAcceptBuyer: isAccept
+    });
+  }
   
   return data
-    .update({
-      isAccept
-    })
+    .update(value)
     .then(() => {
       res.json({
         success: true,
