@@ -1897,7 +1897,6 @@ async function getBuyNego(req, res) {
       });
     })
     .catch(err => {
-      console.log(err);
       res.status(422).json({
         success: false,
         errors: err.message
@@ -2127,7 +2126,7 @@ async function extend(req, res) {
             WHERE "r"."bargainId" = "Bargain"."id" 
               AND "r"."carId" = "Bargain"."carId"
               AND "r"."userId" != ${userId}
-              AND "r"."type" = 4
+              -- AND "r"."type" = 4
               AND "r"."isRead" = TRUE
               AND "r"."deletedAt" IS NULL))`),
           'isRead'
@@ -2573,7 +2572,7 @@ async function negotiate(req, res) {
     WHERE "r"."bargainId" = ${data.id}
       AND "r"."carId" = ${data.carId}
       AND "r"."userId" = ${id}
-      AND "r"."type" = 4
+      -- AND "r"."type" = 4
       AND "r"."isRead" = TRUE
       AND "r"."deletedAt" IS NULL)) AS isread`);
 

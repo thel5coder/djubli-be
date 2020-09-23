@@ -642,7 +642,6 @@ async function listingAll(req, res) {
       });
     })
     .catch(err => {
-      console.log(err);
       res.status(422).json({
         success: false,
         errors: err.message
