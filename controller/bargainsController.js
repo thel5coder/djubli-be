@@ -230,6 +230,26 @@ async function bargainsList(req, res) {
         ]
       },
       {
+        model: models.Room,
+        required: true,
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        as: 'room',
+        include: [
+          {
+            model: models.RoomMember,
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            as: 'members',
+            where: {
+              userId: userLoginId
+            }
+          }
+        ]
+      },
+      {
         model: models.Car,
         required: true,
         as: 'car',
@@ -249,6 +269,14 @@ async function bargainsList(req, res) {
                 }
               }
             ]
+          },
+          {
+            model: models.City,
+            as: 'city'
+          },
+          {
+            model: models.SubDistrict,
+            as: 'subdistrict'
           },
           {
             model: models.ModelYear,
@@ -284,26 +312,26 @@ async function bargainsList(req, res) {
               }
             ]
           },
-          {
-            model: models.Room,
-            required: true,
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            as: 'room',
-            include: [
-              {
-                model: models.RoomMember,
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                },
-                as: 'members',
-                where: {
-                  userId: userLoginId
-                }
-              }
-            ]
-          }
+          // {
+          //   model: models.Room,
+          //   required: true,
+          //   attributes: {
+          //     exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          //   },
+          //   as: 'room',
+          //   include: [
+          //     {
+          //       model: models.RoomMember,
+          //       attributes: {
+          //         exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          //       },
+          //       as: 'members',
+          //       where: {
+          //         userId: userLoginId
+          //       }
+          //     }
+          //   ]
+          // }
         ]
       }
     ],
@@ -607,6 +635,23 @@ async function bargainsListBidder(req, res) {
         ]
       },
       {
+        model: models.Room,
+        required: true,
+        attributes: {
+          exclude: ['createdAt', 'updatedAt', 'deletedAt']
+        },
+        as: 'room',
+        include: [
+          {
+            model: models.RoomMember,
+            attributes: {
+              exclude: ['createdAt', 'updatedAt', 'deletedAt']
+            },
+            as: 'members'
+          }
+        ]
+      },
+      {
         model: models.Car,
         required: true,
         as: 'car',
@@ -626,6 +671,14 @@ async function bargainsListBidder(req, res) {
                 }
               }
             ]
+          },
+          {
+            model: models.City,
+            as: 'city'
+          },
+          {
+            model: models.SubDistrict,
+            as: 'subdistrict'
           },
           {
             model: models.ModelYear,
@@ -661,23 +714,23 @@ async function bargainsListBidder(req, res) {
               }
             ]
           },
-          {
-            model: models.Room,
-            required: true,
-            attributes: {
-              exclude: ['createdAt', 'updatedAt', 'deletedAt']
-            },
-            as: 'room',
-            include: [
-              {
-                model: models.RoomMember,
-                attributes: {
-                  exclude: ['createdAt', 'updatedAt', 'deletedAt']
-                },
-                as: 'members'
-              }
-            ]
-          }
+          // {
+          //   model: models.Room,
+          //   required: true,
+          //   attributes: {
+          //     exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          //   },
+          //   as: 'room',
+          //   include: [
+          //     {
+          //       model: models.RoomMember,
+          //       attributes: {
+          //         exclude: ['createdAt', 'updatedAt', 'deletedAt']
+          //       },
+          //       as: 'members'
+          //     }
+          //   ]
+          // }
         ]
       }
     ],
@@ -971,6 +1024,14 @@ async function getSellNego(req, res) {
         where: whereYear
       },
       {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
+      },
+      {
         model: models.Brand,
         as: 'brand',
         attributes: ['id', 'name', 'logo', 'status']
@@ -1063,7 +1124,7 @@ async function getSellNego(req, res) {
             as: 'purchase',
             required: true,
             where: {
-              isAccept: true
+              isAcceptSeller: true
             }
           }
         ]
@@ -1199,7 +1260,7 @@ async function getSellNego(req, res) {
                 as: 'purchase',
                 required: true,
                 where: {
-                  isAccept: true
+                  isAcceptSeller: true
                 }
               }
             ]
@@ -1215,10 +1276,10 @@ async function getSellNego(req, res) {
             where: models.sequelize.where(
               models.sequelize.literal(
                 `(SELECT COUNT( "RoomMembers"."id" ) 
-                	FROM "RoomMembers" 
-                	WHERE "RoomMembers"."roomId" = "room"."id" 
-                		AND "RoomMembers"."userId" <> ${id}
-                	)`
+                  FROM "RoomMembers" 
+                  WHERE "RoomMembers"."roomId" = "room"."id" 
+                    AND "RoomMembers"."userId" <> ${id}
+                  )`
               ),
               { [Op.gt]: 0 }
             )
@@ -1511,6 +1572,14 @@ async function getBuyNego(req, res) {
         where: whereYear
       },
       {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
+      },
+      {
         model: models.Brand,
         as: 'brand',
         attributes: ['id', 'name', 'logo', 'status']
@@ -1603,7 +1672,7 @@ async function getBuyNego(req, res) {
             as: 'purchase',
             required: true,
             where: {
-              isAccept: true
+              isAcceptBuyer: true
             }
           }
         ]
@@ -1737,7 +1806,7 @@ async function getBuyNego(req, res) {
                 as: 'purchase',
                 required: true,
                 where: {
-                  isAccept: true
+                  isAcceptBuyer: true
                 }
               }
             ]
@@ -1754,10 +1823,10 @@ async function getBuyNego(req, res) {
             where: models.sequelize.where(
               models.sequelize.literal(
                 `(SELECT COUNT( "RoomMembers"."id" ) 
-                	FROM "RoomMembers" 
-                	WHERE "RoomMembers"."roomId" = "room"."id" 
-                		AND "RoomMembers"."userId" = ${id}
-                	)`
+                  FROM "RoomMembers" 
+                  WHERE "RoomMembers"."roomId" = "room"."id" 
+                    AND "RoomMembers"."userId" = ${id}
+                  )`
               ),
               { [Op.gt]: 0 }
             )
@@ -1930,7 +1999,7 @@ async function bid(req, res) {
       models.RoomMember.create({ roomId: room.id, userId });
       await models.Bargain.update({ roomId: room.id }, { where: { id: data.id } });
       Object.assign(data, { roomId: room.id });
-      carExists.update({ roomId: room.id });
+      // carExists.update({ roomId: room.id });
 
       const userNotif = {
         userId: carExists.userId,
@@ -2226,6 +2295,34 @@ async function negotiate(req, res) {
     });
   }
 
+  // update roomId in car first nego
+  if(negotiationType == 0) {
+    const car = await models.Car.findByPk(carId);
+    const bid = await models.Bargain.findOne({
+      where: {
+        carId,
+        userId: bidderId,
+        bidType: 0
+      }
+    });
+
+    if(!car) {
+      return res.status(404).json({ 
+        success: false, 
+        errors: 'car not found' 
+      });
+    }
+
+    if(!bid) {
+      return res.status(404).json({ 
+        success: false, 
+        errors: 'data bid not found' 
+      });
+    }
+
+    await car.update({ roomId: bid.roomId });
+  }
+
   const findCarWithUserInRoom = await models.Car.findByPk(carId, {
     include: [
       {
@@ -2321,7 +2418,6 @@ async function negotiate(req, res) {
       tab: `tabNego-${customer}`
     });
   } else {
-    console.log(carExists.userId);
     userNotifs.push({
       userId: carExists.userId,
       collapseKey: null,
@@ -2346,7 +2442,8 @@ async function negotiate(req, res) {
     bidType: 1,
     negotiationType,
     comment,
-    carPrice
+    carPrice,
+    roomId: carExists.roomId
   };
 
   const trans = await models.sequelize.transaction();
@@ -2522,7 +2619,7 @@ async function failureNegotiation(req, res) {
   }
 
   const where = { carId };
-  if (!withBid) {
+  if (!JSON.parse(withBid)) {
     Object.assign(where, {
       bidType: 1
     });
@@ -2540,31 +2637,31 @@ async function failureNegotiation(req, res) {
     });
   });
 
-  await models.Room.destroy({
-    where: {
-      id: car.roomId
-    },
-    transaction: trans
-  }).catch(err => {
-    trans.rollback();
-    return res.status(422).json({
-      success: false,
-      errors: err.message
-    });
-  });
+  // await models.Room.destroy({
+  //   where: {
+  //     id: car.roomId
+  //   },
+  //   transaction: trans
+  // }).catch(err => {
+  //   trans.rollback();
+  //   return res.status(422).json({ 
+  //     success: false, 
+  //     errors: err.message 
+  //   });
+  // });
 
-  await models.RoomMember.destroy({
-    where: {
-      roomId: car.roomId
-    },
-    transaction: trans
-  }).catch(err => {
-    trans.rollback();
-    return res.status(422).json({
-      success: false,
-      errors: err.message
-    });
-  });
+  // await models.RoomMember.destroy({
+  //   where: {
+  //     roomId: car.roomId
+  //   },
+  //   transaction: trans
+  // }).catch(err => {
+  //   trans.rollback();
+  //   return res.status(422).json({ 
+  //     success: false, 
+  //     errors: err.message 
+  //   });
+  // });
 
   await car.update({ roomId: null }, { transaction: trans }).catch(err => {
     trans.rollback();

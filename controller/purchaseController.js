@@ -96,16 +96,12 @@ async function get(req, res) {
 
   const where = {};
   if (tabType == 0) {
-    const whereSeller = Sequelize.literal(`(SELECT "Cars"."userId" 
-      FROM "Cars" 
-      WHERE "Cars"."id" = "Purchase"."carId"
-        AND "Cars"."deletedAt" IS null)`);
-
-    Object.assign(where, [
-      Sequelize.where(whereSeller, {
-        [Op.eq]: id
-      })
-    ]);
+    Object.assign(where, {
+      [Op.and]: [
+        { isAcceptSeller: true },
+        models.sequelize.literal(`"car"."userId" = ${id}`)
+      ]
+    });
   } else if (tabType == 1) {
     Object.assign(where, {
       [Op.or]: [{
@@ -113,7 +109,7 @@ async function get(req, res) {
           bargainId: {
             [Op.not]: null
           },
-          isAccept: true
+          isAcceptBuyer: true
         },
         {
           userId: id,

@@ -404,6 +404,14 @@ async function carsGet(req, res, auth = false) {
         where: whereYear
       },
       {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
+      },
+      {
         model: models.User,
         as: 'user',
         attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
@@ -852,6 +860,14 @@ async function getById(req, res) {
     attributes: Object.keys(models.Car.attributes).concat(addAttribute),
     include: [
       {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
+      },
+      {
         model: models.User,
         as: 'user',
         attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
@@ -1286,6 +1302,14 @@ async function getByUserId(req, res) {
       where: whereModelYear
     },
     {
+      model: models.City,
+      as: 'city'
+    },
+    {
+      model: models.SubDistrict,
+      as: 'subdistrict'
+    },
+    {
       model: models.User,
       as: 'user',
       attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
@@ -1534,6 +1558,14 @@ async function getByStatus(req, res) {
         where: whereYear
       },
       {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
+      },
+      {
         model: models.User,
         as: 'user',
         attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
@@ -1765,6 +1797,14 @@ async function purchaseList(req, res) {
             as: 'modelYear',
             attributes: ['id', 'year', 'modelId'],
             where: whereYear
+          },
+          {
+            model: models.City,
+            as: 'city'
+          },
+          {
+            model: models.SubDistrict,
+            as: 'subdistrict'
           },
           {
             model: models.Brand,
@@ -2107,6 +2147,14 @@ async function bidList(req, res) {
           as: 'modelYear',
           attributes: ['id', 'year', 'modelId'],
           where: whereModelYear
+        },
+        {
+          model: models.City,
+          as: 'city'
+        },
+        {
+          model: models.SubDistrict,
+          as: 'subdistrict'
         },
         {
           model: models.User,
@@ -2755,6 +2803,14 @@ async function sellList(req, res) {
       where: whereModelYear
     },
     {
+      model: models.City,
+      as: 'city'
+    },
+    {
+      model: models.SubDistrict,
+      as: 'subdistrict'
+    },
+    {
       model: models.User,
       as: 'user',
       attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType']
@@ -3015,6 +3071,14 @@ async function like(req, res) {
           as: 'modelYear',
           attributes: ['id', 'year', 'modelId'],
           where: whereModelYear
+        },
+        {
+          model: models.City,
+          as: 'city'
+        },
+        {
+          model: models.SubDistrict,
+          as: 'subdistrict'
         },
         {
           model: models.User,
@@ -3285,6 +3349,14 @@ async function view(req, res) {
           where: whereModelYear
         },
         {
+          model: models.City,
+          as: 'city'
+        },
+        {
+          model: models.SubDistrict,
+          as: 'subdistrict'
+        },
+        {
           model: models.User,
           as: 'user',
           attributes: ['id', 'name', 'email', 'phone', 'type', 'companyType'],
@@ -3526,6 +3598,14 @@ async function viewLike(req, res) {
       as: 'modelYear',
       attributes: ['id', 'year', 'modelId'],
       where: whereModelYear
+    },
+    {
+      model: models.City,
+      as: 'city'
+    },
+    {
+      model: models.SubDistrict,
+      as: 'subdistrict'
     },
     {
       model: models.User,
@@ -4092,6 +4172,14 @@ async function viewLikeLogon(req, res) {
             limit: 1
           }
         ]
+      },
+      {
+        model: models.City,
+        as: 'city'
+      },
+      {
+        model: models.SubDistrict,
+        as: 'subdistrict'
       },
       {
         model: models.Brand,
