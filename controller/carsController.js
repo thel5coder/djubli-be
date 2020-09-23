@@ -749,7 +749,7 @@ async function carsGetRefactor(req, res, auth = false) {
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
-      subdistrict."name" as "subdistrictName", u."type" as "userType", ic."name" AS "interiorColorName",
+      INITCAP(subdistrict."name") as "subdistrictName", u."type" as "userType", ic."name" AS "interiorColorName",
       ec."name" AS "exteriorColorName" ${pictureSelect}, purchase."id" AS "purchaseId", purchase."createdAt" AS "purchaseDate",
       buyer."id" AS "buyerId", buyer."name" AS "buyerName"
       FROM "Cars" c
@@ -959,7 +959,7 @@ async function getByIdRefactor(req, res, auth = false) {
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
       cle.name AS exteriorColorName, cle.hex AS exteriorColorHex,
       cli.name AS interiorColorName, cli.hex AS interiorColorHex,
-      ct."name" AS city, sdt."name" AS subdistrict,
+      ct."name" AS city, INITCAP(sdt."name") AS subdistrict,
 
       array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
       array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries",
