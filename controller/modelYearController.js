@@ -644,6 +644,7 @@ async function listingAll(req, res) {
 
 async function listingAllNewRefactor(req, res, fromCallback = false) {
   const { page, limit } = req.query;
+  let { by, sort } = req.query;
 
   const {
     brandId,
@@ -667,6 +668,13 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     typeId,
     isMarket
   } = req.query;
+
+  if (sort !== 'desc' && sort !== 'asc') sort = 'desc';
+  if (by === 'listing') {
+    by = `listing`;
+  } else {
+    by = `listing`;
+  }
 
   const replacements = { bidType: 0 };
   let conditionString = ``;
@@ -801,8 +809,7 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     ${distanceJoin}
     WHERE my."deletedAt" IS NULL ${conditionString}
     group by my."id", m."name", m."groupModelId", gm."name", gm."brandId", b."name", b."logo", pur.price
-    order by m."name", my."year";
-    `,
+    order by ${by} ${sort}`,
       {
         replacements,
         type: QueryTypes.SELECT
