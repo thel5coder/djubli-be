@@ -160,13 +160,24 @@ router.get('/', async (req, res) => {
         models.sequelize.literal(
             `(SELECT COUNT("Cars"."id") 
                 FROM "Cars" 
-                WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId" 
-                     ${whereCondition} 
-                    AND "Cars"."userId" = "Dealer"."userId" 
+                WHERE "Cars"."userId" = "Dealer"."userId" 
+                    ${whereCondition} 
                     AND "Cars"."deletedAt" IS NULL
             )`
         ),
         'countListing'
+      ],
+      [
+        models.sequelize.literal(
+            `(SELECT COUNT("Cars"."id") 
+                FROM "Cars" 
+                WHERE "Cars"."brandId" = "Dealer"."authorizedBrandId"  
+                    ${whereCondition} 
+                    AND "Cars"."userId" = "Dealer"."userId"
+                    AND "Cars"."deletedAt" IS NULL
+            )`
+        ),
+        'countListingAuthorizedBrand'
       ],
       [
         models.sequelize.literal(
