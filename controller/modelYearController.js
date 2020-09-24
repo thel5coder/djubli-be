@@ -996,6 +996,10 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     });
   }
 
+  if (fromCallback) {
+    return data[0];
+  }
+
   res.json({
     success: true,
     meta: req.query,

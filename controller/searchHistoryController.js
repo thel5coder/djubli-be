@@ -60,22 +60,30 @@ async function get(req, res) {
           item.dataValues.params = newParams;
 
           if(typeof newParams['radius[0]'] !== 'undefined' && typeof newParams['radius[1]'] !== 'undefined') {
-            newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
+            // newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
+            newParams.minRadius = newParams['radius[0]'];
+            newParams.maxRadius = newParams['radius[1]'];
           }
 
           if(isMarket && JSON.parse(isMarket) == true) {
             newParams.isMarket = JSON.parse(isMarket);
           }
 
-          const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
-          let count = 0;
-          getCountResult.map(itemResult => {
-            itemResult.modelYears.map(subItemResult => {
-              if(subItemResult.dataValues.numberOfCar) {
-                count += subItemResult.dataValues.numberOfCar;
-              }
-            });
-          });
+          newParams.latitude = newParams.latitude || null;
+          newParams.longitude = newParams.longitude || null;
+          newParams.minRadius = newParams.minRadius || null;
+          newParams.maxRadius = newParams.maxRadius || null;
+          const getCountResult = await modelYearController.countAllNewRefactor({ query: newParams }, res, true);
+          let count = getCountResult.count;
+
+          // const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
+          // getCountResult.map(itemResult => {
+          //   itemResult.modelYears.map(subItemResult => {
+          //     if(subItemResult.dataValues.numberOfCar) {
+          //       count += subItemResult.dataValues.numberOfCar;
+          //     }
+          //   });
+          // });
 
           item.countResult = count;
           await models.SearchHistory.update(
@@ -137,18 +145,26 @@ async function getById(req, res) {
       data.dataValues.params = newParams;
 
       if(typeof newParams['radius[0]'] !== 'undefined' && typeof newParams['radius[1]'] !== 'undefined') {
-        newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
+        // newParams.radius = [newParams['radius[0]'], newParams['radius[1]']];
+        newParams.minRadius = newParams['radius[0]'];
+        newParams.maxRadius = newParams['radius[1]'];
       }
 
-      const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
-      let count = 0;
-      getCountResult.map(item => {
-        item.modelYears.map(subItem => {
-          if(subItem.dataValues.numberOfCar) {
-            count += subItem.dataValues.numberOfCar;
-          }
-        });
-      });
+      newParams.latitude = newParams.latitude || null;
+      newParams.longitude = newParams.longitude || null;
+      newParams.minRadius = newParams.minRadius || null;
+      newParams.maxRadius = newParams.maxRadius || null;
+      const getCountResult = await modelYearController.countAllNewRefactor({ query: newParams }, res, true);
+      let count = getCountResult.count;
+      
+      // const getCountResult = await modelYearController.listingAllNew({ query: newParams }, res, true);
+      // getCountResult.map(item => {
+      //   item.modelYears.map(subItem => {
+      //     if(subItem.dataValues.numberOfCar) {
+      //       count += subItem.dataValues.numberOfCar;
+      //     }
+      //   });
+      // });
 
       data.countResult = count;
       await models.SearchHistory.update(
