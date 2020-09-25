@@ -2924,6 +2924,365 @@ async function sellList(req, res) {
     });
 }
 
+async function sellRefactor(req, res) {
+  const userId = req.user.id;
+  const {
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    minKm,
+    maxKm,
+    showDetailPhoto
+  } = req.query;
+  let { page, limit, by, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (parseInt(limit, 10) > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (sort !== 'desc' && sort !== 'asc') sort = 'desc';
+  if (by === 'date') {
+    by = `c."createdAt"`;
+  } else if (by === 'price') {
+    by = `c."price"`;
+  } else if (by === 'km') {
+    by = `c."km"`;
+  } else if (by === 'condition') {
+    by = `c."condition"`;
+  } else if (by === 'likes') {
+    by = `likes`;
+  } else if (by === 'views') {
+    by = `views`;
+  } else {
+    by = 'c.id';
+  }
+
+  const replacements = { bidType: 0, userId };
+  let conditionString = ``;
+  
+  if (minPrice) {
+    conditionString += ` AND c."price" >= :minPrice`;
+    Object.assign(replacements, { minPrice });
+  }
+  if (maxPrice) {
+    conditionString += ` AND c."price" <= :maxPrice`;
+    Object.assign(replacements, { maxPrice });
+  }
+  if (minYear) {
+    conditionString += ` AND my."year" >= :minYear`;
+    Object.assign(replacements, { minYear });
+  }
+  if (maxYear) {
+    conditionString += ` AND my."year" <= :maxYear`;
+    Object.assign(replacements, { maxYear });
+  }
+  if (minKm) {
+    conditionString += ` AND c."km" >= :minKm`;
+    Object.assign(replacements, { minKm });
+  }
+  if (maxKm) {
+    conditionString += ` AND c."km" <= :maxKm`;
+    Object.assign(replacements, { maxKm });
+  }
+
+  let pictureSelect = ``;
+  let pictureJoin = ``;
+  if (showDetailPhoto === 'true') {
+    pictureSelect = `,
+    array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
+    array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries"`;
+    pictureJoin = `LEFT JOIN "ExteriorGaleries" eg ON eg."carId" = c.id
+    LEFT JOIN "Files" egf ON egf."id" = eg."fileId"
+    LEFT JOIN "InteriorGaleries" ig ON ig."carId" = c.id
+    LEFT JOIN "Files" igf ON igf."id" = ig."fileId"`;
+  }
+  const data = await models.sequelize
+    .query(
+      `WITH loan_cars AS (
+        SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
+      ), car_picture AS (
+        SELECT "carId", MIN("fileId") AS "fileId" FROM "ExteriorGaleries" GROUP BY "carId"
+      )
+
+      select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      my.price AS "modelYearPrice", m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
+      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      count(distinct(b2."id")) AS "countBid", max(b2."bidAmount" ) AS "highestBid",
+      count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
+      count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
+      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
+      INITCAP(subdistrict."name") AS "subdistrictName", u."type" AS "userType", ic."name" AS "interiorColorName",
+      ec."name" AS "exteriorColorName" ${pictureSelect}, purchase."id" AS "purchaseId", purchase."createdAt" AS "purchaseDate",
+      buyer."id" AS "buyerId", buyer."name" AS "buyerName"
+      FROM "Cars" c
+      LEFT JOIN "Users" u ON u."id" = c."userId"
+      LEFT JOIN "Cities" city ON city."id" = c."cityId"
+      LEFT JOIN "SubDistricts" subdistrict ON subdistrict."id" = c."subdistrictId"
+      LEFT JOIN "Colors" ic ON ic."id" = c."interiorColorId"
+      LEFT JOIN "Colors" ec ON ec."id" = c."exteriorColorId"
+      LEFT JOIN "ModelYears" my ON my."id" = c."modelYearId"
+      LEFT JOIN "Models" m ON m."id" = c."modelId"
+      LEFT JOIN "GroupModels" gm ON gm."id" = c."groupModelId"
+      LEFT JOIN "Brands" b ON b."id" = c."brandId"
+      LEFT JOIN "Bargains" b2 ON b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
+      LEFT JOIN "Bargains" isBid ON isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
+      LEFT JOIN "Likes" l ON l."carId" = c.id AND l.status IS true
+      LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId AND isLike.status IS true
+      LEFT JOIN "Views" v ON v."carId" = c.id
+      LEFT JOIN "Views" vme ON vme."carId" = c.id AND vme."userId" = :userId
+      LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
+      LEFT JOIN "car_picture" AS cp ON cp."carId" = c."id"
+      LEFT JOIN "Files" AS cpf ON cpf."id" = cp."fileId"
+      LEFT JOIN "Purchases" AS purchase ON purchase."carId" = c."id"
+      LEFT JOIN "Users" AS buyer ON buyer."id" = purchase."userId"
+      ${pictureJoin}
+      WHERE c."userId" = :userId AND c."deletedAt" IS NULL ${conditionString}
+      GROUP BY c."id", my.year, my.picture, my.price, m."name", gm."name", b."name",
+      b."logo", cpf."url", city."name", subdistrict."name", u."type", ic."name", ec."name",
+      purchase."id", "buyer".id
+      ORDER BY ${by} ${sort}
+      OFFSET ${offset} LIMIT ${limit}`,
+      {
+        replacements,
+        type: QueryTypes.SELECT
+      }
+    )
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+
+  if (showDetailPhoto === 'true') {
+    function onlyUnique(value, index, self) {
+      return self.indexOf(value) === index;
+    }
+    for (let i = 0; i < data.length; i += 1) {
+      const exteriors = new Array();
+      const eg = data[i].exteriorGaleries.split('|').filter(onlyUnique);
+      for (let j = 0; j < eg.length; j += 1) {
+        const egColumn = eg[j].split('#sep#');
+        if (egColumn.length === 2) {
+          if (egColumn[1] !== '<m>') {
+            exteriors.push({
+              id: parseInt(egColumn[0], 10),
+              picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+            });
+          }
+        }
+        data[i].exteriorGalery = exteriors;
+        delete data[i].exteriorGaleries;
+      }
+
+      const interiors = new Array();
+      const ig = data[i].interiorGaleries.split('|').filter(onlyUnique);
+      for (let j = 0; j < ig.length; j += 1) {
+        const igColumn = ig[j].split('#sep#');
+        if (igColumn.length === 2) {
+          if (igColumn[1] !== '<m>') {
+            interiors.push({
+              id: parseInt(igColumn[0], 10),
+              picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+            });
+          }
+        }
+      }
+      data[i].interiorGalery = interiors;
+      delete data[i].interiorGaleries;
+    }
+  }
+
+  res.json({
+    success: true,
+    meta: req.query,
+    data
+  });
+}
+
+async function bidRefactor(req, res) {
+  const userId = req.user.id;
+  const {
+    minPrice,
+    maxPrice,
+    minYear,
+    maxYear,
+    minKm,
+    maxKm,
+    showDetailPhoto
+  } = req.query;
+  let { page, limit, by, sort } = req.query;
+  let offset = 0;
+
+  if (validator.isInt(limit ? limit.toString() : '') === false) limit = DEFAULT_LIMIT;
+  if (parseInt(limit, 10) > MAX_LIMIT) limit = MAX_LIMIT;
+  if (validator.isInt(page ? page.toString() : '')) offset = (page - 1) * limit;
+  else page = 1;
+
+  if (sort !== 'desc' && sort !== 'asc') sort = 'desc';
+  if (by === 'date') {
+    by = `c."createdAt"`;
+  } else if (by === 'price') {
+    by = `c."price"`;
+  } else if (by === 'km') {
+    by = `c."km"`;
+  } else if (by === 'condition') {
+    by = `c."condition"`;
+  } else if (by === 'likes') {
+    by = `likes`;
+  } else if (by === 'views') {
+    by = `views`;
+  } else {
+    by = 'c.id';
+  }
+
+  const replacements = { bidType: 0, userId };
+  let conditionString = ``;
+  
+  if (minPrice) {
+    conditionString += ` AND c."price" >= :minPrice`;
+    Object.assign(replacements, { minPrice });
+  }
+  if (maxPrice) {
+    conditionString += ` AND c."price" <= :maxPrice`;
+    Object.assign(replacements, { maxPrice });
+  }
+  if (minYear) {
+    conditionString += ` AND my."year" >= :minYear`;
+    Object.assign(replacements, { minYear });
+  }
+  if (maxYear) {
+    conditionString += ` AND my."year" <= :maxYear`;
+    Object.assign(replacements, { maxYear });
+  }
+  if (minKm) {
+    conditionString += ` AND c."km" >= :minKm`;
+    Object.assign(replacements, { minKm });
+  }
+  if (maxKm) {
+    conditionString += ` AND c."km" <= :maxKm`;
+    Object.assign(replacements, { maxKm });
+  }
+
+  let pictureSelect = ``;
+  let pictureJoin = ``;
+  if (showDetailPhoto === 'true') {
+    pictureSelect = `,
+    array_to_string(array_agg(eg.id::TEXT || '#sep#' || coalesce(egf."url", '<m>')),'|') AS "exteriorGaleries",
+    array_to_string(array_agg(ig.id::TEXT || '#sep#' || coalesce(igf."url", '<m>')),'|') AS "interiorGaleries"`;
+    pictureJoin = `LEFT JOIN "ExteriorGaleries" eg ON eg."carId" = c.id
+    LEFT JOIN "Files" egf ON egf."id" = eg."fileId"
+    LEFT JOIN "InteriorGaleries" ig ON ig."carId" = c.id
+    LEFT JOIN "Files" igf ON igf."id" = ig."fileId"`;
+  }
+  const data = await models.sequelize
+    .query(
+      `WITH loan_cars AS (
+        SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
+      ), car_picture AS (
+        SELECT "carId", MIN("fileId") AS "fileId" FROM "ExteriorGaleries" GROUP BY "carId"
+      )
+
+      select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      my.price AS "modelYearPrice", m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
+      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      count(distinct(b2."id")) AS "countBid", max(b2."bidAmount" ) AS "highestBid",
+      count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
+      count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
+      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
+      INITCAP(subdistrict."name") AS "subdistrictName", u."type" AS "userType", ic."name" AS "interiorColorName",
+      ec."name" AS "exteriorColorName" ${pictureSelect}, purchase."id" AS "purchaseId", purchase."createdAt" AS "purchaseDate",
+      buyer."id" AS "buyerId", buyer."name" AS "buyerName"
+      FROM "Cars" c
+      LEFT JOIN "Users" u ON u."id" = c."userId"
+      LEFT JOIN "Cities" city ON city."id" = c."cityId"
+      LEFT JOIN "SubDistricts" subdistrict ON subdistrict."id" = c."subdistrictId"
+      LEFT JOIN "Colors" ic ON ic."id" = c."interiorColorId"
+      LEFT JOIN "Colors" ec ON ec."id" = c."exteriorColorId"
+      LEFT JOIN "ModelYears" my ON my."id" = c."modelYearId"
+      LEFT JOIN "Models" m ON m."id" = c."modelId"
+      LEFT JOIN "GroupModels" gm ON gm."id" = c."groupModelId"
+      LEFT JOIN "Brands" b ON b."id" = c."brandId"
+      LEFT JOIN "Bargains" b2 ON b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
+      LEFT JOIN "Bargains" isBid ON isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
+      LEFT JOIN "Likes" l ON l."carId" = c.id AND l.status IS true
+      LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId AND isLike.status IS true
+      LEFT JOIN "Views" v ON v."carId" = c.id
+      LEFT JOIN "Views" vme ON vme."carId" = c.id AND vme."userId" = :userId
+      LEFT JOIN "loan_cars" lc ON lc."carId" = c.id
+      LEFT JOIN "car_picture" AS cp ON cp."carId" = c."id"
+      LEFT JOIN "Files" AS cpf ON cpf."id" = cp."fileId"
+      LEFT JOIN "Purchases" AS purchase ON purchase."carId" = c."id"
+      LEFT JOIN "Users" AS buyer ON buyer."id" = purchase."userId"
+      ${pictureJoin}
+      WHERE c."status" = 0 AND c."roomId" IS NULL AND c."deletedAt" IS NULL ${conditionString}
+      GROUP BY c."id", my.year, my.picture, my.price, m."name", gm."name", b."name",
+      b."logo", cpf."url", city."name", subdistrict."name", u."type", ic."name", ec."name",
+      purchase."id", "buyer".id
+      HAVING count(distinct(isBid.id)) > 0
+      ORDER BY ${by} ${sort}
+      OFFSET ${offset} LIMIT ${limit}`,
+      {
+        replacements,
+        type: QueryTypes.SELECT
+      }
+    )
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
+
+  if (showDetailPhoto === 'true') {
+    function onlyUnique(value, index, self) {
+      return self.indexOf(value) === index;
+    }
+    for (let i = 0; i < data.length; i += 1) {
+      const exteriors = new Array();
+      const eg = data[i].exteriorGaleries.split('|').filter(onlyUnique);
+      for (let j = 0; j < eg.length; j += 1) {
+        const egColumn = eg[j].split('#sep#');
+        if (egColumn.length === 2) {
+          if (egColumn[1] !== '<m>') {
+            exteriors.push({
+              id: parseInt(egColumn[0], 10),
+              picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+            });
+          }
+        }
+        data[i].exteriorGalery = exteriors;
+        delete data[i].exteriorGaleries;
+      }
+
+      const interiors = new Array();
+      const ig = data[i].interiorGaleries.split('|').filter(onlyUnique);
+      for (let j = 0; j < ig.length; j += 1) {
+        const igColumn = ig[j].split('#sep#');
+        if (igColumn.length === 2) {
+          if (igColumn[1] !== '<m>') {
+            interiors.push({
+              id: parseInt(igColumn[0], 10),
+              picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+            });
+          }
+        }
+      }
+      data[i].interiorGalery = interiors;
+      delete data[i].interiorGaleries;
+    }
+  }
+
+  res.json({
+    success: true,
+    meta: req.query,
+    data
+  });
+}
+
 async function like(req, res) {
   const { id } = req.params;
   const {
@@ -4320,6 +4679,8 @@ module.exports = {
   bidList,
   sell,
   sellList,
+  sellRefactor,
+  bidRefactor,
   like,
   view,
   viewLike,

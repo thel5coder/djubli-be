@@ -19,93 +19,37 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
-// Withot Login
+// API GET Withot Login
 router.get('/', async (req, res) => await carsController.carsGet(req, res));
-
-// Withot Login
 router.get('/refactor', async (req, res) => await carsController.carsGetRefactor(req, res));
-
-// With Login
-router.get(
-  '/refactor/logon',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.carsGetRefactor(req, res, true)
-);
-
-// With Login
-router.get(
-  '/logon',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.carsGet(req, res, true)
-);
-
-router.get('/user/:id', async (req, res) => await carsController.getByUserId(req, res));
-
-// Get By Status
-router.get('/status/:status', async (req, res) => await carsController.getByStatus(req, res));
-
-router.get(
-  '/purchase_list/status/:status',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.purchaseList(req, res)
-);
-
-router.get(
-  '/bid_list',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.bidList(req, res)
-);
-
-router.get(
-  '/bid/list',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.bidList(req, res)
-);
-
-// With Login
-router.get(
-  '/sell_list/status/:status',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.sellList(req, res)
-);
-
-// Withot Login
-router.get(
-  '/sell/list/status/:status',
-  async (req, res) => await carsController.sellList(req, res)
-);
-
 router.get('/id/:id', async (req, res) => await carsController.getById(req, res));
-
-// Get By ID Refactor
 router.get('/id/:id/refactor', async (req, res) => await carsController.getByIdRefactor(req, res));
-router.get('/id/:id/refactor/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.getByIdRefactor(req, res, true));
-// Get By ID Refactor
-
-router.get('/like/:id', async (req, res) => await carsController.like(req, res));
-
-router.get('/view/:id', async (req, res) => await carsController.view(req, res));
-
-router.get('/viewLike', async (req, res) => await carsController.viewLike(req, res));
-
-router.get('/views/like', async (req, res) => await carsController.viewLike(req, res));
-
-// router get list car by like(Login)
-router.get(
-  '/viewLikeLogon',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.viewLikeLogon(req, res)
-);
-
+router.get('/user/:id', async (req, res) => await carsController.getByUserId(req, res));
+router.get('/status/:status', async (req, res) => await carsController.getByStatus(req, res));
 router.get('/categories', async (req, res) => await carsController.getCategory(req, res));
+router.get('/sell/list/status/:status', async (req, res) => await carsController.sellList(req, res));
+router.get('/like/:id', async (req, res) => await carsController.like(req, res));
+router.get('/view/:id', async (req, res) => await carsController.view(req, res));
+router.get('/viewLike', async (req, res) => await carsController.viewLike(req, res));
+router.get('/views/like', async (req, res) => await carsController.viewLike(req, res));
+// API GET Withot Login
 
-router.get(
-  '/checkBid/:id',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.checkBid(req, res)
-);
+// API GET With Login
+router.get('/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.carsGet(req, res, true));
+router.get('/refactor/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.carsGetRefactor(req, res, true));
+router.get('/id/:id/refactor/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.getByIdRefactor(req, res, true));
+router.get('/purchase_list/status/:status', passport.authenticate('user', { session: false }), async (req, res) => await carsController.purchaseList(req, res));
+router.get('/bid_list', passport.authenticate('user', { session: false }), async (req, res) => await carsController.bidList(req, res));
+router.get('/bid/list', passport.authenticate('user', { session: false }), async (req, res) => await carsController.bidList(req, res));
+router.get('/sell_list/status/:status', passport.authenticate('user', { session: false }), async (req, res) => await carsController.sellList(req, res));
+router.get('/sell/refactor', passport.authenticate('user', { session: false }), async (req, res) => await carsController.sellRefactor(req, res));
+router.get('/bid/refactor', passport.authenticate('user', { session: false }), async (req, res) => await carsController.bidRefactor(req, res));
+router.get('/viewLikeLogon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.viewLikeLogon(req, res));
+router.get('/checkBid/:id', passport.authenticate('user', { session: false }), async (req, res) => await carsController.checkBid(req, res));
+// API GET With Login
 
-// Update Status
+router.post('/', passport.authenticate('user', { session: false }), async (req, res) => await carsController.sell(req, res));
+
 router.put('/status/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
@@ -149,12 +93,6 @@ router.put('/status/:id', passport.authenticate('user', { session: false }), asy
       });
     });
 });
-
-router.post(
-  '/',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await carsController.sell(req, res)
-);
 
 router.put('/:id', passport.authenticate('user', { session: false }), async (req, res) => {
   const { id } = req.params;
@@ -615,22 +553,26 @@ router.delete('/id/:id', passport.authenticate('user', { session: false }), asyn
   });
 });
 
-router.delete(
-  '/meet/schedules/:id',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => {
-    const { id } = req.params;
-    if (validator.isInt(id ? id.toString() : '') === false)
-      return res.status(400).json({ success: false, errors: 'Invalid Parameter' });
-
-    const data = await models.MeetingSchedule.findByPk(id);
-    if (!data) return res.status(400).json({ success: false, errors: 'Schedule not found' });
-
-    return data
-      .destroy(id)
-      .then(async data => apiResponse._success({ res, data }))
-      .catch(err => apiResponse._error({ res, errors: err }));
+router.delete('/meet/schedules/:id', passport.authenticate('user', { session: false }), async (req, res) => {
+  const { id } = req.params;
+  if (validator.isInt(id ? id.toString() : '') === false) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: 'Invalid Parameter' 
+    });
   }
-);
+
+  const data = await models.MeetingSchedule.findByPk(id);
+  if (!data) {
+    return res.status(400).json({ 
+      success: false, 
+      errors: 'Schedule not found' 
+    });
+  }
+
+  return data.destroy(id)
+    .then(async data => apiResponse._success({ res, data }))
+    .catch(err => apiResponse._error({ res, errors: err }));
+});
 
 module.exports = router;
