@@ -3189,7 +3189,7 @@ async function bidRefactor(req, res) {
       select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
       my.price AS "modelYearPrice", m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
-      count(distinct(b2."id")) AS "countBid", max(b2."bidAmount" ) AS "highestBid",
+      count(distinct(b2."id")) AS "countBid", max(b2."bidAmount" ) AS "highestBid", b3."bidAmount" AS bidAmount,
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
       CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
@@ -3207,6 +3207,7 @@ async function bidRefactor(req, res) {
       LEFT JOIN "GroupModels" gm ON gm."id" = c."groupModelId"
       LEFT JOIN "Brands" b ON b."id" = c."brandId"
       LEFT JOIN "Bargains" b2 ON b2."carId" = c."id" and b2."bidType" = 0 AND b2."deletedAt" IS NULL
+      LEFT JOIN "Bargains" b3 ON b3."carId" = c."id" and b3."bidType" = 0 AND b3."userId" = :userId AND b3."deletedAt" IS NULL
       LEFT JOIN "Bargains" isBid ON isBid."carId" = c."id" and isBid."bidType" = 0 AND isBid."deletedAt" IS NULL AND isBid."userId" = :userId 
       LEFT JOIN "Likes" l ON l."carId" = c.id AND l.status IS true
       LEFT JOIN "Likes" isLike ON isLike."carId" = c.id AND isLike."userId" = :userId AND isLike.status IS true
@@ -3221,7 +3222,7 @@ async function bidRefactor(req, res) {
       WHERE c."status" = 0 AND c."roomId" IS NULL AND c."deletedAt" IS NULL ${conditionString}
       GROUP BY c."id", my.year, my.picture, my.price, m."name", gm."name", b."name",
       b."logo", cpf."url", city."name", subdistrict."name", u."type", ic."name", ec."name",
-      purchase."id", "buyer".id
+      purchase."id", "buyer".id, b3."bidAmount"
       HAVING count(distinct(isBid.id)) > 0
       ORDER BY ${by} ${sort}
       OFFSET ${offset} LIMIT ${limit}`,
