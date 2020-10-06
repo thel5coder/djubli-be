@@ -16,6 +16,15 @@ const router = express.Router();
 const DEFAULT_LIMIT = process.env.DEFAULT_LIMIT || 10;
 const MAX_LIMIT = process.env.MAX_LIMIT || 50;
 
+router.get('/listingAll', async (req, res) => await modelYearController.listingAll(req, res));
+router.get('/listingAllNew', async (req, res) => await modelYearController.listingAllNew(req, res));
+router.get('/listingAllNewRefactor', async (req, res) => await modelYearController.listingAllNewRefactor(req, res));
+router.get('/countAllNewRefactor', async (req, res) => await modelYearController.countAllNewRefactor(req, res));
+router.get('/listingCar/:id', async (req, res) => await modelYearController.listingCar(req, res));
+router.get('/luxuryCar', async (req, res) => await modelYearController.luxuryCar(req, res));
+
+router.get('/listingCarLogon/:id', passport.authenticate('user', { session: false }), async (req, res) => await modelYearController.listingCar(req, res, true));
+
 router.get('/', async (req, res) => {
   let { page, limit, sort } = req.query;
   const { modelId } = req.query;
@@ -93,20 +102,6 @@ router.get('/id/:id', async (req, res) => {
       })
     );
 });
-
-router.get('/listingAll', async (req, res) => await modelYearController.listingAll(req, res));
-
-router.get('/listingAllNew', async (req, res) => await modelYearController.listingAllNew(req, res));
-
-router.get(
-  '/listingAllNewRefactor',
-  async (req, res) => await modelYearController.listingAllNewRefactor(req, res)
-);
-
-router.get(
-  '/countAllNewRefactor',
-  async (req, res) => await modelYearController.countAllNewRefactor(req, res)
-);
 
 router.get('/listingType', async (req, res) => {
   const {
@@ -373,15 +368,5 @@ router.get('/listingType', async (req, res) => {
       });
     });
 });
-
-router.get('/listingCar/:id', async (req, res) => await modelYearController.listingCar(req, res));
-
-router.get(
-  '/listingCarLogon/:id',
-  passport.authenticate('user', { session: false }),
-  async (req, res) => await modelYearController.listingCar(req, res, true)
-);
-
-router.get('/luxuryCar', async (req, res) => await modelYearController.luxuryCar(req, res));
 
 module.exports = router;
