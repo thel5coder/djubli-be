@@ -729,11 +729,13 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
     conditionString += ` AND c."status" = :carStatus`;
     Object.assign(replacements, { carStatus: 2 });
     carConditionString += ` AND "status" = 2`;
-  } else {
-    conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1) AND lc."id" IS NULL`;
-    Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
-    carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
   }
+  //  else {
+  //   conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1) AND lc."id" IS NULL`;
+  //   Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
+  //   carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
+  // }
+
   if (
     !isNaN(latitude) &&
     !isNaN(longitude) &&
@@ -906,11 +908,12 @@ async function countAllNewRefactor(req, res, fromCallback = false) {
     conditionString += ` AND c."status" = :carStatus`;
     Object.assign(replacements, { carStatus: 2 });
     carConditionString += ` AND "status" = 2`;
-  } else {
-    conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1)`;
-    Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
-    carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
   }
+  //  else {
+  //   conditionString += ` AND (c."status" = :carStatus0 OR c."status" = :carStatus1)`;
+  //   Object.assign(replacements, { carStatus0: 0, carStatus1: 1 });
+  //   carConditionString += ` AND ("status" = 0 OR "status" = 1)`;
+  // }
 
   if (
     !isNaN(latitude) &&
