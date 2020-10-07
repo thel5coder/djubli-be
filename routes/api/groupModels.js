@@ -30,15 +30,23 @@ router.get('/', async (req, res) => {
   if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];
 
   const where = {};
-  let whereCar = '';
+  const whereCar = {};
   if (brandId) {
+    const brand = await models.Brand.findByPk(brandId);
+    if(!brand) {
+      return res.status(422).json({
+        success: false,
+        errors: 'brand not exist'
+      });
+    }
+
     Object.assign(where, {
-      brandId: {
-        [Op.eq]: brandId
-      }
+      brandId
     });
 
-    whereCar += ` AND "Car"."brandId" = ${brandId}`;
+    Object.assign(whereCar, {
+      brandId
+    });
   }
 
   if(name) {
@@ -53,19 +61,23 @@ router.get('/', async (req, res) => {
     attributes: {
       include: [
         [
-          models.sequelize.literal(`(SELECT COUNT("Car"."id") 
-            FROM "Cars" as "Car" 
-            WHERE "Car"."groupModelId" = "GroupModel"."id"
-              ${whereCar}
-              AND "Car"."status" = 0
-              AND "Car"."deletedAt" IS NULL
-          )`),
+          models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
           'countResult'
         ]
       ]
     },
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: [],
+        where: whereCar
+      }
+    ],
+    subQuery: false,
     where,
     order,
+    group: ['GroupModel.id'],
     offset,
     limit
   })
@@ -109,38 +121,29 @@ router.get('/listingAll', async (req, res) => {
   return models.GroupModel.findAll({
     attributes: Object.keys(models.GroupModel.attributes).concat([
       [
-        models.sequelize.literal(
-          `(SELECT MAX("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."groupModelId" = "GroupModel"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("MAX", models.sequelize.col("car.price")), 
         'maxPrice'
       ],
       [
-        models.sequelize.literal(
-          `(SELECT MIN("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."groupModelId" = "GroupModel"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("MIN", models.sequelize.col("car.price")), 
         'minPrice'
       ],
       [
-        models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") 
-            FROM "Cars" 
-            WHERE "Cars"."groupModelId" = "GroupModel"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
         'numberOfCar'
       ]
     ]),
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: []
+      }
+    ],
+    subQuery: false,
     where,
     order,
+    group: ['GroupModel.id'],
     offset,
     limit
   })
@@ -187,23 +190,21 @@ router.get('/listingCar/:id', async (req, res) => {
 
   if (year) {
     Object.assign(includeWhere, {
-      year: {
-        [Op.eq]: year
-      }
+      year
     });
   }
 
-  const addAttributes = {
-    fields: [
-      'like',
-      'view'
-    ],
-    upperCase: true,
-  };
-
-  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Car.findAll({
-    attributes: Object.keys(models.Car.attributes).concat(addAttribute),
+    attributes: Object.keys(models.Car.attributes).concat([
+      [
+        models.sequelize.fn("COUNT", models.sequelize.col("likes.id")), 
+        'like'
+      ],
+      [
+        models.sequelize.fn("COUNT", models.sequelize.col("views.id")), 
+        'view'
+      ]
+    ]),
     include: [
       {
         model: models.ModelYear,
@@ -278,10 +279,36 @@ router.get('/listingCar/:id', async (req, res) => {
             }
           }
         ]
+      },
+      {
+        model: models.Like,
+        as: 'likes',
+        attributes: []
+      },
+      {
+        model: models.View,
+        as: 'views',
+        attributes: []
       }
     ],
+    subQuery: false,
     where,
     order,
+    group: [
+      '"Car"."id"',
+      '"modelYear"."id"',
+      '"modelYear->model"."id"',
+      '"modelYear->model->groupModel"."id"',
+      '"modelYear->model->groupModel->brand"."id"',
+      '"user"."id"',
+      '"interiorColor"."id"',
+      '"exteriorColor"."id"',
+      '"meetingSchedule"."id"',
+      '"interiorGalery"."id"',
+      '"interiorGalery->file"."id"',
+      '"exteriorGalery"."id"',
+      '"exteriorGalery->file"."id"'
+    ],
     offset,
     limit
   })

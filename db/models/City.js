@@ -9,7 +9,12 @@ module.exports = (sequelize, DataTypes) => {
     { timestamps: true, paranoid: true }
   );
   City.associate = function(models) {
-    // associations can be defined here
+    City.hasMany(models.Car, {
+      foreignKey: 'cityId',
+      sourceKey: 'id',
+      as: 'car',
+      onDelete: 'CASCADE'
+    });
   };
   return City;
 };

@@ -31,6 +31,7 @@ router.get('/', async (req, res) => {
   const where = {};
   let whereColor = `("Car"."interiorColorId" = "Color"."id" OR 
     "Car"."exteriorColorId" = "Color"."id")`;
+  // const whereCar = {};
   let whereCar = '';
   if(name) {
     Object.assign(where, {
@@ -41,18 +42,30 @@ router.get('/', async (req, res) => {
   }
 
   if(brandId) {
+    // Object.assign(where, {
+    //   brandId
+    // });
     whereCar += ` AND "Car"."brandId" = ${brandId}`;
   }
 
   if(modelId) {
+    // Object.assign(where, {
+    //   modelId
+    // });
     whereCar += ` AND "Car"."modelId" = ${modelId}`;
   }
 
   if(groupModelId) {
+    // Object.assign(where, {
+    //   groupModelId
+    // });
     whereCar += ` AND "Car"."groupModelId" = ${groupModelId}`;
   }
 
   if(exteriorColorId) {
+    // Object.assign(where, {
+    //   exteriorColorId
+    // });
     whereCar += ` AND "Car"."exteriorColorId" = ${exteriorColorId}`;
   }
 
@@ -74,10 +87,24 @@ router.get('/', async (req, res) => {
           )`),
           'countResult'
         ]
+        // [
+        //   models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
+        //   'countResult'
+        // ]
       ]
     },
+    // include: [
+    //   {
+    //     model: models.Car,
+    //     as: 'car',
+    //     attributes: [],
+    //     where: whereCar
+    //   }
+    // ],
+    // subQuery: false,
     where,
     order,
+    // group: ['Color.id'],
     offset,
     limit
   })

@@ -21,6 +21,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'city',
       onDelete: 'CASCADE'
     });
+    SubDistrict.hasMany(models.Car, {
+      foreignKey: 'subdistrictId',
+      sourceKey: 'id',
+      as: 'car',
+      onDelete: 'CASCADE'
+    });
   };
   return SubDistrict;
 };

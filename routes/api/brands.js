@@ -42,18 +42,22 @@ router.get('/', async (req, res) => {
     attributes: {
       include: [
         [
-          models.sequelize.literal(`(SELECT COUNT("Car"."id") 
-            FROM "Cars" as "Car" 
-            WHERE "Car"."brandId" = "Brand"."id"
-              AND "Car"."status" = 0
-              AND "Car"."deletedAt" IS NULL
-          )`),
+          models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
           'countResult'
         ]
       ]
     },
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: []
+      }
+    ],
+    subQuery: false,
     where,
     order,
+    group: ['Brand.id'],
     offset,
     limit
   })
@@ -97,38 +101,29 @@ router.get('/listingAll', async (req, res) => {
   return models.Brand.findAll({
     attributes: Object.keys(models.Brand.attributes).concat([
       [
-        models.sequelize.literal(
-          `(SELECT MAX("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."brandId" = "Brand"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("MAX", models.sequelize.col("car.price")), 
         'maxPrice'
       ],
       [
-        models.sequelize.literal(
-          `(SELECT MIN("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."brandId" = "Brand"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("MIN", models.sequelize.col("car.price")), 
         'minPrice'
       ],
       [
-        models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") 
-            FROM "Cars" 
-            WHERE "Cars"."brandId" = "Brand"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
         'numberOfCar'
       ]
     ]),
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: []
+      }
+    ],
+    subQuery: false,
     where,
     order,
+    group: ['Brand.id'],
     offset,
     limit
   })
@@ -174,9 +169,7 @@ router.get('/listingCar/:id', async (req, res) => {
 
   if (year) {
     Object.assign(includeWhere, {
-      year: {
-        [Op.eq]: year
-      }
+      year
     });
   }
 

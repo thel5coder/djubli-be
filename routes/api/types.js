@@ -110,47 +110,35 @@ router.get('/listingCar', async (req, res) => {
   return models.Type.findAll({
     include: [
       {
-        attributes: Object.keys(models.GroupModel.attributes).concat([
-          [
-            models.sequelize.literal(
-              `(SELECT MAX("Cars"."price") 
-                FROM "Cars" 
-                WHERE "Cars"."groupModelId" = "groupModel"."id" 
-                  AND "Cars"."deletedAt" IS NULL
-              )`
-            ),
-            'maxPrice'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT MIN("Cars"."price") 
-                FROM "Cars" 
-                WHERE "Cars"."groupModelId" = "groupModel"."id" 
-                  AND "Cars"."deletedAt" IS NULL
-              )`
-            ),
-            'minPrice'
-          ],
-          [
-            models.sequelize.literal(
-              `(SELECT COUNT("Cars"."id") 
-                FROM "Cars" 
-                WHERE "Cars"."groupModelId" = "groupModel"."id" 
-                  AND "Cars"."deletedAt" IS NULL
-              )`
-            ),
-            'numberOfCar'
-          ]
-        ]),
         model: models.GroupModel,
         as: 'groupModel',
         where: whereInclude,
+        attributes: Object.keys(models.GroupModel.attributes).concat([
+          [
+            models.sequelize.fn("MAX", models.sequelize.col("groupModel->cars.price")), 
+            'maxPrice'
+          ],
+          [
+            models.sequelize.fn("MIN", models.sequelize.col("groupModel->cars.price")), 
+            'minPrice'
+          ],
+          [
+            models.sequelize.fn("COUNT", models.sequelize.col("groupModel->cars.id")), 
+            'numberOfCar'
+          ]
+        ]),
         include: [
           {
             model: models.Car,
+            as: 'cars',
+            attributes: []
+          },
+          {
+            model: models.Car,
             as: 'car',
-            separate: true,
             where: whereCar,
+            separate: true,
+            group: null,
             attributes: Object.keys(models.Car.attributes).concat(addAttribute),
             include: [
               {
@@ -217,8 +205,14 @@ router.get('/listingCar', async (req, res) => {
         ]
       }
     ],
+    subQuery: false,
     where,
     order,
+    group: [
+      '"Type"."id"', 
+      '"groupModel"."id"', 
+      '"groupModel->cars"."id"'
+    ],
     offset,
     limit
   })
