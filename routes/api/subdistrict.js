@@ -32,7 +32,7 @@ router.get('/cityId/:id', async (req, res) => {
   	if (by === 'name') order = [[by, sort]];
   	if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];	
 
-  	let whereCar = '';
+  	const whereCar = {};
   	const where = {
   		cityId: id
   	};
@@ -46,42 +46,56 @@ router.get('/cityId/:id', async (req, res) => {
 	}
 
 	if(brandId) {
-    	whereCar += ` AND "Car"."brandId" = ${brandId}`;
+		Object.assign(where, {
+	      	brandId
+	    });
   	}
 
   	if(modelId) {
-    	whereCar += ` AND "Car"."modelId" = ${modelId}`;
+  		Object.assign(where, {
+	      	modelId
+	    });
   	}
 
   	if(groupModelId) {
-    	whereCar += ` AND "Car"."groupModelId" = ${groupModelId}`;
+  		Object.assign(where, {
+	      	groupModelId
+	    });
   	}
 
   	if(exteriorColorId) {
-    	whereCar += ` AND "Car"."exteriorColorId" = ${exteriorColorId}`;
+  		Object.assign(where, {
+	      	exteriorColorId
+	    });
   	}
 
   	if(interiorColorId) {
-    	whereCar += ` AND "Car"."interiorColorId" = ${interiorColorId}`;
+  		Object.assign(where, {
+	      	interiorColorId
+	    });
   	}
 
 	return models.SubDistrict.findAll({
 		attributes: {
 	      	include: [
 		        [
-			        models.sequelize.literal(`(SELECT COUNT("Car"."id") 
-			            FROM "Cars" as "Car" 
-			            WHERE "Car"."subdistrictId" = "SubDistrict"."id"
-			              	AND "Car"."status" = 0
-			              	AND "Car"."deletedAt" IS NULL
-			              	${whereCar}
-			        )`),
-			        'countResult'
-		        ]
+          			models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
+          			'countResult'
+        		]
 	      	]
 	    },
+	    include: [
+	      	{
+		        model: models.Car,
+		        as: 'car',
+		        attributes: [],
+		        where: whereCar
+	      	}
+	    ],
+	    subQuery: false,
 		where,
-		order
+		order,
+		group: ['SubDistrict.id'],
 	})
 	.then(async data => {
 		res.json({

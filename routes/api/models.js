@@ -31,18 +31,24 @@ router.get('/', async (req, res) => {
   if (by === 'countResult') order = [[models.sequelize.literal('"countResult"'), sort]];
 
   const where = {};
-  let whereCar = '';
+  const whereCar = {};
   if (groupModelId) {
+    const groupModel = await models.GroupModel.findByPk(groupModelId);
+    if(!groupModel) {
+      return res.status(422).json({
+        success: false,
+        errors: 'groupModel not exist'
+      });
+    }
+
     Object.assign(where, {
-      groupModelId: {
-        [Op.eq]: groupModelId
-      }
+      groupModelId
     });
 
-    whereCar += ` AND "Car"."groupModelId" = ${groupModelId}
-      AND "Car"."brandId" = (SELECT "GroupModels"."brandId"
-        FROM "GroupModels" 
-        WHERE "GroupModels"."id" = ${groupModelId})`;
+    Object.assign(whereCar, {
+      groupModelId,
+      brandId: groupModel.brandId
+    });
   }
 
   if(name) {
@@ -57,19 +63,23 @@ router.get('/', async (req, res) => {
     attributes: {
       include: [
         [
-          models.sequelize.literal(`(SELECT COUNT("Car"."id") 
-            FROM "Cars" as "Car" 
-            WHERE "Car"."modelId" = "Model"."id"
-              ${whereCar}
-              AND "Car"."status" = 0
-              AND "Car"."deletedAt" IS NULL
-          )`),
+          models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
           'countResult'
         ]
       ]
     },
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: [],
+        where: whereCar
+      }
+    ],
+    subQuery: false,
     where,
     order,
+    group: ['Model.id'],
     offset,
     limit
   })
@@ -113,38 +123,29 @@ router.get('/listingAll', async (req, res) => {
   return models.Model.findAll({
     attributes: Object.keys(models.Model.attributes).concat([
       [
-        models.sequelize.literal(
-          `(SELECT MAX("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelId" = "Model"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("MAX", models.sequelize.col("car.price")), 
         'maxPrice'
       ],
       [
-        models.sequelize.literal(
-          `(SELECT MIN("Cars"."price") 
-            FROM "Cars" 
-            WHERE "Cars"."modelId" = "Model"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("MIN", models.sequelize.col("car.price")), 
         'minPrice'
       ],
       [
-        models.sequelize.literal(
-          `(SELECT COUNT("Cars"."id") 
-            FROM "Cars" 
-            WHERE "Cars"."modelId" = "Model"."id" 
-              AND "Cars"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
         'numberOfCar'
       ]
     ]),
+    include: [
+      {
+        model: models.Car,
+        as: 'car',
+        attributes: []
+      }
+    ],
+    subQuery: false,
     where,
     order,
+    group: ['Model.id'],
     offset,
     limit
   })
@@ -191,42 +192,18 @@ router.get('/listingCar/:id', async (req, res) => {
 
   if (year) {
     Object.assign(includeWhere, {
-      year: {
-        [Op.eq]: year
-      }
+      year
     });
   }
 
-  const addAttributes = {
-    fields: [
-      'like',
-      'view'
-    ],
-    upperCase: true,
-  };
-
-  const addAttribute = await carHelper.customFields(addAttributes);
   return models.Car.findAll({
     attributes: Object.keys(models.Car.attributes).concat([
       [
-        models.sequelize.literal(
-          `(SELECT COUNT("Likes"."id") 
-            FROM "Likes" 
-            WHERE "Likes"."carId" = "Car"."id" 
-              AND "Likes"."status" IS TRUE 
-              AND "Likes"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("COUNT", models.sequelize.col("likes.id")), 
         'like'
       ],
       [
-        models.sequelize.literal(
-          `(SELECT COUNT("Views"."id") 
-            FROM "Views" 
-            WHERE "Views"."carId" = "Car"."id" 
-              AND "Views"."deletedAt" IS NULL
-          )`
-        ),
+        models.sequelize.fn("COUNT", models.sequelize.col("views.id")), 
         'view'
       ]
     ]),
@@ -304,10 +281,36 @@ router.get('/listingCar/:id', async (req, res) => {
             }
           }
         ]
+      },
+      {
+        model: models.Like,
+        as: 'likes',
+        attributes: []
+      },
+      {
+        model: models.View,
+        as: 'views',
+        attributes: []
       }
     ],
+    subQuery: false,
     where,
     order,
+    group: [
+      '"Car"."id"', 
+      '"modelYear"."id"', 
+      '"modelYear->model"."id"', 
+      '"modelYear->model->groupModel"."id"', 
+      '"modelYear->model->groupModel->brand"."id"',
+      '"user"."id"', 
+      '"interiorColor"."id"', 
+      '"exteriorColor"."id"', 
+      '"meetingSchedule"."id"',
+      '"interiorGalery"."id"', 
+      '"interiorGalery->file"."id"', 
+      '"exteriorGalery"."id"', 
+      '"exteriorGalery->file"."id"'
+    ],
     offset,
     limit
   })
