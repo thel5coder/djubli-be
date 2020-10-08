@@ -31,8 +31,7 @@ router.get('/', async (req, res) => {
   const where = {};
   let whereColor = `("Car"."interiorColorId" = "Color"."id" OR 
     "Car"."exteriorColorId" = "Color"."id")`;
-  // const whereCar = {};
-  let whereCar = '';
+  const whereCar = {};
   if(name) {
     Object.assign(where, {
       name: {
@@ -42,69 +41,100 @@ router.get('/', async (req, res) => {
   }
 
   if(brandId) {
-    // Object.assign(where, {
-    //   brandId
-    // });
-    whereCar += ` AND "Car"."brandId" = ${brandId}`;
+    Object.assign(whereCar, {
+      brandId
+    });
   }
 
   if(modelId) {
-    // Object.assign(where, {
-    //   modelId
-    // });
-    whereCar += ` AND "Car"."modelId" = ${modelId}`;
+    Object.assign(whereCar, {
+      modelId
+    });
   }
 
   if(groupModelId) {
-    // Object.assign(where, {
-    //   groupModelId
-    // });
-    whereCar += ` AND "Car"."groupModelId" = ${groupModelId}`;
+    Object.assign(whereCar, {
+      groupModelId
+    });
   }
 
   if(exteriorColorId) {
-    // Object.assign(where, {
-    //   exteriorColorId
-    // });
-    whereCar += ` AND "Car"."exteriorColorId" = ${exteriorColorId}`;
+    Object.assign(whereCar, {
+      exteriorColorId
+    });
   }
 
+  const include = [];
+  const includeAttribute = [];
   if(interiorType == 1) {
-    whereColor = `"Car"."interiorColorId" = "Color"."id"`;
+    include.push(
+      {
+        model: models.Car,
+        as: 'interiorColorCar',
+        attributes: [],
+        required: false,
+        where: whereCar
+      }
+    );
+
+    includeAttribute.push(
+      [
+        models.sequelize.fn("COUNT", models.sequelize.col("interiorColorCar.id")), 
+        'countResult'
+      ]
+    );
   } else if(interiorType == 2) {
-    whereColor = `"Car"."exteriorColorId" = "Color"."id"`;
+    include.push(
+      {
+        model: models.Car,
+        as: 'exteriorColorCar',
+        attributes: [],
+        required: false,
+        where: whereCar
+      }
+    );
+
+    includeAttribute.push(
+      [
+        models.sequelize.fn("COUNT", models.sequelize.col("exteriorColorCar.id")), 
+        'countResult'
+      ]
+    );
+  } else if(!interiorType) {
+    include.push(
+      {
+        model: models.Car,
+        as: 'exteriorColorCar',
+        attributes: [],
+        required: false,
+        where: whereCar
+      },
+      {
+        model: models.Car,
+        as: 'interiorColorCar',
+        attributes: [],
+        required: false,
+        where: whereCar
+      }
+    );
+
+    includeAttribute.push(
+      [
+        models.sequelize.literal(' COUNT("exteriorColorCar"."id")+COUNT("interiorColorCar"."id")'), 
+        'countResult'
+      ]
+    );
   }
 
   return models.Color.findAll({
     attributes: {
-      include: [
-        [
-          models.sequelize.literal(`(SELECT COUNT("Car"."id") 
-            FROM "Cars" as "Car" 
-            WHERE ${whereColor} ${whereCar}
-              AND "Car"."status" = 0
-              AND "Car"."deletedAt" IS NULL
-          )`),
-          'countResult'
-        ]
-        // [
-        //   models.sequelize.fn("COUNT", models.sequelize.col("car.id")), 
-        //   'countResult'
-        // ]
-      ]
+      include: includeAttribute
     },
-    // include: [
-    //   {
-    //     model: models.Car,
-    //     as: 'car',
-    //     attributes: [],
-    //     where: whereCar
-    //   }
-    // ],
-    // subQuery: false,
+    include,
+    subQuery: false,
     where,
     order,
-    // group: ['Color.id'],
+    group: ['Color.id'],
     offset,
     limit
   })
