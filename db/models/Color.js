@@ -8,7 +8,18 @@ module.exports = (sequelize, DataTypes) => {
     { timestamps: true, paranoid: true }
   );
   Color.associate = function(models) {
-    // associations can be defined here
+    Color.hasMany(models.Car, {
+      foreignKey: 'interiorColorId',
+      sourceKey: 'id',
+      as: 'interiorColorCar',
+      onDelete: 'CASCADE'
+    });
+    Color.hasMany(models.Car, {
+      foreignKey: 'exteriorColorId',
+      sourceKey: 'id',
+      as: 'exteriorColorCar',
+      onDelete: 'CASCADE'
+    });
   };
   return Color;
 };
