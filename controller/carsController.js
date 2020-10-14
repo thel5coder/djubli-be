@@ -530,7 +530,7 @@ async function carsGet(req, res, auth = false) {
     });
 }
 
-async function carsGetRefactor(req, res, auth = false) {
+async function carsGetRefactor(req, res) {
   const {
     groupModelId,
     modelId,
@@ -554,7 +554,8 @@ async function carsGetRefactor(req, res, auth = false) {
     showDetailPhoto,
     likeMe,
     viewMe,
-    negoStatus
+    negoStatus,
+    userId
   } = req.query;
   const { latitude, longitude } = req.query;
   let { page, limit, by, sort } = req.query;
@@ -583,14 +584,22 @@ async function carsGetRefactor(req, res, auth = false) {
   } else {
     by = 'c.id';
   }
-  const userId = req.user ? req.user.id : null;
-  const replacements = { bidType: 0, userId };
+
   let conditionString = ``;
   let carDistance = ``;
   let distanceSelect = ``;
   let carConditionString = ``;
   let distanceJoin = ``;
   let distanceGroup = ``;
+  let newUserId = req.user ? req.user.id : null;
+
+  if (userId && !req.user) {
+    newUserId = userId;
+    conditionString += ` AND c."userId" = :userId`;
+  }
+
+  const replacements = { bidType: 0, userId: newUserId };
+  
   if (brandId) {
     conditionString += ` AND c."brandId" = :brandId`;
     Object.assign(replacements, { brandId });

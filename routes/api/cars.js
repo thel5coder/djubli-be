@@ -36,7 +36,7 @@ router.get('/views/like', async (req, res) => await carsController.viewLike(req,
 
 // API GET With Login
 router.get('/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.carsGet(req, res, true));
-router.get('/refactor/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.carsGetRefactor(req, res, true));
+router.get('/refactor/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.carsGetRefactor(req, res));
 router.get('/id/:id/refactor/logon', passport.authenticate('user', { session: false }), async (req, res) => await carsController.getByIdRefactor(req, res, true));
 router.get('/purchase_list/status/:status', passport.authenticate('user', { session: false }), async (req, res) => await carsController.purchaseList(req, res));
 router.get('/bid_list', passport.authenticate('user', { session: false }), async (req, res) => await carsController.bidList(req, res));
