@@ -36,6 +36,7 @@ async function carsGet(req, res, auth = false) {
     interiorColorId,
     minKm,
     maxKm,
+    userId,
     profileUser
   } = req.query;
   let { latitude, longitude } = req.query;
@@ -93,7 +94,17 @@ async function carsGet(req, res, auth = false) {
       break;
   }
 
-  const userId = auth ? req.user.id : null;
+  let newUserId = auth ? req.user.id : null;
+  const where = {};
+  const whereUser = {};
+
+  if(!auth && userId) {
+    newUserId = userId;
+    Object.assign(where, {
+      userId: newUserId
+    });
+  }
+
   const addAttributes = {
     fields: [
       'like',
@@ -106,11 +117,8 @@ async function carsGet(req, res, auth = false) {
       'bidAmount'
     ],
     upperCase: true,
-    id: userId
+    id: newUserId
   };
-
-  const where = {};
-  const whereUser = {};
 
   if (modelYearId) {
     Object.assign(where, {
