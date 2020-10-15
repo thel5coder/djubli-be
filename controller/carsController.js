@@ -593,7 +593,7 @@ async function carsGetRefactor(req, res) {
   let distanceGroup = ``;
   let newUserId = req.user ? req.user.id : null;
 
-  if (userId && !req.user) {
+  if (userId) {
     newUserId = userId;
     conditionString += ` AND c."userId" = :userId`;
   }
