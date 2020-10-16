@@ -585,20 +585,20 @@ async function carsGetRefactor(req, res) {
     by = 'c.id';
   }
 
+  const newUserId = req.user ? req.user.id : null;
+  const myCar = userId ? userId : null;
+
+  const replacements = { bidType: 0, userId: newUserId, myCar };
   let conditionString = ``;
   let carDistance = ``;
   let distanceSelect = ``;
   let carConditionString = ``;
   let distanceJoin = ``;
   let distanceGroup = ``;
-  let newUserId = req.user ? req.user.id : null;
 
   if (userId) {
-    newUserId = userId;
-    conditionString += ` AND c."userId" = :userId`;
+    conditionString += ` AND c."userId" = :myCar`;
   }
-
-  const replacements = { bidType: 0, userId: newUserId };
   
   if (brandId) {
     conditionString += ` AND c."brandId" = :brandId`;
