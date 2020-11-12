@@ -654,6 +654,118 @@ async function extraInclude(params) {
   return attribute;
 }
 
+// for notification helper
+async function emitFieldCustomCar(params) {
+  const tableName = 'upperCase' in params ? (params.upperCase ? `Car` : `car`) : `car`;
+  return [
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Likes"."id") 
+          FROM "Likes" 
+          WHERE "Likes"."carId" = "${tableName}"."id" 
+            AND "Likes"."status" IS TRUE 
+            AND "Likes"."userId" = ${params.userId} 
+            AND "Likes"."deletedAt" IS NULL
+        )`
+      ),
+      'islike'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Bargains"."id") 
+          FROM "Bargains" 
+          WHERE "Bargains"."userId" = ${params.userId} 
+            AND "Bargains"."carId" = "${tableName}"."id" 
+            AND "Bargains"."expiredAt" >= (SELECT NOW()) 
+            AND "Bargains"."deletedAt" IS NULL 
+            AND "Bargains"."bidType" = 0
+        )`
+      ),
+      'isBid'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT "Brands"."name" 
+          FROM "Brands" 
+          WHERE "Brands"."id" = "${tableName}"."brandId" 
+            AND "Brands"."deletedAt" IS NULL
+        )`
+      ),
+      'Brands'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT "Models"."name" 
+          FROM "Models" 
+          WHERE "Models"."id" = "${tableName}"."modelId" 
+            AND "Models"."deletedAt" IS NULL
+        )`
+      ),
+      'Model'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Likes"."carId") 
+          FROM "Likes" 
+          WHERE "Likes"."carId" = "${tableName}"."id" 
+            AND "Likes"."status" IS TRUE 
+            AND "Likes"."deletedAt" IS NULL
+        )`
+      ),
+      'jumlahLike'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Views"."carId") 
+          FROM "Views" 
+          WHERE "Views"."carId" = "${tableName}"."id" 
+            AND "Views"."deletedAt" IS NULL
+        )`
+      ),
+      'jumlahView'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT MAX("Bargains"."bidAmount") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "${tableName}"."id" 
+            AND "Bargains"."deletedAt" IS NULL 
+            AND "Bargains"."bidType" = 0
+        )`
+      ),
+      'highestBidder'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT COUNT("Bargains"."id") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "${tableName}"."id" 
+            AND "Bargains"."deletedAt" IS NULL 
+            AND "Bargains"."bidType" = 0
+            AND (SELECT COUNT("b"."id")
+              FROM "Bargains" b
+              WHERE "b"."deletedAt" IS NULL
+                AND "b"."negotiationType" IN (4,7,8)
+                AND "b"."carId" = "Bargains"."carId") = 0
+        )`
+      ),
+      'numberOfBidder'
+    ],
+    [
+      models.sequelize.literal(
+        `(SELECT MAX("Bargains"."bidAmount") 
+          FROM "Bargains" 
+          WHERE "Bargains"."carId" = "${tableName}"."id" 
+            AND "Bargains"."deletedAt" IS NULL 
+            AND "Bargains"."bidType" = 0 
+            AND "Bargains"."userId" = ${params.userId}
+        )`
+      ),
+      'bidAmount'
+    ]
+  ];
+}
+
 // unused functions
 async function emitJual(params) {
   console.log(params);
@@ -894,6 +1006,7 @@ async function emitJual(params) {
 module.exports = {
   extraInclude,
   customFields,
+  emitFieldCustomCar,
 
   // unused functions
   emitJual

@@ -5,7 +5,7 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const randomize = require('randomatic');
 const models = require('../../db/models');
-const imageHelper = require('../../helpers/s3');
+const minio = require('../../helpers/minio');
 const paginator = require('../../helpers/paginator');
 
 const { Op } = Sequelize;
@@ -153,27 +153,44 @@ router.post('/', async (req, res) => {
     const tname = randomize('0', 4);
     const img = images[0].mimetype.split('/');
     result.name = `djublee/images/modelYear/${tname}${moment().format('x')}${unescape(
-      `.${img[1]}`
+      images[0].originalname
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
     picture = result.name;
-    // imageHelper.uploadToS3(result);
     Object.assign(create, { picture });
   }
 
-  // return res.json({ success: true, data: create });
-  return models.ModelYear.create(create)
-    .then(data => {
-      if (picture) imageHelper.uploadToS3(result);
-      res.json({ success: true, data });
-    })
-    .catch(err => {
-      res.status(422).json({ success: false, errors: err.message });
+  const trans = await models.sequelize.transaction();
+  const data = await models.ModelYear.create(create, { transaction: trans })
+  .catch(err => {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
     });
+  });
+
+  if (Object.keys(result).length > 0) {
+    await minio.upload(result.name, result.data).then(res => {
+      console.log(`etag min.io: ${res.etag}`);
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err
+      });
+    });
+  }
+
+  trans.commit();
+  return res.json({
+    success: true,
+    data
+  });
 });
 
-router.put('id/:id', async (req, res) => {
+router.put('/id/:id', async (req, res) => {
   const { id } = req.params;
   if (validator.isInt(id ? id.toString() : '') === false) {
     return res.status(400).json({
@@ -183,6 +200,7 @@ router.put('id/:id', async (req, res) => {
   }
 
   const data = await models.ModelYear.findByPk(id);
+  const oldPicture = data.picture;
   if (!data) {
     return res.status(400).json({
       success: false,
@@ -194,8 +212,8 @@ router.put('id/:id', async (req, res) => {
   const { images } = req.files;
 
   let picture = null;
+  const result = {};
   if (images) {
-    const result = {};
     const tname = randomize('0', 4);
     result.name = `djublee/images/modelYear/${tname}${moment().format('x')}${unescape(
       images[0].originalname
@@ -203,27 +221,48 @@ router.put('id/:id', async (req, res) => {
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
     picture = result.name;
-    imageHelper.uploadToS3(result);
   }
 
-  return data
-    .update({
-      year,
-      picture,
-      modelId
-    })
-    .then(() => {
-      res.json({
-        success: true,
-        data
+  const trans = await models.sequelize.transaction();
+  await data.update(
+    { year, picture, modelId },
+    { transaction: trans }
+  ).catch(err => {
+    trans.rollback();
+    return res.status(422).json({
+      success: false,
+      errors: err.message
+    });
+  });
+
+  if (Object.keys(result).length > 0) {
+    if(oldPicture) {
+      // delete old file
+      await minio.destroy(oldPicture).catch(err => {
+        trans.rollback();
+        return res.status(422).json({
+          success: false,
+          errors: err
+        });
       });
-    })
-    .catch(err => {
-      res.status(422).json({
+    }
+
+    await minio.upload(result.name, result.data).then(res => {
+      console.log(`etag min.io: ${res.etag}`);
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
         success: false,
-        errors: err.message
+        errors: err
       });
     });
+  }
+
+  trans.commit();
+  return res.json({
+    success: true,
+    data
+  });
 });
 
 router.delete('/id/:id', async (req, res) => {

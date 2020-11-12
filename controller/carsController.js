@@ -5,7 +5,7 @@ const Sequelize = require('sequelize');
 const { QueryTypes } = require('sequelize');
 const randomize = require('randomatic');
 const models = require('../db/models');
-const imageHelper = require('../helpers/s3');
+const minio = require('../helpers/minio');
 const paginator = require('../helpers/paginator');
 const distanceHelper = require('../helpers/distance');
 const apiResponse = require('../helpers/apiResponse');
@@ -2366,7 +2366,6 @@ async function sell(req, res) {
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
     STNKphoto = result.name;
-    // imageHelper.uploadToS3(result);
   }
 
   const errors = [];
@@ -2518,7 +2517,17 @@ async function sell(req, res) {
     });
   });
 
-  if (Object.keys(result).length > 0) imageHelper.uploadToS3(result);
+  if (Object.keys(result).length > 0) {
+    await minio.upload(result.name, result.data).then(res => {
+      console.log(`etag min.io: ${res.etag}`);
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err
+      });
+    });
+  }
 
   if (interior) {
     let { interiorGalery } = [];
