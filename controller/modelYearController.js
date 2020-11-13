@@ -837,7 +837,10 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
         const modelYearPictureURL = await minio.getUrl(item.modelYearPicture).then(res => {
           return res;
         }).catch(err => {
-          console.log(err);
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
         });
 
         item.modelYearPicture = modelYearPictureURL;
@@ -847,7 +850,10 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
         const brandLogoURL = await minio.getUrl(item.brandLogo).then(res => {
           return res;
         }).catch(err => {
-          console.log(err);
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
         });
 
         item.brandLogo = brandLogoURL;
