@@ -1,3 +1,5 @@
+const minio = require('../../helpers/minio');
+
 module.exports = (sequelize, DataTypes) => {
   const Car = sequelize.define(
     'Car',
@@ -27,14 +29,28 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       timestamps: true,
-      paranoid: true,
-      getterMethods: {
-        stnkUrl() {
-          return this.STNKphoto ? process.env.HDRIVE_S3_BASE_URL + this.STNKphoto : null;
-        }
-      }
+      paranoid: true
     }
   );
+  Car.addHook('afterFind', async (result) => {
+    await Promise.all(
+      result.map(async item => {
+        if(item.dataValues.STNKphoto) {
+          const url = await minio.getUrl(item.dataValues.STNKphoto).then(res => {
+            return res;
+          }).catch(err => {
+            console.log(err);
+          });
+
+          return item.dataValues.stnkUrl = url;
+        }
+
+        return item.dataValues.stnkUrl = null;
+      })
+    );
+
+    return result;
+  });
   Car.associate = models => {
     Car.hasMany(models.InteriorGalery, {
       foreignKey: 'carId',

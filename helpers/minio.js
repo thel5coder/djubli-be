@@ -12,6 +12,8 @@ const port = parseInt(process.env.MINIO_PORT);
 const MINIO_BASE_URL = process.env.MINIO_BASE_URL;
 const bucket = process.env.MINIO_DEFAULT_BUCKET;
 
+// 1 day for file url
+const duration = 24*60*60;
 const minioClient = new minio.Client({
     endPoint,
     port,
@@ -35,7 +37,16 @@ async function destroy(fileName) {
     });
 }
 
+async function getUrl(fileName) {
+	return await minioClient.presignedGetObject(bucket, fileName, duration).then(presignedUrl => {
+    	return presignedUrl;
+    }).catch(error => {
+    	return { error };
+    });
+}
+
 module.exports = {
 	upload,
-	destroy
+	destroy,
+	getUrl
 }

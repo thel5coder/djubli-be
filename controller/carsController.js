@@ -760,13 +760,13 @@ async function carsGetRefactor(req, res) {
       ${carDistance}
       ${negoRoom}
       
-      select c.*${distanceSelect}, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      select c.*${distanceSelect}, my.year, my.picture AS "modelYearPicture",
       my.price AS "modelYearPrice", m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      b."logo" AS "brandLogo",
       count(distinct(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
+      cpf."url" AS "carPicture", city."name" as "cityName",
       INITCAP(subdistrict."name") as "subdistrictName", u."type" as "userType", ic."name" AS "interiorColorName",
       ec."name" AS "exteriorColorName" ${pictureSelect}, purchase."id" AS "purchaseId", purchase."createdAt" AS "purchaseDate",
       buyer."id" AS "buyerId", buyer."name" AS "buyerName"
@@ -812,6 +812,62 @@ async function carsGetRefactor(req, res) {
       });
     });
 
+  await Promise.all(
+    data.map(async item => {
+      if(item.STNKphoto) {
+        const STNKphotoURL = await minio.getUrl(item.STNKphoto).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.STNKphoto = STNKphotoURL;
+      }
+
+      if(item.modelYearPicture) {
+        const modelYearPictureURL = await minio.getUrl(item.modelYearPicture).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.modelYearPicture = modelYearPictureURL;
+      }
+
+      if(item.brandLogo) {
+        const brandLogoURL = await minio.getUrl(item.brandLogo).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.brandLogo = brandLogoURL;
+      }
+
+      if(item.carPicture) {
+        const carPictureURL = await minio.getUrl(item.carPicture).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.carPicture = carPictureURL;
+      }
+    })
+  );
+
   if (showDetailPhoto === 'true') {
     function onlyUnique(value, index, self) {
       return self.indexOf(value) === index;
@@ -823,9 +879,18 @@ async function carsGetRefactor(req, res) {
         const egColumn = eg[j].split('#sep#');
         if (egColumn.length === 2) {
           if (egColumn[1] !== '<m>') {
+            const pictureURL = await minio.getUrl(egColumn[1]).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
             exteriors.push({
               id: parseInt(egColumn[0], 10),
-              picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+              picture: pictureURL
             });
           }
         }
@@ -839,9 +904,18 @@ async function carsGetRefactor(req, res) {
         const igColumn = ig[j].split('#sep#');
         if (igColumn.length === 2) {
           if (igColumn[1] !== '<m>') {
+            const pictureURL = await minio.getUrl(igColumn[1]).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
             interiors.push({
               id: parseInt(igColumn[0], 10),
-              picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+              picture: pictureURL
             });
           }
         }
@@ -972,9 +1046,9 @@ async function getByIdRefactor(req, res, auth = false) {
   const userId = auth ? req.user.id : null;
   const data = await models.sequelize
     .query(
-      `select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      `select c.*, my.year, my.picture AS "modelYearPicture",
       my.price, m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      b."logo" AS "brandLogo",
       cle.name AS exteriorColorName, cle.hex AS exteriorColorHex,
       cli.name AS interiorColorName, cli.hex AS interiorColorHex,
       ct."name" AS city, INITCAP(sdt."name") AS subdistrict,
@@ -1030,6 +1104,45 @@ async function getByIdRefactor(req, res, auth = false) {
       });
     });
 
+  if(data.STNKphoto) {
+    const STNKphotoURL = await minio.getUrl(data.STNKphoto).then(res => {
+      return res;
+    }).catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err
+      });
+    });
+
+    data.STNKphoto = STNKphotoURL;
+  }
+
+  if(data.modelYearPicture) {
+    const modelYearPictureURL = await minio.getUrl(data.modelYearPicture).then(res => {
+      return res;
+    }).catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err
+      });
+    });
+
+    data.modelYearPicture = modelYearPictureURL;
+  }
+
+  if(data.brandLogo) {
+    const brandLogoURL = await minio.getUrl(data.brandLogo).then(res => {
+      return res;
+    }).catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err
+      });
+    });
+
+    data.brandLogo = brandLogoURL;
+  }
+
   function onlyUnique(value, index, self) {
     return self.indexOf(value) === index;
   }
@@ -1045,9 +1158,18 @@ async function getByIdRefactor(req, res, auth = false) {
       const egColumn = eg[j].split('#sep#');
       if (egColumn.length === 2) {
         if (egColumn[1] !== '<m>') {
+          const pictureURL = await minio.getUrl(egColumn[1]).then(res => {
+            return res;
+          }).catch(err => {
+            res.status(422).json({
+              success: false,
+              errors: err
+            });
+          });
+
           exteriorGalery.push({
             id: parseInt(egColumn[0], 10),
-            picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+            picture: pictureURL
           });
         }
       }
@@ -1060,9 +1182,18 @@ async function getByIdRefactor(req, res, auth = false) {
       const igColumn = ig[j].split('#sep#');
       if (igColumn.length === 2) {
         if (igColumn[1] !== '<m>') {
+          const pictureURL = await minio.getUrl(igColumn[1]).then(res => {
+            return res;
+          }).catch(err => {
+            res.status(422).json({
+              success: false,
+              errors: err
+            });
+          });
+
           interiorGalery.push({
             id: parseInt(igColumn[0], 10),
-            picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+            picture: pictureURL
           });
         }
       }
@@ -3034,13 +3165,13 @@ async function sellRefactor(req, res) {
         SELECT "carId", MIN("fileId") AS "fileId" FROM "ExteriorGaleries" GROUP BY "carId"
       )
 
-      select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      select c.*, my.year, my.picture AS "modelYearPicture",
       my.price AS "modelYearPrice", m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      b."logo" AS "brandLogo",
       count(distinct(b2."id")) AS "countBid", max(b2."bidAmount" ) AS "highestBid",
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
+      cpf."url" AS "carPicture", city."name" as "cityName",
       INITCAP(subdistrict."name") AS "subdistrictName", u."type" AS "userType", ic."name" AS "interiorColorName",
       ec."name" AS "exteriorColorName" ${pictureSelect}, purchase."id" AS "purchaseId", purchase."createdAt" AS "purchaseDate",
       buyer."id" AS "buyerId", buyer."name" AS "buyerName"
@@ -3084,6 +3215,62 @@ async function sellRefactor(req, res) {
       });
     });
 
+  await Promise.all(
+    data.map(async item => {
+      if(item.STNKphoto) {
+        const STNKphotoURL = await minio.getUrl(item.STNKphoto).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.STNKphoto = STNKphotoURL;
+      }
+
+      if(item.modelYearPicture) {
+        const modelYearPictureURL = await minio.getUrl(item.modelYearPicture).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.modelYearPicture = modelYearPictureURL;
+      }
+
+      if(item.brandLogo) {
+        const brandLogoURL = await minio.getUrl(item.brandLogo).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.brandLogo = brandLogoURL;
+      }
+
+      if(item.carPicture) {
+        const carPictureURL = await minio.getUrl(item.carPicture).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.carPicture = carPictureURL;
+      }
+    })
+  );
+
   if (showDetailPhoto === 'true') {
     function onlyUnique(value, index, self) {
       return self.indexOf(value) === index;
@@ -3095,9 +3282,18 @@ async function sellRefactor(req, res) {
         const egColumn = eg[j].split('#sep#');
         if (egColumn.length === 2) {
           if (egColumn[1] !== '<m>') {
+            const pictureURL = await minio.getUrl(egColumn[1]).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
             exteriors.push({
               id: parseInt(egColumn[0], 10),
-              picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+              picture: pictureURL
             });
           }
         }
@@ -3111,9 +3307,18 @@ async function sellRefactor(req, res) {
         const igColumn = ig[j].split('#sep#');
         if (igColumn.length === 2) {
           if (igColumn[1] !== '<m>') {
+            const pictureURL = await minio.getUrl(igColumn[1]).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
             interiors.push({
               id: parseInt(igColumn[0], 10),
-              picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+              picture: pictureURL
             });
           }
         }
@@ -3213,13 +3418,13 @@ async function bidRefactor(req, res) {
         SELECT "carId", MIN("fileId") AS "fileId" FROM "ExteriorGaleries" GROUP BY "carId"
       )
 
-      select c.*, my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+      select c.*, my.year, my.picture AS "modelYearPicture",
       my.price AS "modelYearPrice", m."name" AS "modelName", gm."name" AS "groupModelName", b."name" AS "brandName",
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo",
+      b."logo" AS "brandLogo",
       count(distinct(b2."id")) AS "countBid", max(b2."bidAmount" ) AS "highestBid", b3."bidAmount" AS bidAmount,
       count(distinct(isBid.id)) AS isBid, count(distinct(l.id)) AS likes,
       count(distinct(isLike.id)) AS isLike, count(distinct(v.id)) AS views,
-      CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',cpf."url") AS "carPicture", city."name" as "cityName",
+      cpf."url" AS "carPicture", city."name" as "cityName",
       INITCAP(subdistrict."name") AS "subdistrictName", u."type" AS "userType", ic."name" AS "interiorColorName",
       ec."name" AS "exteriorColorName" ${pictureSelect}, purchase."id" AS "purchaseId", purchase."createdAt" AS "purchaseDate",
       buyer."id" AS "buyerId", buyer."name" AS "buyerName"
@@ -3265,6 +3470,62 @@ async function bidRefactor(req, res) {
       });
     });
 
+  await Promise.all(
+    data.map(async item => {
+      if(item.STNKphoto) {
+        const STNKphotoURL = await minio.getUrl(item.STNKphoto).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.STNKphoto = STNKphotoURL;
+      }
+
+      if(item.modelYearPicture) {
+        const modelYearPictureURL = await minio.getUrl(item.modelYearPicture).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.modelYearPicture = modelYearPictureURL;
+      }
+
+      if(item.brandLogo) {
+        const brandLogoURL = await minio.getUrl(item.brandLogo).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.brandLogo = brandLogoURL;
+      }
+
+      if(item.carPicture) {
+        const carPictureURL = await minio.getUrl(item.carPicture).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.carPicture = carPictureURL;
+      }
+    })
+  );
+
   if (showDetailPhoto === 'true') {
     function onlyUnique(value, index, self) {
       return self.indexOf(value) === index;
@@ -3276,9 +3537,18 @@ async function bidRefactor(req, res) {
         const egColumn = eg[j].split('#sep#');
         if (egColumn.length === 2) {
           if (egColumn[1] !== '<m>') {
+            const pictureURL = await minio.getUrl(egColumn[1]).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
             exteriors.push({
               id: parseInt(egColumn[0], 10),
-              picture: process.env.HDRIVE_S3_BASE_URL + egColumn[1]
+              picture: pictureURL
             });
           }
         }
@@ -3292,9 +3562,18 @@ async function bidRefactor(req, res) {
         const igColumn = ig[j].split('#sep#');
         if (igColumn.length === 2) {
           if (igColumn[1] !== '<m>') {
+            const pictureURL = await minio.getUrl(igColumn[1]).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+            
             interiors.push({
               id: parseInt(igColumn[0], 10),
-              picture: process.env.HDRIVE_S3_BASE_URL + igColumn[1]
+              picture: pictureURL
             });
           }
         }
