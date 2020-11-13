@@ -5,7 +5,6 @@ const validator = require('validator');
 const Sequelize = require('sequelize');
 const randomize = require('randomatic');
 const models = require('../../db/models');
-const imageHelper = require('../../helpers/s3');
 const paginator = require('../../helpers/paginator');
 
 const { Op } = Sequelize;

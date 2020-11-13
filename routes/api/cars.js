@@ -6,7 +6,7 @@ const randomize = require('randomatic');
 const passport = require('passport');
 const Sequelize = require('sequelize');
 const models = require('../../db/models');
-const imageHelper = require('../../helpers/s3');
+const minio = require('../../helpers/minio');
 const general = require('../../helpers/general');
 const paginator = require('../../helpers/paginator');
 const carsController = require('../../controller/carsController');
@@ -128,7 +128,6 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   if (address) Object.assign(update, { address });
 
   const result = {};
-  let isUpload = false;
   if (images) {
     const tname = randomize('0', 4);
     result.name = `djublee/images/car/${tname}${moment().format('x')}${unescape(
@@ -136,7 +135,6 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
     ).replace(/\s/g, '')}`;
     result.mimetype = images[0].mimetype;
     result.data = images[0].buffer;
-    isUpload = true;
     Object.assign(update, { STNKphoto: result.name });
   }
 
@@ -187,6 +185,7 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   }
 
   const carExists = await models.Car.findByPk(id);
+  const oldSTNKPhoto = carExists.STNKphoto;
   if (!carExists) return apiResponse._error({ res, errors: `car not found` });
   Object.assign(update, { oldPrice: carExists.price });
 
@@ -273,6 +272,29 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
       });
     });
 
+  if (Object.keys(result).length > 0) {
+    if(oldSTNKPhoto) {
+      // delete old file
+      await minio.destroy(oldSTNKPhoto).catch(err => {
+        trans.rollback();
+        return res.status(422).json({
+          success: false,
+          errors: err
+        });
+      });
+    }
+
+    await minio.upload(result.name, result.data).then(res => {
+      console.log(`etag min.io: ${res.etag}`);
+    }).catch(err => {
+      trans.rollback();
+      return res.status(422).json({
+        success: false,
+        errors: err
+      });
+    });
+  }
+
   if (errors.length > 0) {
     trans.rollback();
     return res.status(422).json({
@@ -282,7 +304,6 @@ router.put('/:id', passport.authenticate('user', { session: false }), async (req
   }
 
   trans.commit();
-  if (isUpload) imageHelper.uploadToS3(result);
 
   if (userNotifs.length > 0) {
     userNotifs.map(async userNotif => {
