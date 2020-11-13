@@ -1,3 +1,5 @@
+const minio = require('../../helpers/minio');
+
 module.exports = (sequelize, DataTypes) => {
   const Brand = sequelize.define(
     'Brand',
@@ -8,14 +10,28 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       timestamps: true,
-      paranoid: true,
-      getterMethods: {
-        logoUrl() {
-          return this.logo ? process.env.HDRIVE_S3_BASE_URL + this.logo : null;
-        }
-      }
+      paranoid: true
     }
   );
+  Brand.addHook('afterFind', async (result) => {
+    await Promise.all(
+      result.map(async item => {
+        if(item.dataValues.logo) {
+          const url = await minio.getUrl(item.dataValues.logo).then(res => {
+            return res;
+          }).catch(err => {
+            console.log(err);
+          });
+
+          return item.dataValues.logoUrl = url;
+        }
+
+        return item.dataValues.logoUrl = null;
+      })
+    );
+
+    return result;
+  });
   Brand.associate = models => {
     Brand.hasMany(models.DealerSellAndBuyBrand, {
       foreignKey: 'brandId',

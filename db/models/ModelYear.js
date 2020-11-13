@@ -1,3 +1,5 @@
+const minio = require('../../helpers/minio');
+
 module.exports = (sequelize, DataTypes) => {
   const ModelYear = sequelize.define(
     'ModelYear',
@@ -9,14 +11,28 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       timestamps: true,
-      paranoid: true,
-      getterMethods: {
-        pictureUrl() {
-          return this.picture ? process.env.HDRIVE_S3_BASE_URL + this.picture : null;
-        }
-      }
+      paranoid: true
     }
   );
+  ModelYear.addHook('afterFind', async (result) => {
+    await Promise.all(
+      result.map(async item => {
+        if(item.dataValues.picture) {
+          const url = await minio.getUrl(item.dataValues.picture).then(res => {
+            return res;
+          }).catch(err => {
+            console.log(err);
+          });
+
+          return item.dataValues.pictureUrl = url;
+        }
+
+        return item.dataValues.pictureUrl = null;
+      })
+    );
+
+    return result;
+  });
   ModelYear.associate = models => {
     ModelYear.belongsTo(models.Model, {
       foreignKey: 'modelId',

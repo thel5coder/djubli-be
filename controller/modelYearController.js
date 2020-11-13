@@ -10,6 +10,7 @@ const paginator = require('../helpers/paginator');
 const carHelper = require('../helpers/car');
 const general = require('../helpers/general');
 const distanceHelper = require('../helpers/distance');
+const minio = require('../helpers/minio');
 
 const { Op } = Sequelize;
 
@@ -798,10 +799,9 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
       SELECT "id", "carId" FROM "Bargains" WHERE "deletedAt" IS NULL AND "negotiationType" IN (4,8)
     ) ${carDistance}
     
-    select my.id, my."modelId", my.year, CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',my.picture) AS "modelYearPicture",
+    select my.id, my."modelId", my.year, my.picture AS "modelYearPicture",
     my.price, m."name" AS "modelName", m."groupModelId", gm."name" AS "groupModelName",
-    gm."brandId", b."name" AS "brandName",
-    CONCAT ('${process.env.HDRIVE_S3_BASE_URL}',b."logo") AS "brandLogo", pur."price",
+    gm."brandId", b."name" AS "brandName", b."logo" AS "brandLogo", pur."price",
     count(DISTINCT(c."id")) as "listing", count(DISTINCT(b2."id")) as "countBid", max(b2."bidAmount" ) as "highestBid",
     AVG(all_pur."price") as "marketPrice", MIN(c."price") as "lowestPrice",
     COUNT(DISTINCT(all_pur."id")) AS "countTransaction", pur."price" as "lastTransaction"
@@ -830,6 +830,36 @@ async function listingAllNewRefactor(req, res, fromCallback = false) {
         errors: err.message
       });
     });
+
+  await Promise.all(
+    data.map(async item => {
+      if(item.modelYearPicture) {
+        const modelYearPictureURL = await minio.getUrl(item.modelYearPicture).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.modelYearPicture = modelYearPictureURL;
+      }
+
+      if(item.brandLogo) {
+        const brandLogoURL = await minio.getUrl(item.brandLogo).then(res => {
+          return res;
+        }).catch(err => {
+          res.status(422).json({
+            success: false,
+            errors: err
+          });
+        });
+
+        item.brandLogo = brandLogoURL;
+      }
+    })
+  );
 
   res.json({
     success: true,

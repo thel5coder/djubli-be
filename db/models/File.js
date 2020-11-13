@@ -1,3 +1,5 @@
+const minio = require('../../helpers/minio');
+
 module.exports = (sequelize, DataTypes) => {
   const File = sequelize.define(
     'File',
@@ -7,14 +9,28 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       timestamps: true,
-      paranoid: true,
-      getterMethods: {
-        fileUrl() {
-          return this.url ? process.env.HDRIVE_S3_BASE_URL + this.url : null;
-        }
-      }
+      paranoid: true
     }
   );
+  File.addHook('afterFind', async (result) => {
+    await Promise.all(
+      result.map(async item => {
+        if(item.dataValues.url) {
+          const url = await minio.getUrl(item.dataValues.url).then(res => {
+            return res;
+          }).catch(err => {
+            console.log(err);
+          });
+
+          return item.dataValues.fileUrl = url;
+        }
+
+        return item.dataValues.fileUrl = null;
+      })
+    );
+
+    return result;
+  });
   File.associate = models => {
     File.hasMany(models.DealerGallery, {
       foreignKey: 'fileId',
