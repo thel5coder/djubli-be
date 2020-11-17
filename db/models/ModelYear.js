@@ -15,21 +15,35 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   ModelYear.addHook('afterFind', async (result) => {
-    await Promise.all(
-      result.map(async item => {
-        if(item.dataValues.picture) {
-          const url = await minio.getUrl(item.dataValues.picture).then(res => {
-            return res;
-          }).catch(err => {
-            console.log(err);
-          });
+    if(Array.isArray(result)) {
+      await Promise.all(
+        result.map(async item => {
+          if(item.dataValues.picture) {
+            const url = await minio.getUrl(item.dataValues.picture).then(res => {
+              return res;
+            }).catch(err => {
+              console.log(err);
+            });
 
-          return item.dataValues.pictureUrl = url;
-        }
+            return item.dataValues.pictureUrl = url;
+          }
 
-        return item.dataValues.pictureUrl = null;
-      })
-    );
+          return item.dataValues.pictureUrl = null;
+        })
+      );
+    } else if(result && result.dataValues) {
+      if(result.dataValues.picture) {
+        const url = await minio.getUrl(result.dataValues.picture).then(res => {
+          return res;
+        }).catch(err => {
+          console.log(err);
+        });
+
+        return result.dataValues.pictureUrl = url;
+      }
+
+      return result.dataValues.pictureUrl = null;
+    }
 
     return result;
   });

@@ -14,21 +14,35 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   Brand.addHook('afterFind', async (result) => {
-    await Promise.all(
-      result.map(async item => {
-        if(item.dataValues.logo) {
-          const url = await minio.getUrl(item.dataValues.logo).then(res => {
-            return res;
-          }).catch(err => {
-            console.log(err);
-          });
+    if(Array.isArray(result)) {
+      await Promise.all(
+        result.map(async item => {
+          if(item.dataValues.logo) {
+            const url = await minio.getUrl(item.dataValues.logo).then(res => {
+              return res;
+            }).catch(err => {
+              console.log(err);
+            });
 
-          return item.dataValues.logoUrl = url;
-        }
+            return item.dataValues.logoUrl = url;
+          }
 
-        return item.dataValues.logoUrl = null;
-      })
-    );
+          return item.dataValues.logoUrl = null;
+        })
+      );
+    } else if(result && result.dataValues) {
+      if(result.dataValues.logo) {
+        const url = await minio.getUrl(result.dataValues.logo).then(res => {
+          return res;
+        }).catch(err => {
+          console.log(err);
+        });
+
+        return result.dataValues.logoUrl = url;
+      }
+
+      return result.dataValues.logoUrl = null;
+    }
 
     return result;
   });

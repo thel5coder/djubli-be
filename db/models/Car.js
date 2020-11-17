@@ -33,21 +33,35 @@ module.exports = (sequelize, DataTypes) => {
     }
   );
   Car.addHook('afterFind', async (result) => {
-    await Promise.all(
-      result.map(async item => {
-        if(item.dataValues.STNKphoto) {
-          const url = await minio.getUrl(item.dataValues.STNKphoto).then(res => {
-            return res;
-          }).catch(err => {
-            console.log(err);
-          });
+    if(Array.isArray(result)) {
+      await Promise.all(
+        result.map(async item => {
+          if(item.dataValues.STNKphoto) {
+            const url = await minio.getUrl(item.dataValues.STNKphoto).then(res => {
+              return res;
+            }).catch(err => {
+              console.log(err);
+            });
 
-          return item.dataValues.stnkUrl = url;
-        }
+            return item.dataValues.stnkUrl = url;
+          }
 
-        return item.dataValues.stnkUrl = null;
-      })
-    );
+          return item.dataValues.stnkUrl = null;
+        })
+      );
+    } else if(result && result.dataValues) {
+      if(result.dataValues.STNKphoto) {
+        const url = await minio.getUrl(result.dataValues.STNKphoto).then(res => {
+          return res;
+        }).catch(err => {
+          console.log(err);
+        });
+
+        return result.dataValues.stnkUrl = url;
+      }
+
+      return result.dataValues.stnkUrl = null;
+    }
 
     return result;
   });
