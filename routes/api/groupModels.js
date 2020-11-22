@@ -332,7 +332,10 @@ router.get('/listingCar/:id', async (req, res) => {
             const url = await minio.getUrl(item.modelYear.picture).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.modelYear.dataValues.pictureUrl = url;
@@ -346,7 +349,10 @@ router.get('/listingCar/:id', async (req, res) => {
                 const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -360,7 +366,10 @@ router.get('/listingCar/:id', async (req, res) => {
                 const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemExteriorGalery.file.dataValues.fileUrl = url;

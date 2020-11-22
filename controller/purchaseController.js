@@ -432,7 +432,10 @@ async function get(req, res) {
             const url = await minio.getUrl(item.car.STNKphoto).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.car.dataValues.stnkUrl = url;
@@ -444,7 +447,10 @@ async function get(req, res) {
             const url = await minio.getUrl(item.car.brand.logo).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.car.brand.dataValues.logoUrl = url;
@@ -456,7 +462,10 @@ async function get(req, res) {
             const url = await minio.getUrl(item.car.user.file.url).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.car.user.file.dataValues.fileUrl = url;
@@ -468,7 +477,10 @@ async function get(req, res) {
             const url = await minio.getUrl(item.bargain.user.file.url).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.bargain.user.file.dataValues.fileUrl = url;
@@ -482,7 +494,10 @@ async function get(req, res) {
                 const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -496,7 +511,10 @@ async function get(req, res) {
                 const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemExteriorGalery.file.dataValues.fileUrl = url;
@@ -645,7 +663,10 @@ async function getByModelYearId(req, res, params) {
             const url = await minio.getUrl(item.car.STNKphoto).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.car.dataValues.stnkUrl = url;
@@ -657,7 +678,10 @@ async function getByModelYearId(req, res, params) {
             const url = await minio.getUrl(item.car.brand.logo).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.car.brand.dataValues.logoUrl = url;
@@ -671,7 +695,10 @@ async function getByModelYearId(req, res, params) {
                 const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -685,7 +712,10 @@ async function getByModelYearId(req, res, params) {
                 const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemExteriorGalery.file.dataValues.fileUrl = url;
@@ -739,59 +769,73 @@ async function getById(req, res) {
     where: { id }
   })
     .then(async data => {
-      if(data.car.STNKphoto) {
-        const url = await minio.getUrl(data.car.STNKphoto).then(res => {
-          return res;
-        }).catch(err => {
-          console.log(err);
-        });
-
-        data.car.dataValues.stnkUrl = url;
-      } else {
-        data.car.dataValues.stnkUrl = null;
-      }
-
-      if(data.car.brand.logo) {
-        const url = await minio.getUrl(data.car.brand.logo).then(res => {
-          return res;
-        }).catch(err => {
-          console.log(err);
-        });
-
-        data.car.brand.dataValues.logoUrl = url;
-      } else {
-        data.car.brand.dataValues.logoUrl = null;
-      }
-
-      await Promise.all(
-        data.car.interiorGalery.map(async itemInteriorGalery => {
-          if(itemInteriorGalery.file.url) {
-            const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
-              return res;
-            }).catch(err => {
-              console.log(err);
+      if(data) {
+        if(data.car.STNKphoto) {
+          const url = await minio.getUrl(data.car.STNKphoto).then(res => {
+            return res;
+          }).catch(err => {
+            res.status(422).json({
+              success: false,
+              errors: err
             });
+          });
 
-            itemInteriorGalery.file.dataValues.fileUrl = url;
-          } else {
-            itemInteriorGalery.file.dataValues.fileUrl = null;
-          }
-        }),
+          data.car.dataValues.stnkUrl = url;
+        } else {
+          data.car.dataValues.stnkUrl = null;
+        }
 
-        data.car.exteriorGalery.map(async itemExteriorGalery => {
-          if(itemExteriorGalery.file.url) {
-            const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
-              return res;
-            }).catch(err => {
-              console.log(err);
+        if(data.car.brand.logo) {
+          const url = await minio.getUrl(data.car.brand.logo).then(res => {
+            return res;
+          }).catch(err => {
+            res.status(422).json({
+              success: false,
+              errors: err
             });
+          });
 
-            itemExteriorGalery.file.dataValues.fileUrl = url;
-          } else {
-            itemExteriorGalery.file.dataValues.fileUrl = null;
-          }
-        })
-      );
+          data.car.brand.dataValues.logoUrl = url;
+        } else {
+          data.car.brand.dataValues.logoUrl = null;
+        }
+
+        await Promise.all(
+          data.car.interiorGalery.map(async itemInteriorGalery => {
+            if(itemInteriorGalery.file.url) {
+              const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
+                return res;
+              }).catch(err => {
+                res.status(422).json({
+                  success: false,
+                  errors: err
+                });
+              });
+
+              itemInteriorGalery.file.dataValues.fileUrl = url;
+            } else {
+              itemInteriorGalery.file.dataValues.fileUrl = null;
+            }
+          }),
+
+          data.car.exteriorGalery.map(async itemExteriorGalery => {
+            if(itemExteriorGalery.file.url) {
+              const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                return res;
+              }).catch(err => {
+                res.status(422).json({
+                  success: false,
+                  errors: err
+                });
+              });
+
+              itemExteriorGalery.file.dataValues.fileUrl = url;
+            } else {
+              itemExteriorGalery.file.dataValues.fileUrl = null;
+            }
+          })
+        );
+      }
 
       res.json({
         success: true,

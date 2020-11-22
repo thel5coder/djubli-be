@@ -642,7 +642,10 @@ async function listingAll(req, res) {
             const url = await minio.getUrl(item.model.groupModel.brand.logo).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.model.groupModel.brand.dataValues.logoUrl = url;
@@ -656,7 +659,10 @@ async function listingAll(req, res) {
                 const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemCar.dataValues.stnkUrl = url;
@@ -670,7 +676,10 @@ async function listingAll(req, res) {
                     const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -684,7 +693,10 @@ async function listingAll(req, res) {
                     const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemExteriorGalery.file.dataValues.fileUrl = url;
@@ -1897,7 +1909,10 @@ async function listingAllNew(req, res, fromCallback = false) {
             const url = await minio.getUrl(item.groupModel.brand.logo).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.groupModel.brand.dataValues.logoUrl = url;
@@ -1911,7 +1926,10 @@ async function listingAllNew(req, res, fromCallback = false) {
                 const url = await minio.getUrl(itemModelYear.picture).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemModelYear.dataValues.pictureUrl = url;
@@ -1925,7 +1943,10 @@ async function listingAllNew(req, res, fromCallback = false) {
                     const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemCar.dataValues.stnkUrl = url;
@@ -1939,7 +1960,10 @@ async function listingAllNew(req, res, fromCallback = false) {
                         const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                           return res;
                         }).catch(err => {
-                          console.log(err);
+                          res.status(422).json({
+                            success: false,
+                            errors: err
+                          });
                         });
 
                         itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -1953,7 +1977,10 @@ async function listingAllNew(req, res, fromCallback = false) {
                         const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                           return res;
                         }).catch(err => {
-                          console.log(err);
+                          res.status(422).json({
+                            success: false,
+                            errors: err
+                          });
                         });
 
                         itemExteriorGalery.file.dataValues.fileUrl = url;
@@ -2186,7 +2213,10 @@ async function luxuryCar(req, res) {
             const url = await minio.getUrl(item.model.groupModel.brand.logo).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.model.groupModel.brand.dataValues.logoUrl = url;
@@ -2200,7 +2230,10 @@ async function luxuryCar(req, res) {
                 const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemCar.dataValues.stnkUrl = url;
@@ -2212,7 +2245,10 @@ async function luxuryCar(req, res) {
                 const url = await minio.getUrl(itemCar.brand.logo).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemCar.brand.dataValues.logoUrl = url;
@@ -2226,7 +2262,10 @@ async function luxuryCar(req, res) {
                     const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -2240,7 +2279,10 @@ async function luxuryCar(req, res) {
                     const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemExteriorGalery.file.dataValues.fileUrl = url;
@@ -2803,7 +2845,10 @@ async function listingCar(req, res, auth = false) {
             const url = await minio.getUrl(item.modelYear.picture).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.modelYear.dataValues.pictureUrl = url;
@@ -2817,7 +2862,10 @@ async function listingCar(req, res, auth = false) {
                 const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -2831,7 +2879,10 @@ async function listingCar(req, res, auth = false) {
                 const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemExteriorGalery.file.dataValues.fileUrl = url;

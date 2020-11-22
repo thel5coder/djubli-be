@@ -246,7 +246,10 @@ router.get('/listingCar', async (req, res) => {
                     const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemCar.dataValues.stnkUrl = url;
@@ -258,7 +261,10 @@ router.get('/listingCar', async (req, res) => {
                     const url = await minio.getUrl(itemCar.modelYear.picture).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemCar.modelYear.dataValues.pictureUrl = url;
@@ -270,7 +276,10 @@ router.get('/listingCar', async (req, res) => {
                     const url = await minio.getUrl(itemCar.brand.logo).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemCar.brand.dataValues.logoUrl = url;
@@ -284,7 +293,10 @@ router.get('/listingCar', async (req, res) => {
                         const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                           return res;
                         }).catch(err => {
-                          console.log(err);
+                          res.status(422).json({
+                            success: false,
+                            errors: err
+                          });
                         });
 
                         itemExteriorGalery.file.dataValues.fileUrl = url;

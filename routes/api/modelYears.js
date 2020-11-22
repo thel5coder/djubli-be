@@ -362,7 +362,10 @@ router.get('/listingType', async (req, res) => {
             const url = await minio.getUrl(item.model.groupModel.brand.logo).then(res => {
               return res;
             }).catch(err => {
-              console.log(err);
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
             });
 
             item.model.groupModel.brand.dataValues.logoUrl = url;
@@ -376,7 +379,10 @@ router.get('/listingType', async (req, res) => {
                 const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemCar.dataValues.stnkUrl = url;
@@ -388,7 +394,10 @@ router.get('/listingType', async (req, res) => {
                 const url = await minio.getUrl(itemCar.brand.logo).then(res => {
                   return res;
                 }).catch(err => {
-                  console.log(err);
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
                 });
 
                 itemCar.brand.dataValues.logoUrl = url;
@@ -402,7 +411,10 @@ router.get('/listingType', async (req, res) => {
                     const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemInteriorGalery.file.dataValues.fileUrl = url;
@@ -416,7 +428,10 @@ router.get('/listingType', async (req, res) => {
                     const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
                       return res;
                     }).catch(err => {
-                      console.log(err);
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
                     });
 
                     itemExteriorGalery.file.dataValues.fileUrl = url;
