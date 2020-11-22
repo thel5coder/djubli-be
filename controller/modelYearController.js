@@ -636,6 +636,80 @@ async function listingAll(req, res) {
       });
       const pagination = paginator.paging(page, count, limit);
 
+      await Promise.all(
+        data.map(async item => {
+          if(item.model.groupModel.brand.logo) {
+            const url = await minio.getUrl(item.model.groupModel.brand.logo).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
+            item.model.groupModel.brand.dataValues.logoUrl = url;
+          } else {
+            item.model.groupModel.brand.dataValues.logoUrl = null;
+          }          
+
+          await Promise.all(
+            item.car.map(async itemCar => {
+              if(itemCar.STNKphoto) {
+                const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
+                  return res;
+                }).catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
+                });
+
+                itemCar.dataValues.stnkUrl = url;
+              } else {
+                itemCar.dataValues.stnkUrl = null;
+              }
+
+              await Promise.all(
+                itemCar.interiorGalery.map(async itemInteriorGalery => {
+                  if(itemInteriorGalery.file.url) {
+                    const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
+                      return res;
+                    }).catch(err => {
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
+                    });
+
+                    itemInteriorGalery.file.dataValues.fileUrl = url;
+                  } else {
+                    itemInteriorGalery.file.dataValues.fileUrl = null;
+                  }
+                }),
+
+                itemCar.exteriorGalery.map(async itemExteriorGalery => {
+                  if(itemExteriorGalery.file.url) {
+                    const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                      return res;
+                    }).catch(err => {
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
+                    });
+
+                    itemExteriorGalery.file.dataValues.fileUrl = url;
+                  } else {
+                    itemExteriorGalery.file.dataValues.fileUrl = null;
+                  }
+                })
+              );
+            })
+          );
+        })
+      );
+
       res.json({
         success: true,
         pagination,
@@ -1829,6 +1903,99 @@ async function listingAllNew(req, res, fromCallback = false) {
         return data;
       }
 
+      await Promise.all(
+        data.map(async item => {
+          if(item.groupModel.brand.logo) {
+            const url = await minio.getUrl(item.groupModel.brand.logo).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
+            item.groupModel.brand.dataValues.logoUrl = url;
+          } else {
+            item.groupModel.brand.dataValues.logoUrl = null;
+          }          
+
+          await Promise.all(
+            item.modelYears.map(async itemModelYear => {
+              if(itemModelYear.picture) {
+                const url = await minio.getUrl(itemModelYear.picture).then(res => {
+                  return res;
+                }).catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
+                });
+
+                itemModelYear.dataValues.pictureUrl = url;
+              } else {
+                itemModelYear.dataValues.pictureUrl = null;
+              }
+
+              await Promise.all(
+                itemModelYear.cars.map(async itemCar => {
+                  if(itemCar.STNKphoto) {
+                    const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
+                      return res;
+                    }).catch(err => {
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
+                    });
+
+                    itemCar.dataValues.stnkUrl = url;
+                  } else {
+                    itemCar.dataValues.stnkUrl = null;
+                  }
+
+                  await Promise.all(
+                    itemCar.interiorGalery.map(async itemInteriorGalery => {
+                      if(itemInteriorGalery.file.url) {
+                        const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
+                          return res;
+                        }).catch(err => {
+                          res.status(422).json({
+                            success: false,
+                            errors: err
+                          });
+                        });
+
+                        itemInteriorGalery.file.dataValues.fileUrl = url;
+                      } else {
+                        itemInteriorGalery.file.dataValues.fileUrl = null;
+                      }
+                    }),
+
+                    itemCar.exteriorGalery.map(async itemExteriorGalery => {
+                      if(itemExteriorGalery.file.url) {
+                        const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                          return res;
+                        }).catch(err => {
+                          res.status(422).json({
+                            success: false,
+                            errors: err
+                          });
+                        });
+
+                        itemExteriorGalery.file.dataValues.fileUrl = url;
+                      } else {
+                        itemExteriorGalery.file.dataValues.fileUrl = null;
+                      }
+                    })
+                  );
+                })
+              );
+            })
+          );
+        })
+      );
+
       res.status(200).json({
         success: true,
         pagination,
@@ -2039,6 +2206,95 @@ async function luxuryCar(req, res) {
         where
       });
       const pagination = paginator.paging(page, count, limit);
+
+      await Promise.all(
+        data.map(async item => {
+          if(item.model.groupModel.brand.logo) {
+            const url = await minio.getUrl(item.model.groupModel.brand.logo).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
+            item.model.groupModel.brand.dataValues.logoUrl = url;
+          } else {
+            item.model.groupModel.brand.dataValues.logoUrl = null;
+          }          
+
+          await Promise.all(
+            item.car.map(async itemCar => {
+              if(itemCar.STNKphoto) {
+                const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
+                  return res;
+                }).catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
+                });
+
+                itemCar.dataValues.stnkUrl = url;
+              } else {
+                itemCar.dataValues.stnkUrl = null;
+              }
+
+              if(itemCar.brand.logo) {
+                const url = await minio.getUrl(itemCar.brand.logo).then(res => {
+                  return res;
+                }).catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
+                });
+
+                itemCar.brand.dataValues.logoUrl = url;
+              } else {
+                itemCar.brand.dataValues.logoUrl = null;
+              }
+
+              await Promise.all(
+                itemCar.interiorGalery.map(async itemInteriorGalery => {
+                  if(itemInteriorGalery.file.url) {
+                    const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
+                      return res;
+                    }).catch(err => {
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
+                    });
+
+                    itemInteriorGalery.file.dataValues.fileUrl = url;
+                  } else {
+                    itemInteriorGalery.file.dataValues.fileUrl = null;
+                  }
+                }),
+
+                itemCar.exteriorGalery.map(async itemExteriorGalery => {
+                  if(itemExteriorGalery.file.url) {
+                    const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                      return res;
+                    }).catch(err => {
+                      res.status(422).json({
+                        success: false,
+                        errors: err
+                      });
+                    });
+
+                    itemExteriorGalery.file.dataValues.fileUrl = url;
+                  } else {
+                    itemExteriorGalery.file.dataValues.fileUrl = null;
+                  }
+                })
+              );
+            })
+          );
+        })
+      );
 
       res.json({
         success: true,
@@ -2582,6 +2838,61 @@ async function listingCar(req, res, auth = false) {
         where
       });
       const pagination = paginator.paging(page, count, limit);
+
+      await Promise.all(
+        data.map(async item => {
+          if(item.modelYear.picture) {
+            const url = await minio.getUrl(item.modelYear.picture).then(res => {
+              return res;
+            }).catch(err => {
+              res.status(422).json({
+                success: false,
+                errors: err
+              });
+            });
+
+            item.modelYear.dataValues.pictureUrl = url;
+          } else {
+            item.modelYear.dataValues.pictureUrl = null;
+          }          
+
+          await Promise.all(
+            item.interiorGalery.map(async itemInteriorGalery => {
+              if(itemInteriorGalery.file.url) {
+                const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
+                  return res;
+                }).catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
+                });
+
+                itemInteriorGalery.file.dataValues.fileUrl = url;
+              } else {
+                itemInteriorGalery.file.dataValues.fileUrl = null;
+              }
+            }),
+
+            item.exteriorGalery.map(async itemExteriorGalery => {
+              if(itemExteriorGalery.file.url) {
+                const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                  return res;
+                }).catch(err => {
+                  res.status(422).json({
+                    success: false,
+                    errors: err
+                  });
+                });
+
+                itemExteriorGalery.file.dataValues.fileUrl = url;
+              } else {
+                itemExteriorGalery.file.dataValues.fileUrl = null;
+              }
+            })
+          );
+        })
+      );
 
       res.status(200).json({
         success: true,

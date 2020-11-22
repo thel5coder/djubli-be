@@ -36,17 +36,19 @@ module.exports = (sequelize, DataTypes) => {
     if(Array.isArray(result)) {
       await Promise.all(
         result.map(async item => {
-          if(item.dataValues.STNKphoto) {
-            const url = await minio.getUrl(item.dataValues.STNKphoto).then(res => {
-              return res;
-            }).catch(err => {
-              console.log(err);
-            });
+          if(item.dataValues) {
+            if(item.dataValues.STNKphoto) {
+              const url = await minio.getUrl(item.dataValues.STNKphoto).then(res => {
+                return res;
+              }).catch(err => {
+                console.log(err);
+              });
 
-            return item.dataValues.stnkUrl = url;
+              return item.dataValues.stnkUrl = url;
+            }
+
+            return item.dataValues.stnkUrl = null;
           }
-
-          return item.dataValues.stnkUrl = null;
         })
       );
     } else if(result && result.dataValues) {
