@@ -5,6 +5,7 @@ const Sequelize = require('sequelize');
 const models = require('../../db/models');
 const carHelper = require('../../helpers/car');
 const paginator = require('../../helpers/paginator');
+const minio = require('../../helpers/minio');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -234,6 +235,70 @@ router.get('/listingCar', async (req, res) => {
         where
       });
       const pagination = paginator.paging(page, count, limit);
+
+      await Promise.all(
+        data.map(async item => {
+          await Promise.all(
+            item.groupModel.map(async itemGroupModel => {
+              await Promise.all(
+                itemGroupModel.car.map(async itemCar => {
+                  if(itemCar.STNKphoto) {
+                    const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
+                      return res;
+                    }).catch(err => {
+                      console.log(err);
+                    });
+
+                    itemCar.dataValues.stnkUrl = url;
+                  } else {
+                    itemCar.dataValues.stnkUrl = null;
+                  }
+
+                  if(itemCar.modelYear.picture) {
+                    const url = await minio.getUrl(itemCar.modelYear.picture).then(res => {
+                      return res;
+                    }).catch(err => {
+                      console.log(err);
+                    });
+
+                    itemCar.modelYear.dataValues.pictureUrl = url;
+                  } else {
+                    itemCar.modelYear.dataValues.pictureUrl = null;
+                  }
+
+                  if(itemCar.brand.logo) {
+                    const url = await minio.getUrl(itemCar.brand.logo).then(res => {
+                      return res;
+                    }).catch(err => {
+                      console.log(err);
+                    });
+
+                    itemCar.brand.dataValues.logoUrl = url;
+                  } else {
+                    itemCar.brand.dataValues.logoUrl = null;
+                  }
+
+                  await Promise.all(
+                    itemCar.exteriorGalery.map(async itemExteriorGalery => {
+                      if(itemExteriorGalery.file.url) {
+                        const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                          return res;
+                        }).catch(err => {
+                          console.log(err);
+                        });
+
+                        itemExteriorGalery.file.dataValues.fileUrl = url;
+                      } else {
+                        itemExteriorGalery.file.dataValues.fileUrl = null;
+                      }
+                    })
+                  );
+                })
+              );
+            })
+          );
+        })
+      );
 
       res.json({
         success: true,

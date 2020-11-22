@@ -8,6 +8,7 @@ const paginator = require('../../helpers/paginator');
 const carHelper = require('../../helpers/car');
 const general = require('../../helpers/general');
 const distanceHelper = require('../../helpers/distance');
+const minio = require('../../helpers/minio');
 const modelYearController = require('../../controller/modelYearController');
 
 const { Op } = Sequelize;
@@ -354,6 +355,80 @@ router.get('/listingType', async (req, res) => {
       });
 
       const pagination = paginator.paging(page, count, limit);
+
+      await Promise.all(
+        data.map(async item => {
+          if(item.model.groupModel.brand.logo) {
+            const url = await minio.getUrl(item.model.groupModel.brand.logo).then(res => {
+              return res;
+            }).catch(err => {
+              console.log(err);
+            });
+
+            item.model.groupModel.brand.dataValues.logoUrl = url;
+          } else {
+            item.model.groupModel.brand.dataValues.logoUrl = null;
+          }          
+
+          await Promise.all(
+            item.car.map(async itemCar => {
+              if(itemCar.STNKphoto) {
+                const url = await minio.getUrl(itemCar.STNKphoto).then(res => {
+                  return res;
+                }).catch(err => {
+                  console.log(err);
+                });
+
+                itemCar.dataValues.stnkUrl = url;
+              } else {
+                itemCar.dataValues.stnkUrl = null;
+              }
+
+              if(itemCar.brand.logo) {
+                const url = await minio.getUrl(itemCar.brand.logo).then(res => {
+                  return res;
+                }).catch(err => {
+                  console.log(err);
+                });
+
+                itemCar.brand.dataValues.logoUrl = url;
+              } else {
+                itemCar.brand.dataValues.logoUrl = null;
+              }
+
+              await Promise.all(
+                itemCar.interiorGalery.map(async itemInteriorGalery => {
+                  if(itemInteriorGalery.file.url) {
+                    const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
+                      return res;
+                    }).catch(err => {
+                      console.log(err);
+                    });
+
+                    itemInteriorGalery.file.dataValues.fileUrl = url;
+                  } else {
+                    itemInteriorGalery.file.dataValues.fileUrl = null;
+                  }
+                }),
+
+                itemCar.exteriorGalery.map(async itemExteriorGalery => {
+                  if(itemExteriorGalery.file.url) {
+                    const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                      return res;
+                    }).catch(err => {
+                      console.log(err);
+                    });
+
+                    itemExteriorGalery.file.dataValues.fileUrl = url;
+                  } else {
+                    itemExteriorGalery.file.dataValues.fileUrl = null;
+                  }
+                })
+              );
+            })
+          );
+        })
+      );
 
       res.json({
         success: true,

@@ -6,6 +6,7 @@ const passport = require('passport');
 const models = require('../../db/models');
 const carHelper = require('../../helpers/car');
 const paginator = require('../../helpers/paginator');
+const minio = require('../../helpers/minio');
 
 const { Op } = Sequelize;
 const router = express.Router();
@@ -326,6 +327,52 @@ router.get('/listingCar/:id', async (req, res) => {
         where
       });
       const pagination = paginator.paging(page, count, limit);
+
+      await Promise.all(
+        data.map(async item => {
+          if(item.modelYear.picture) {
+            const url = await minio.getUrl(item.modelYear.picture).then(res => {
+              return res;
+            }).catch(err => {
+              console.log(err);
+            });
+
+            item.modelYear.dataValues.pictureUrl = url;
+          } else {
+            item.modelYear.dataValues.pictureUrl = null;
+          }
+
+          await Promise.all(
+            item.interiorGalery.map(async itemInteriorGalery => {
+              if(itemInteriorGalery.file.url) {
+                const url = await minio.getUrl(itemInteriorGalery.file.url).then(res => {
+                  return res;
+                }).catch(err => {
+                  console.log(err);
+                });
+
+                itemInteriorGalery.file.dataValues.fileUrl = url;
+              } else {
+                itemInteriorGalery.file.dataValues.fileUrl = null;
+              }
+            }),
+
+            item.exteriorGalery.map(async itemExteriorGalery => {
+              if(itemExteriorGalery.file.url) {
+                const url = await minio.getUrl(itemExteriorGalery.file.url).then(res => {
+                  return res;
+                }).catch(err => {
+                  console.log(err);
+                });
+
+                itemExteriorGalery.file.dataValues.fileUrl = url;
+              } else {
+                itemExteriorGalery.file.dataValues.fileUrl = null;
+              }
+            })
+          );
+        })
+      );
 
       res.json({
         success: true,
