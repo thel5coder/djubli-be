@@ -32,40 +32,40 @@ router.get("/", async (req, res) => {
     where
   });
 
-  // return models.Model.findAll({
-  //   include: [
-  //     {
-  //       model: models.GroupModel,
-  //       as: 'groupModel',
-  //       include: [
-  //         {
-  //           model: models.Brand,
-  //           as: 'brand'
-  //         }
-  //       ]
-  //     }
-  //   ],
-  //   where,
-  //   order,
-  //   offset,
-  //   limit
-  // })
-  //   .then(async data => {
-  //     const count = await models.Model.count({ where });
-  //     const pagination = paginator.paging(page, count, limit);
-  //
-  //     res.json({
-  //       success: true,
-  //       pagination,
-  //       data
-  //     });
-  //   })
-  //   .catch(err => {
-  //     res.status(422).json({
-  //       success: false,
-  //       errors: err.message
-  //     });
-  //   });
+  return models.Model.findAll({
+    include: [
+      {
+        model: models.GroupModel,
+        as: 'groupModel',
+        include: [
+          {
+            model: models.Brand,
+            as: 'brand'
+          }
+        ]
+      }
+    ],
+    where,
+    order,
+    offset,
+    limit
+  })
+    .then(async data => {
+      const count = await models.Model.count({ where });
+      const pagination = paginator.paging(page, count, limit);
+
+      res.json({
+        success: true,
+        pagination,
+        data
+      });
+    })
+    .catch(err => {
+      res.status(422).json({
+        success: false,
+        errors: err.message
+      });
+    });
 });
 
 router.get("/id/:id", async (req, res) => {
