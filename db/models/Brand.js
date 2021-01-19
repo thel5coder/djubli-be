@@ -77,6 +77,12 @@ module.exports = (sequelize, DataTypes) => {
       as: 'dealer',
       onDelete: 'CASCADE'
     });
+    Brand.hasMany(models.GroupModel, {
+      foreignKey: 'brandId',
+      sourceKey: 'id',
+      as: 'groupModelBrand',
+      onDelete: 'CASCADE'
+    });
   };
   return Brand;
 };
