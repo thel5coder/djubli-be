@@ -26,11 +26,7 @@ router.get("/", async (req, res) => {
 
   const where = {};
 
-  return res.status(200).json({
-    order,
-    offset,
-    where
-  });
+  // return res.status(200).json({ order, where, offset});
 
   return models.Model.findAll({
     include: [
@@ -51,17 +47,17 @@ router.get("/", async (req, res) => {
     limit
   })
     .then(async data => {
-      const count = await models.Model.count({ where });
-      const pagination = paginator.paging(page, count, limit);
+      // const count = await models.Model.count({ where });
+      // const pagination = paginator.paging(page, count, limit);
 
-      res.json({
+      return res.json({
         success: true,
-        pagination,
+        // pagination,
         data
       });
     })
     .catch(err => {
-      res.status(422).json({
+      return res.status(422).json({
         success: false,
         errors: err.message
       });

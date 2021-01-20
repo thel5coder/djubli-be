@@ -1,0 +1,9 @@
+version: '3'
+services:
+  dev-jubli-backend:
+    container_name: dev-jubli-backend
+    image: dev-jubli-backend:latest
+    restart: always
+    hostname: dev-jubli-backend
+    ports:
+      - "5000:7500"
